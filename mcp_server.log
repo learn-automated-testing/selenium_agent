@@ -1985,3 +1985,14 @@ Stacktrace:
 2025-07-21 15:36:35,288 - selenium_mcp.tools.javascript - INFO - 🟡 Executed JavaScript: window.scrollTo(0, 500);...
 2025-07-21 15:37:33,035 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
 2025-07-21 15:37:33,038 - __main__ - INFO - 🛠️ Executing tool: generate_script
+2025-11-22 09:27:57,036 - mcp_server - INFO - 🚀 Successfully loaded 46 tools
+2025-11-22 09:27:57,036 - mcp_server - INFO -   1. navigate_to
+2025-11-22 09:27:57,036 - mcp_server - INFO -   2. go_back
+2025-11-22 09:27:57,036 - mcp_server - INFO -   3. go_forward
+2025-11-22 09:27:57,036 - mcp_server - INFO -   4. capture_page
+2025-11-22 09:27:57,036 - mcp_server - INFO -   5. click_element
+2025-11-22 09:27:57,036 - mcp_server - INFO -   ... and 41 more tools
+2025-11-22 09:38:27,650 - mcp_server - INFO - 🚀 Successfully loaded 46 tools
+2025-11-22 09:38:27,666 - mcp_server - INFO - 🚀 Selenium MCP Server initialized with 46 tools
+2025-11-22 09:40:10,199 - mcp_server - INFO - 🚀 Successfully loaded 46 tools
+2025-11-22 09:40:10,215 - mcp_server - INFO - 🚀 Selenium MCP Server initialized with 46 tools

@@ -1,0 +1,55 @@
+{
+  "name": "mcp-selenium-server",
+  "version": "1.0.0",
+  "description": "Node.js launcher for Selenium MCP Server - AI-powered browser automation with test agents",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "selenium-mcp": "./bin/selenium-mcp.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install-python-server.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "selenium",
+    "mcp",
+    "model-context-protocol",
+    "browser-automation",
+    "testing",
+    "test-automation",
+    "ai-agents",
+    "playwright-alternative",
+    "web-testing",
+    "test-generator",
+    "test-healer",
+    "claude",
+    "anthropic"
+  ],
+  "author": "R. van der Horst",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/learn-automated-testing/selenium-mcp-server.git",
+    "directory": "npm-wrapper"
+  },
+  "homepage": "https://github.com/learn-automated-testing/selenium-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/learn-automated-testing/selenium-mcp-server/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "files": [
+    "bin/",
+    "scripts/",
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ]
+}

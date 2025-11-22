@@ -145,6 +145,8 @@ class Context:
         self.current_snapshot: Optional[PageSnapshot] = None
         self.action_history: List[Dict[str, Any]] = []  # Track recorded actions
         self.recording_enabled: bool = False  # Control recording state
+        self.planning_session: Optional[Dict[str, Any]] = None  # Track planning sessions
+        self.generation_session: Optional[Dict[str, Any]] = None  # Track generation sessions
     
     async def ensure_browser(self):
         """Ensure browser is available."""

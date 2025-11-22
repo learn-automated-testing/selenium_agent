@@ -19,7 +19,20 @@ from .network import NetworkTool
 from .pdf import PDFTool
 from .recording import StartRecordingTool, StopRecordingTool, RecordingStatusTool, ClearRecordingTool
 from .script_generator import GenerateScriptTool
+from .script_generator_improved import ImprovedGenerateScriptTool
 from .reset_session import ResetSessionTool
+from .agents import (
+    PlannerSetupTool, PlannerSavePlanTool, PlannerExplorePageTool,
+    GeneratorSetupTool, GeneratorReadLogTool, GeneratorWriteTestTool,
+    HealerRunTestsTool, HealerDebugTestTool, HealerFixTestTool,
+    BrowserGenerateLocatorTool
+)
+from .verification import (
+    BrowserVerifyElementVisibleTool,
+    BrowserVerifyTextVisibleTool,
+    BrowserVerifyValueTool,
+    BrowserVerifyListVisibleTool
+)
 
 def get_all_tools():
     """Get all available tools."""
@@ -86,8 +99,31 @@ def get_all_tools():
         StopRecordingTool(),
         RecordingStatusTool(),
         ClearRecordingTool(),
-        GenerateScriptTool(),
+        ImprovedGenerateScriptTool(),  # Using improved version
         
         # Session management
         ResetSessionTool(),
+
+        # Agent-specific tools
+        # Planner agent tools
+        PlannerSetupTool(),
+        PlannerExplorePageTool(),
+        PlannerSavePlanTool(),
+
+        # Generator agent tools
+        GeneratorSetupTool(),
+        GeneratorReadLogTool(),
+        GeneratorWriteTestTool(),
+
+        # Healer agent tools
+        HealerRunTestsTool(),
+        HealerDebugTestTool(),
+        HealerFixTestTool(),
+        BrowserGenerateLocatorTool(),
+
+        # Verification tools (for generator and healer agents)
+        BrowserVerifyElementVisibleTool(),
+        BrowserVerifyTextVisibleTool(),
+        BrowserVerifyValueTool(),
+        BrowserVerifyListVisibleTool(),
     ]

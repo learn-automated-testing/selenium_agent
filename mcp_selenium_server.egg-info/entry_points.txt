@@ -1,0 +1,2 @@
+[console_scripts]
+selenium-mcp = selenium_mcp.server:main
