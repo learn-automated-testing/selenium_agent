@@ -906,3 +906,18 @@ Stacktrace:
 2025-11-23 00:32:52,334 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
 2025-11-23 00:32:52,335 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
 2025-11-23 00:32:52,335 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2025-11-23 00:41:30,605 - selenium_mcp.server - INFO - 🚀 Successfully loaded 47 tools
+2025-11-23 00:41:30,623 - selenium_mcp.server - INFO - 🚀 Selenium MCP Server initialized with 47 tools
+2025-11-23 00:41:30,634 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2025-11-23 00:41:30,635 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2025-11-23 00:41:30,636 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2025-11-23 00:41:36,572 - selenium_mcp.server - INFO - 🚀 Successfully loaded 47 tools
+2025-11-23 00:41:36,591 - selenium_mcp.server - INFO - 🚀 Selenium MCP Server initialized with 47 tools
+2025-11-23 00:41:36,598 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2025-11-23 00:41:36,599 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2025-11-23 00:41:36,600 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2025-11-23 00:58:56,532 - selenium_mcp.server - INFO - 🚀 Successfully loaded 47 tools
+2025-11-23 00:58:56,549 - selenium_mcp.server - INFO - 🚀 Selenium MCP Server initialized with 47 tools
+2025-11-23 00:58:56,556 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2025-11-23 00:58:56,558 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2025-11-23 00:58:56,558 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
