@@ -82,11 +82,21 @@ python mcp_server.py
 uvx selenium-mcp-server
 ```
 
-### Configure in Claude Desktop / Cursor
+### Configure MCP Client
 
-Add to your MCP client configuration:
+> **📖 Complete Setup Guide Available**
+> See [MCP_CLIENT_SETUP.md](MCP_CLIENT_SETUP.md) for detailed configuration instructions for:
+> - Claude Desktop
+> - Cursor
+> - Cline (VSCode)
+> - Continue.dev
+> - Other MCP clients
 
-**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+**Quick Setup for Claude Desktop**:
+
+macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
 ```json
 {
   "mcpServers": {
@@ -97,12 +107,26 @@ Add to your MCP client configuration:
 }
 ```
 
-**Cursor** (Settings → MCP):
+**Quick Setup for Cursor**:
+
+Settings → MCP Servers → Add:
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
       "command": "selenium-mcp"
+    }
+  }
+}
+```
+
+For npm installation, use:
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["mcp-selenium-server"]
     }
   }
 }
