@@ -91,8 +91,17 @@ async function main() {
     console.log('');
     console.log('⚠️  Python version is too old!');
     console.log('');
-    console.log('Selenium MCP Server requires Python 3.10 or higher.');
-    console.log('Please upgrade your Python installation.');
+    console.log(`Detected: Python ${versionInfo.major}.${versionInfo.minor}`);
+    console.log('Required: Python 3.10 or higher');
+    console.log('');
+    console.log('Please install Python 3.10+ to use selenium-ai-agent:');
+    console.log('  • Download from: https://www.python.org/downloads/');
+    console.log('  • Or use your system package manager:');
+    console.log('    - macOS: brew install python@3.13');
+    console.log('    - Ubuntu/Debian: sudo apt install python3.10');
+    console.log('    - Windows: winget install Python.Python.3.13');
+    console.log('');
+    console.log('After installing Python 3.10+, run: npm install selenium-ai-agent');
     console.log('');
     return;
   }

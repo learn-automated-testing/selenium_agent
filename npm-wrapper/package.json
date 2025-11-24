@@ -1,6 +1,6 @@
 {
   "name": "selenium-ai-agent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node.js launcher for Selenium MCP Server - AI-powered browser automation with test agents",
   "main": "index.js",
   "type": "module",
