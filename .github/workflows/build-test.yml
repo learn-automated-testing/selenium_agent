@@ -70,7 +70,7 @@ jobs:
         run: |
           echo "🔍 Verifying selenium-mcp command..."
           selenium-mcp --help || echo "Command not found, checking installation..."
-          python -c "import selenium_mcp; print('✅ selenium_mcp module imported successfully')"
+          python -c "import selenium_mcp; print('selenium_mcp module imported successfully')"
 
       - name: Verify agent files are accessible after install
         shell: bash
@@ -89,20 +89,20 @@ jobs:
           print(f'Looking for agents at: {agents_dir}')
 
           if agents_dir.exists():
-              print('✅ Agents directory found!')
+              print('Agents directory found!')
               agent_files = list(agents_dir.glob('*.agent.md'))
               print(f'Found {len(agent_files)} agent files:')
               for f in agent_files:
                   print(f'  - {f.name}')
 
               if len(agent_files) >= 3:
-                  print('✅ All agent files accessible!')
+                  print('All agent files accessible!')
                   sys.exit(0)
               else:
-                  print('❌ Missing agent files!')
+                  print('ERROR: Missing agent files!')
                   sys.exit(1)
           else:
-              print('❌ Agents directory not found!')
+              print('ERROR: Agents directory not found!')
               sys.exit(1)
           "
 
@@ -181,7 +181,7 @@ jobs:
         run: |
           echo "🧪 Testing Python installation..."
           selenium-mcp --help
-          python -c "import selenium_mcp; print('✅ Package imported')"
+          python -c "import selenium_mcp; print('Package imported')"
 
       - name: Verify agents are accessible
         run: |
@@ -209,7 +209,7 @@ jobs:
           content = generator.read_text()
           assert 'MANDATORY: Ask User Before Saving' in content, 'Save gate not found in generator'
 
-          print('✅ All agents verified with review gates!')
+          print('All agents verified with review gates!')
           "
 
   summary:
