@@ -38,6 +38,7 @@ jobs:
           echo "✅ Clean complete"
 
       - name: Build package
+        shell: bash
         run: |
           echo "🔨 Building Python package..."
           python -m build
@@ -46,6 +47,7 @@ jobs:
           ls -la dist/
 
       - name: Check package
+        shell: bash
         run: |
           echo "🔍 Checking package with twine..."
           twine check dist/*
