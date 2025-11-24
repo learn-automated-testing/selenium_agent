@@ -22,7 +22,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(log_file),
+        logging.FileHandler(log_file, encoding='utf-8'),
     ]
 )
 logger = logging.getLogger(__name__)
@@ -33,9 +33,9 @@ mcp = FastMCP("selenium-mcp")
 # Get all tools
 try:
     tools = get_all_tools()
-    logger.info(f"🚀 Successfully loaded {len(tools)} tools")
+    logger.info(f"Successfully loaded {len(tools)} tools")
 except Exception as e:
-    logger.error(f"❌ Failed to load tools: {e}")
+    logger.error(f"Failed to load tools: {e}")
     import traceback
     logger.error(traceback.format_exc())
     tools = []
@@ -48,7 +48,7 @@ def get_context() -> Context:
     global context
     if not context:
         context = Context(tools)
-        logger.info("📦 Created browser context")
+        logger.info("Created browser context")
     return context
 
 # Register each tool with FastMCP using the tool's Pydantic input schema
@@ -62,7 +62,7 @@ for tool in tools:
         # Create the tool handler with the correct signature
         async def handler(params: schema_class) -> str:
             """Execute a browser automation tool."""
-            logger.info(f"🛠️ Executing tool: {tool_obj.schema.name}")
+            logger.info(f"Executing tool: {tool_obj.schema.name}")
 
             try:
                 ctx = get_context()
@@ -93,9 +93,9 @@ for tool in tools:
 
     # Register with FastMCP
     mcp.tool()(tool_handler)
-    logger.debug(f"✅ Registered tool: {tool_name}")
+    logger.debug(f"Registered tool: {tool_name}")
 
-logger.info(f"🚀 Selenium MCP Server initialized with {len(tools)} tools")
+logger.info(f"Selenium MCP Server initialized with {len(tools)} tools")
 
 def main():
     """Main entry point for the Selenium MCP server."""
