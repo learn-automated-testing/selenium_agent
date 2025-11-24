@@ -41,6 +41,12 @@ jobs:
           echo "📁 Python package:"
           ls -la selenium_mcp/
 
+      - name: Clean previous builds
+        run: |
+          echo "🧹 Cleaning previous build artifacts..."
+          rm -rf dist/ build/ *.egg-info
+          echo "✅ Clean complete"
+
       - name: Build Python package
         run: |
           echo "🔨 Building Python package..."
@@ -81,12 +87,12 @@ jobs:
         run: |
           echo "## 🐍 Python Package Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Package: \`ai-agent-selenium\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Package: \`selenium-ai-agent\`" >> $GITHUB_STEP_SUMMARY
           echo "📦 Version: \`$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pip install ai-agent-selenium" >> $GITHUB_STEP_SUMMARY
+          echo "pip install selenium-ai-agent" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Included Files" >> $GITHUB_STEP_SUMMARY
