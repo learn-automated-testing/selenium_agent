@@ -73,7 +73,7 @@ jobs:
           ls -la dist/
           echo ""
           echo "🔍 Verifying package name:"
-          ls dist/*.whl dist/*.tar.gz | grep -i selenium-ai-agent && echo "✅ Correct package name" || (echo "❌ Wrong package name!" && exit 1)
+          ls dist/*.whl dist/*.tar.gz | grep -E "selenium.ai.agent" && echo "✅ Correct package name" || (echo "❌ Wrong package name!" && exit 1)
 
       - name: Verify package contents
         run: |
