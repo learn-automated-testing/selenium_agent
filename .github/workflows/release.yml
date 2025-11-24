@@ -105,12 +105,12 @@ jobs:
 
             **Python (pip)**:
             ```bash
-            pip install mcp-selenium-server
+            pip install ai-agent-selenium
             ```
 
             **Node.js (npm)**:
             ```bash
-            npm install mcp-selenium-server
+            npm install ai-agent-selenium
             ```
 
             ### Documentation
@@ -150,19 +150,19 @@ jobs:
           echo "### Published Packages" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ github.event.inputs.publish_python }}" == "true" ]; then
-            echo "- ✅ PyPI: https://pypi.org/project/mcp-selenium-server/" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ PyPI: https://pypi.org/project/ai-agent-selenium/" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [ "${{ github.event.inputs.publish_npm }}" == "true" ]; then
-            echo "- ✅ npm: https://www.npmjs.com/package/mcp-selenium-server" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ npm: https://www.npmjs.com/package/ai-agent-selenium" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Installation Commands" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Python" >> $GITHUB_STEP_SUMMARY
-          echo "pip install mcp-selenium-server==${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "pip install ai-agent-selenium==${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Node.js" >> $GITHUB_STEP_SUMMARY
-          echo "npm install mcp-selenium-server@${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "npm install ai-agent-selenium@${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

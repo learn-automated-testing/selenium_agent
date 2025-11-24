@@ -24,12 +24,12 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 **Option 1: Install from PyPI (Python Users)**
 ```bash
-pip install mcp-selenium-server
+pip install ai-agent-selenium
 ```
 
 **Option 2: Install from npm (JavaScript/TypeScript Users)**
 ```bash
-npm install mcp-selenium-server
+npm install ai-agent-selenium
 # Auto-installs Python package via post-install script
 ```
 
@@ -126,7 +126,7 @@ For npm installation, use:
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["mcp-selenium-server"]
+      "args": ["ai-agent-selenium"]
     }
   }
 }

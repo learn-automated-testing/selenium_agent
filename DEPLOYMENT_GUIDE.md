@@ -1,6 +1,6 @@
 # Deployment Guide - PyPI and npm
 
-This guide explains how to deploy the `mcp-selenium-server` package to both PyPI (Python) and npm (Node.js) using GitHub Actions.
+This guide explains how to deploy the `ai-agent-selenium` package to both PyPI (Python) and npm (Node.js) using GitHub Actions.
 
 ---
 
@@ -88,8 +88,8 @@ After first manual publish, GitHub Actions can handle updates.
 - ✅ Version updated everywhere
 - ✅ Git tag created: `v1.0.1`
 - ✅ GitHub release created
-- ✅ Published to PyPI: `pip install mcp-selenium-server==1.0.1`
-- ✅ Published to npm: `npm install mcp-selenium-server@1.0.1`
+- ✅ Published to PyPI: `pip install ai-agent-selenium==1.0.1`
+- ✅ Published to npm: `npm install ai-agent-selenium@1.0.1`
 
 ---
 
@@ -234,13 +234,13 @@ npm publish --access public
 
 2. **Deploy to PyPI First**
    - [ ] Run Python publish workflow
-   - [ ] Verify on https://pypi.org/project/mcp-selenium-server/
-   - [ ] Test: `pip install mcp-selenium-server==X.Y.Z`
+   - [ ] Verify on https://pypi.org/project/ai-agent-selenium/
+   - [ ] Test: `pip install ai-agent-selenium==X.Y.Z`
 
 3. **Deploy to npm Second** (after PyPI)
    - [ ] Run npm publish workflow
-   - [ ] Verify on https://www.npmjs.com/package/mcp-selenium-server
-   - [ ] Test: `npm install mcp-selenium-server@X.Y.Z`
+   - [ ] Verify on https://www.npmjs.com/package/ai-agent-selenium
+   - [ ] Test: `npm install ai-agent-selenium@X.Y.Z`
 
 4. **Create GitHub Release**
    - [ ] Tag: `vX.Y.Z`
@@ -249,8 +249,8 @@ npm publish --access public
 
 ### Post-Deployment
 
-- [ ] Test PyPI installation: `pip install mcp-selenium-server`
-- [ ] Test npm installation: `npm install mcp-selenium-server`
+- [ ] Test PyPI installation: `pip install ai-agent-selenium`
+- [ ] Test npm installation: `npm install ai-agent-selenium`
 - [ ] Verify agents are accessible after install
 - [ ] Verify review gates work
 - [ ] Update documentation if needed
@@ -310,10 +310,10 @@ The release workflow handles this automatically.
 
 ```bash
 # Install
-pip install mcp-selenium-server
+pip install ai-agent-selenium
 
 # Check version
-pip show mcp-selenium-server
+pip show ai-agent-selenium
 
 # Verify agents
 python -c "
@@ -332,16 +332,16 @@ selenium-mcp --help
 
 ```bash
 # Install
-npm install mcp-selenium-server
+npm install ai-agent-selenium
 
 # Check version
-npm list mcp-selenium-server
+npm list ai-agent-selenium
 
 # Verify post-install ran
 # Should see: "✅ Selenium MCP Server installed successfully!"
 
 # Verify command
-npx mcp-selenium-server --help
+npx ai-agent-selenium --help
 ```
 
 ### Verify Agent Content
@@ -407,10 +407,10 @@ include INSTALLATION_GUIDE.md
 
 **Solution**:
 1. Make sure PyPI package is published **first**
-2. Check PyPI package name matches: `mcp-selenium-server`
+2. Check PyPI package name matches: `ai-agent-selenium`
 3. Verify in `npm-wrapper/scripts/install-python-server.js`:
    ```javascript
-   pip install mcp-selenium-server
+   pip install ai-agent-selenium
    ```
 
 ### Version Mismatch

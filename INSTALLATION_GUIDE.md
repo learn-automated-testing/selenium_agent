@@ -16,7 +16,7 @@ This guide explains both methods and what happens in each case.
 
 **Install from PyPI**:
 ```bash
-pip install mcp-selenium-server
+pip install ai-agent-selenium
 ```
 
 **Install from GitHub**:
@@ -106,12 +106,12 @@ Add to your MCP client config (e.g., Claude Desktop):
 
 **Install from npm** (when published):
 ```bash
-npm install mcp-selenium-server
+npm install ai-agent-selenium
 ```
 
 **Or with npx** (no installation):
 ```bash
-npx mcp-selenium-server
+npx ai-agent-selenium
 ```
 
 ### What Happens During `npm install`
@@ -119,7 +119,7 @@ npx mcp-selenium-server
 #### Step 1: npm Package Installation
 ```
 node_modules/
-└── mcp-selenium-server/
+└── ai-agent-selenium/
     ├── package.json
     ├── index.js
     ├── bin/
@@ -153,7 +153,7 @@ node_modules/
 
 2. ✅ **Installs Python package automatically**
    ```bash
-   python -m pip install mcp-selenium-server
+   python -m pip install ai-agent-selenium
    ```
 
 3. ✅ **Everything from Method 1 gets installed**:
@@ -175,7 +175,7 @@ The npm package provides a Node.js wrapper that:
 ```
 Your Project:
 ├── node_modules/
-│   └── mcp-selenium-server/       # npm package (wrapper)
+│   └── ai-agent-selenium/       # npm package (wrapper)
 │       ├── bin/selenium-mcp.js
 │       └── scripts/
 │
@@ -197,7 +197,7 @@ Python site-packages/:
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["mcp-selenium-server"]
+      "args": ["ai-agent-selenium"]
     }
   }
 }
@@ -209,7 +209,7 @@ Python site-packages/:
   "mcpServers": {
     "selenium-mcp": {
       "command": "node",
-      "args": ["./node_modules/mcp-selenium-server/bin/selenium-mcp.js"]
+      "args": ["./node_modules/ai-agent-selenium/bin/selenium-mcp.js"]
     }
   }
 }
@@ -222,14 +222,14 @@ Python site-packages/:
 | Aspect | pip (Python) | npm (Node.js) |
 |--------|-------------|---------------|
 | **Target Users** | Python developers | JavaScript/TypeScript developers |
-| **Installation** | `pip install mcp-selenium-server` | `npm install mcp-selenium-server` |
+| **Installation** | `pip install ai-agent-selenium` | `npm install ai-agent-selenium` |
 | **Python Required** | Yes, must be pre-installed | Yes, auto-detected & used |
 | **Package Type** | Pure Python package | Node.js wrapper + Python package |
 | **Final Result** | Python package installed | Python package + Node.js wrapper |
 | **Agent Files** | ✅ Included in Python package | ✅ Included in Python package |
 | **Documentation** | ✅ Included in Python package | ✅ Included in Python package |
-| **Command** | `selenium-mcp` | `npx mcp-selenium-server` |
-| **MCP Config** | `"command": "selenium-mcp"` | `"command": "npx", "args": ["mcp-selenium-server"]` |
+| **Command** | `selenium-mcp` | `npx ai-agent-selenium` |
+| **MCP Config** | `"command": "selenium-mcp"` | `"command": "npx", "args": ["ai-agent-selenium"]` |
 
 ### Key Point: Same Result Either Way
 
@@ -336,7 +336,7 @@ System:
 Your Project:
 my-project/
 ├── node_modules/
-│   └── mcp-selenium-server/   # npm wrapper
+│   └── ai-agent-selenium/   # npm wrapper
 │       ├── bin/
 │       └── scripts/
 ├── test-plans/                # Created by Planner
@@ -407,14 +407,14 @@ File naming conventions:
 If npm post-install fails:
 
 ```bash
-npm install mcp-selenium-server
+npm install ai-agent-selenium
 # Output:
 ⚠️  Python not found!
 ```
 
 **Solution**:
 1. Install Python 3.10+ from https://www.python.org/
-2. Run `npm install mcp-selenium-server` again
+2. Run `npm install ai-agent-selenium` again
 
 ### Manual Python Package Installation
 
@@ -422,24 +422,24 @@ If automatic installation fails:
 
 ```bash
 # Install Python package manually
-pip install mcp-selenium-server
+pip install ai-agent-selenium
 
 # Then npm package will work
-npm install mcp-selenium-server
+npm install ai-agent-selenium
 ```
 
 ### Verify Installation
 
 **Check Python package**:
 ```bash
-pip show mcp-selenium-server
+pip show ai-agent-selenium
 selenium-mcp --help
 ```
 
 **Check npm package** (if using npm):
 ```bash
-npm list mcp-selenium-server
-npx mcp-selenium-server --help
+npm list ai-agent-selenium
+npx ai-agent-selenium --help
 ```
 
 ### Access Documentation After Install
@@ -477,7 +477,7 @@ python -c "import selenium_mcp; print(selenium_mcp.__file__)"
 ### pip Installation
 ```bash
 # Install
-pip install mcp-selenium-server
+pip install ai-agent-selenium
 
 # What you get
 ✅ Python package with all tools
@@ -489,7 +489,7 @@ pip install mcp-selenium-server
 ### npm Installation
 ```bash
 # Install
-npm install mcp-selenium-server
+npm install ai-agent-selenium
 
 # What happens
 1. npm installs Node.js wrapper
@@ -503,7 +503,7 @@ npm install mcp-selenium-server
 ✅ Agent instructions (with review gates)
 ✅ Documentation
 ✅ Node.js wrapper
-✅ Command: npx mcp-selenium-server
+✅ Command: npx ai-agent-selenium
 ```
 
 ### In Both Cases
@@ -522,7 +522,7 @@ npm install mcp-selenium-server
 
 **Package installs to**:
 - Python: `site-packages/selenium_mcp/`
-- npm: `node_modules/mcp-selenium-server/` + `site-packages/selenium_mcp/`
+- npm: `node_modules/ai-agent-selenium/` + `site-packages/selenium_mcp/`
 
 ---
 
@@ -530,9 +530,9 @@ npm install mcp-selenium-server
 
 | If you're using... | Install with... | Command |
 |-------------------|----------------|---------|
-| Python projects | pip | `pip install mcp-selenium-server` |
-| Node.js/TypeScript projects | npm | `npm install mcp-selenium-server` |
-| Just want to try it | npx | `npx mcp-selenium-server` |
+| Python projects | pip | `pip install ai-agent-selenium` |
+| Node.js/TypeScript projects | npm | `npm install ai-agent-selenium` |
+| Just want to try it | npx | `npx ai-agent-selenium` |
 | Both Python & Node.js | Either (same result) | Your preference |
 
 ---

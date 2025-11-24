@@ -67,7 +67,7 @@ jobs:
       - name: Verify Python package is available (for post-install)
         run: |
           echo "🔍 Checking if Python package will be available..."
-          echo "The npm post-install script will run: pip install mcp-selenium-server"
+          echo "The npm post-install script will run: pip install ai-agent-selenium"
           echo "Make sure PyPI package is published first!"
 
       - name: Publish to npm
@@ -92,23 +92,23 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "## 📦 NPM Package Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Package: \`mcp-selenium-server\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Package: \`ai-agent-selenium\`" >> $GITHUB_STEP_SUMMARY
           echo "📦 Version: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "npm install mcp-selenium-server" >> $GITHUB_STEP_SUMMARY
+          echo "npm install ai-agent-selenium" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### What Happens on Install" >> $GITHUB_STEP_SUMMARY
           echo "1. npm installs Node.js wrapper" >> $GITHUB_STEP_SUMMARY
           echo "2. Post-install script checks for Python 3.10+" >> $GITHUB_STEP_SUMMARY
-          echo "3. Automatically runs: \`pip install mcp-selenium-server\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. Automatically runs: \`pip install ai-agent-selenium\`" >> $GITHUB_STEP_SUMMARY
           echo "4. Python package (with agents) gets installed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Usage" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "npx mcp-selenium-server" >> $GITHUB_STEP_SUMMARY
+          echo "npx ai-agent-selenium" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure

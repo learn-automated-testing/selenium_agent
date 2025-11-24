@@ -7,7 +7,7 @@
 │                    METHOD 1: pip (Python)                    │
 └─────────────────────────────────────────────────────────────┘
 
-$ pip install mcp-selenium-server
+$ pip install ai-agent-selenium
 
     ↓
 
@@ -37,13 +37,13 @@ Configure in MCP client:
 │                  METHOD 2: npm (Node.js)                     │
 └─────────────────────────────────────────────────────────────┘
 
-$ npm install mcp-selenium-server
+$ npm install ai-agent-selenium
 
     ↓
 
 ┌─────────────────────────────────────────────────────────────┐
 │ Step 1: Installs npm wrapper                                 │
-│   → node_modules/mcp-selenium-server/                        │
+│   → node_modules/ai-agent-selenium/                        │
 │      ├── bin/selenium-mcp.js (Node.js wrapper)               │
 │      └── scripts/install-python-server.js                    │
 └─────────────────────────────────────────────────────────────┘
@@ -60,7 +60,7 @@ $ npm install mcp-selenium-server
 
 ┌─────────────────────────────────────────────────────────────┐
 │ Step 3: Auto-installs Python package                         │
-│   $ python -m pip install mcp-selenium-server                │
+│   $ python -m pip install ai-agent-selenium                │
 │                                                              │
 │ Installs to: site-packages/selenium_mcp/                    │
 │                                                              │
@@ -70,7 +70,7 @@ $ npm install mcp-selenium-server
 │    - Framework standards                                     │
 │    - Workflow instructions                                   │
 │ ✅ Documentation (*.md files)                                │
-│ ✅ Command: npx mcp-selenium-server                          │
+│ ✅ Command: npx ai-agent-selenium                          │
 │ ✅ Dependencies (fastmcp, selenium, etc.)                    │
 └─────────────────────────────────────────────────────────────┘
 
@@ -78,7 +78,7 @@ Configure in MCP client:
 {
   "selenium-mcp": {
     "command": "npx",
-    "args": ["mcp-selenium-server"]
+    "args": ["ai-agent-selenium"]
   }
 }
 ```
@@ -212,14 +212,14 @@ Result: Generator ALWAYS asks for save location approval
 
 | Aspect | pip | npm |
 |--------|-----|-----|
-| **Install command** | `pip install mcp-selenium-server` | `npm install mcp-selenium-server` |
+| **Install command** | `pip install ai-agent-selenium` | `npm install ai-agent-selenium` |
 | **Requirements** | Python 3.10+ | Python 3.10+ AND Node.js 16+ |
 | **Python package** | ✅ Direct install | ✅ Auto-installed by npm |
 | **Node wrapper** | ❌ No | ✅ Yes |
 | **Agent files** | ✅ Included | ✅ Included (in Python package) |
 | **Review gates** | ✅ Work automatically | ✅ Work automatically |
 | **Framework standards** | ✅ Enforced | ✅ Enforced |
-| **Run command** | `selenium-mcp` | `npx mcp-selenium-server` |
+| **Run command** | `selenium-mcp` | `npx ai-agent-selenium` |
 | **Target users** | Python devs | JavaScript/TypeScript devs |
 
 ---
@@ -247,7 +247,7 @@ Result: Generator ALWAYS asks for save location approval
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["mcp-selenium-server"]
+      "args": ["ai-agent-selenium"]
     }
   }
 }
@@ -261,14 +261,14 @@ Result: Generator ALWAYS asks for save location approval
 
 **pip**:
 ```bash
-pip show mcp-selenium-server
+pip show ai-agent-selenium
 selenium-mcp --help
 ```
 
 **npm**:
 ```bash
-npm list mcp-selenium-server
-npx mcp-selenium-server --help
+npm list ai-agent-selenium
+npx ai-agent-selenium --help
 ```
 
 ### Check Agent Files Exist
@@ -297,7 +297,7 @@ Runs post-install script
     ↓
 Checks Python
     ↓
-pip install mcp-selenium-server
+pip install ai-agent-selenium
     ↓
 Same result as direct pip install
     +

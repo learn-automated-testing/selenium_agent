@@ -1,6 +1,6 @@
 # MCP Client Setup Guide
 
-This guide shows how to install and configure `mcp-selenium-server` with various MCP clients including Claude Desktop, Cursor, Cline (VSCode), and other compatible clients.
+This guide shows how to install and configure `ai-agent-selenium` with various MCP clients including Claude Desktop, Cursor, Cline (VSCode), and other compatible clients.
 
 ---
 
@@ -22,19 +22,19 @@ Before configuring MCP clients, install the package:
 
 ### Python Installation (Recommended for Python users)
 ```bash
-pip install mcp-selenium-server
+pip install ai-agent-selenium
 ```
 
 ### Node.js Installation (Recommended for JavaScript/TypeScript users)
 ```bash
-npm install -g mcp-selenium-server
+npm install -g ai-agent-selenium
 # OR locally in your project
-npm install mcp-selenium-server
+npm install ai-agent-selenium
 ```
 
 ### Using npx (No installation needed)
 ```bash
-npx mcp-selenium-server
+npx ai-agent-selenium
 ```
 
 ---
@@ -60,7 +60,7 @@ npx mcp-selenium-server
 
 ### Configuration (Python Installation)
 
-If you installed via `pip install mcp-selenium-server`:
+If you installed via `pip install ai-agent-selenium`:
 
 ```json
 {
@@ -81,7 +81,7 @@ If you installed via npm globally:
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["mcp-selenium-server"]
+      "args": ["ai-agent-selenium"]
     }
   }
 }
@@ -94,7 +94,7 @@ If installed locally in a project:
   "mcpServers": {
     "selenium-mcp": {
       "command": "node",
-      "args": ["/absolute/path/to/node_modules/mcp-selenium-server/bin/selenium-mcp.js"]
+      "args": ["/absolute/path/to/node_modules/ai-agent-selenium/bin/selenium-mcp.js"]
     }
   }
 }
@@ -201,7 +201,7 @@ Or edit the config file directly:
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["mcp-selenium-server"]
+      "args": ["ai-agent-selenium"]
     }
   }
 }
@@ -271,7 +271,7 @@ Or edit directly:
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["mcp-selenium-server"]
+      "args": ["ai-agent-selenium"]
     }
   }
 }
@@ -344,7 +344,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 const transport = new StdioClientTransport({
   command: 'selenium-mcp',  // or 'npx', 'python', etc.
-  args: []                  // or ['mcp-selenium-server'], ['-m', 'selenium_mcp.server']
+  args: []                  // or ['ai-agent-selenium'], ['-m', 'selenium_mcp.server']
 });
 
 const client = new Client({
@@ -408,16 +408,16 @@ If this happens, agents are working correctly!
 selenium-mcp --help
 
 # Should show installed package
-pip show mcp-selenium-server
+pip show ai-agent-selenium
 ```
 
 **Test npm installation**:
 ```bash
 # Should start the server
-npx mcp-selenium-server --help
+npx ai-agent-selenium --help
 
 # Should show installed package
-npm list -g mcp-selenium-server
+npm list -g ai-agent-selenium
 ```
 
 ---
@@ -432,14 +432,14 @@ npm list -g mcp-selenium-server
 
 1. **Install the package**:
    ```bash
-   pip install mcp-selenium-server
+   pip install ai-agent-selenium
    ```
 
 2. **Find where it's installed**:
    ```bash
    which selenium-mcp
    # Or
-   pip show mcp-selenium-server
+   pip show ai-agent-selenium
    ```
 
 3. **Use full path in config**:
@@ -473,7 +473,7 @@ npm list -g mcp-selenium-server
 
 1. **Install globally**:
    ```bash
-   npm install -g mcp-selenium-server
+   npm install -g ai-agent-selenium
    ```
 
 2. **Use full npx path**:
@@ -482,7 +482,7 @@ npm list -g mcp-selenium-server
      "mcpServers": {
        "selenium-mcp": {
          "command": "/usr/local/bin/npx",
-         "args": ["mcp-selenium-server"]
+         "args": ["ai-agent-selenium"]
        }
      }
    }
@@ -491,7 +491,7 @@ npm list -g mcp-selenium-server
 3. **Use local installation**:
    ```bash
    cd your-project
-   npm install mcp-selenium-server
+   npm install ai-agent-selenium
    ```
 
    Then use node directly:
@@ -500,7 +500,7 @@ npm list -g mcp-selenium-server
      "mcpServers": {
        "selenium-mcp": {
          "command": "node",
-         "args": ["./node_modules/mcp-selenium-server/bin/selenium-mcp.js"]
+         "args": ["./node_modules/ai-agent-selenium/bin/selenium-mcp.js"]
        }
      }
    }
@@ -516,12 +516,12 @@ npm list -g mcp-selenium-server
 
 2. **Manually install Python package**:
    ```bash
-   pip install mcp-selenium-server
+   pip install ai-agent-selenium
    ```
 
 3. **Then npm wrapper will work**:
    ```bash
-   npm install mcp-selenium-server
+   npm install ai-agent-selenium
    ```
 
 ### Issue: "MCP server not showing in client"
@@ -573,8 +573,8 @@ if agents_dir.exists():
 
 **Solution**: Reinstall package:
 ```bash
-pip uninstall mcp-selenium-server
-pip install mcp-selenium-server
+pip uninstall ai-agent-selenium
+pip install ai-agent-selenium
 ```
 
 ### Issue: "Review gates not working"
@@ -584,7 +584,7 @@ pip install mcp-selenium-server
 **Solution**:
 ```bash
 # Upgrade to latest version
-pip install --upgrade mcp-selenium-server
+pip install --upgrade ai-agent-selenium
 
 # Verify review gates
 python -c "
@@ -662,7 +662,7 @@ Some configurations may benefit from environment variables:
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["mcp-selenium-server"]
+      "args": ["ai-agent-selenium"]
     }
   }
 }
@@ -686,7 +686,7 @@ Some configurations may benefit from environment variables:
   "mcpServers": {
     "selenium-mcp": {
       "command": "node",
-      "args": ["./node_modules/mcp-selenium-server/bin/selenium-mcp.js"]
+      "args": ["./node_modules/ai-agent-selenium/bin/selenium-mcp.js"]
     }
   }
 }
@@ -722,8 +722,8 @@ Some configurations may benefit from environment variables:
 ### Setup Steps
 
 1. **Install package**:
-   - `pip install mcp-selenium-server` (Python)
-   - `npm install -g mcp-selenium-server` (Node.js)
+   - `pip install ai-agent-selenium` (Python)
+   - `npm install -g ai-agent-selenium` (Node.js)
 
 2. **Find config file**:
    - Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
