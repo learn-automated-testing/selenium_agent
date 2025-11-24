@@ -19,11 +19,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          clean: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install build dependencies
         run: |
@@ -42,18 +44,27 @@ jobs:
           ls -la selenium_mcp/
 
       - name: Clean previous builds
+        shell: bash
         run: |
           echo "🧹 Cleaning previous build artifacts..."
-          rm -rf dist/ build/ *.egg-info
+          rm -rf dist/ build/ *.egg-info selenium_mcp/*.egg-info
           echo "✅ Clean complete"
+          echo "Remaining files:"
+          ls -la || true
 
       - name: Build Python package
+        shell: bash
         run: |
           echo "🔨 Building Python package..."
           python -m build
           echo ""
           echo "✅ Build complete!"
+          echo ""
+          echo "📦 Built packages:"
           ls -la dist/
+          echo ""
+          echo "🔍 Verifying package name:"
+          ls dist/*.whl dist/*.tar.gz | grep -i selenium-ai-agent && echo "✅ Correct package name" || (echo "❌ Wrong package name!" && exit 1)
 
       - name: Verify package contents
         run: |
