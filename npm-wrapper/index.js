@@ -65,7 +65,7 @@ export async function getVersion() {
     const isWindows = platform() === 'win32';
     const pythonCmd = isWindows ? 'python' : 'python3';
 
-    const proc = spawn(pythonCmd, ['-m', 'pip', 'show', 'selenium-mcp-server'], {
+    const proc = spawn(pythonCmd, ['-m', 'pip', 'show', 'selenium-ai-agent'], {
       stdio: 'pipe'
     });
 
@@ -84,7 +84,7 @@ export async function getVersion() {
           reject(new Error('Version not found in pip output'));
         }
       } else {
-        reject(new Error('selenium-mcp-server not installed'));
+        reject(new Error('selenium-ai-agent not installed'));
       }
     });
   });

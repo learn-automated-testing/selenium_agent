@@ -17,7 +17,7 @@ function getPythonCommand() {
   // Try common Python commands in order of preference
   const pythonCommands = isWindows
     ? ['python', 'python3', 'py']
-    : ['python3', 'python'];
+    : ['python3.13', 'python3.12', 'python3.11', 'python3.10', 'python3', 'python'];
 
   return pythonCommands;
 }
@@ -61,28 +61,28 @@ async function launch() {
     process.exit(1);
   }
 
-  // Check if selenium-mcp-server is installed
-  const checkInstall = spawn(pythonCmd, ['-m', 'pip', 'show', 'selenium-mcp-server'], {
+  // Check if selenium-ai-agent is installed
+  const checkInstall = spawn(pythonCmd, ['-m', 'pip', 'show', 'selenium-ai-agent'], {
     stdio: 'pipe'
   });
 
   checkInstall.on('close', (code) => {
     if (code !== 0) {
-      console.error('❌ Error: selenium-mcp-server Python package not found!');
+      console.error('❌ Error: selenium-ai-agent Python package not found!');
       console.error('');
-      console.error('Installing selenium-mcp-server...');
+      console.error('Installing selenium-ai-agent...');
       console.error('');
 
       // Install the Python package
-      const install = spawn(pythonCmd, ['-m', 'pip', 'install', 'selenium-mcp-server'], {
+      const install = spawn(pythonCmd, ['-m', 'pip', 'install', '--break-system-packages', 'selenium-ai-agent'], {
         stdio: 'inherit'
       });
 
       install.on('close', (installCode) => {
         if (installCode !== 0) {
           console.error('');
-          console.error('❌ Failed to install selenium-mcp-server');
-          console.error('Please run manually: pip install selenium-mcp-server');
+          console.error('❌ Failed to install selenium-ai-agent');
+          console.error('Please run manually: pip install selenium-ai-agent');
           process.exit(1);
         }
 
