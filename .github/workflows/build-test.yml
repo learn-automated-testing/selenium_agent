@@ -31,6 +31,7 @@ jobs:
           pip install build twine setuptools wheel
 
       - name: Clean previous builds
+        shell: bash
         run: |
           echo "🧹 Cleaning dist directory..."
           rm -rf dist/ build/ *.egg-info
