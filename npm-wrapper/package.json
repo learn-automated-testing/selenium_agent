@@ -1,5 +1,5 @@
 {
-  "name": "mcp-selenium-server",
+  "name": "ai-agent-selenium",
   "version": "1.0.0",
   "description": "Node.js launcher for Selenium MCP Server - AI-powered browser automation with test agents",
   "main": "index.js",
