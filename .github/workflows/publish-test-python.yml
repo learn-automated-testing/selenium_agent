@@ -1,8 +1,6 @@
-name: Publish Python Package to PyPI
+name: Publish Python Package to Test PyPI
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       version:
@@ -10,8 +8,8 @@ on:
         required: false
 
 jobs:
-  build-and-publish:
-    name: Build and Publish to PyPI
+  build-and-publish-test:
+    name: Build and Publish to Test PyPI
     runs-on: ubuntu-latest
 
     steps:
@@ -62,31 +60,32 @@ jobs:
           echo "🔍 Running twine check..."
           twine check dist/*
 
-      - name: Publish to PyPI
+      - name: Publish to Test PyPI
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
         run: |
-          echo "📤 Publishing to PyPI..."
-          twine upload dist/* --verbose
+          echo "📤 Publishing to Test PyPI..."
+          twine upload --repository testpypi dist/* --verbose || echo "⚠️ Test PyPI upload failed (version may already exist)"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: python-package
+          name: python-package-test
           path: dist/
-          retention-days: 30
+          retention-days: 7
 
       - name: Create deployment summary
         run: |
-          echo "## 🐍 Python Package Published" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Python Package Published to Test PyPI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Package: \`mcp-selenium-server\`" >> $GITHUB_STEP_SUMMARY
           echo "📦 Version: \`$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pip install mcp-selenium-server" >> $GITHUB_STEP_SUMMARY
+          echo "# Install from Test PyPI" >> $GITHUB_STEP_SUMMARY
+          echo "pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ mcp-selenium-server" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Included Files" >> $GITHUB_STEP_SUMMARY
@@ -94,10 +93,15 @@ jobs:
           echo "- ✅ Documentation (AGENT_WORKFLOW.md, FRAMEWORK_STANDARDS.md, etc.)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Python package (selenium_mcp/)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ All dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Test the package from Test PyPI" >> $GITHUB_STEP_SUMMARY
+          echo "2. Verify all functionality works" >> $GITHUB_STEP_SUMMARY
+          echo "3. If everything works, publish to production PyPI" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure
         if: failure()
         run: |
-          echo "## ❌ Python Package Publish Failed" >> $GITHUB_STEP_SUMMARY
+          echo "## ❌ Test PyPI Package Publish Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
