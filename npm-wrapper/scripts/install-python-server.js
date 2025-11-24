@@ -11,7 +11,9 @@ import { spawn } from 'child_process';
 import { platform } from 'os';
 
 const isWindows = platform() === 'win32';
-const pythonCommands = isWindows ? ['python', 'python3', 'py'] : ['python3', 'python'];
+const pythonCommands = isWindows
+  ? ['python', 'python3', 'py']
+  : ['python3.13', 'python3.12', 'python3.11', 'python3.10', 'python3', 'python'];
 
 async function checkPython(cmd) {
   return new Promise((resolve) => {
@@ -112,7 +114,7 @@ async function main() {
   console.log('');
 
   // Install the Python package
-  const install = spawn(pythonCmd, ['-m', 'pip', 'install', 'selenium-ai-agent'], {
+  const install = spawn(pythonCmd, ['-m', 'pip', 'install', '--break-system-packages', 'selenium-ai-agent'], {
     stdio: 'inherit'
   });
 
