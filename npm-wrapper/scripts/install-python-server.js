@@ -77,7 +77,7 @@ async function main() {
     console.log('    - Ubuntu/Debian: sudo apt install python3');
     console.log('    - Windows: winget install Python.Python.3.12');
     console.log('');
-    console.log('After installing Python, run: npm install ai-agent-selenium');
+    console.log('After installing Python, run: npm install selenium-ai-agent');
     console.log('');
     return;
   }
@@ -103,7 +103,7 @@ async function main() {
   console.log('');
 
   // Install the Python package
-  const install = spawn(pythonCmd, ['-m', 'pip', 'install', 'ai-agent-selenium'], {
+  const install = spawn(pythonCmd, ['-m', 'pip', 'install', 'selenium-ai-agent'], {
     stdio: 'inherit'
   });
 
@@ -112,14 +112,14 @@ async function main() {
     if (code === 0) {
       console.log('✅ Selenium MCP Server installed successfully!');
       console.log('');
-      console.log('You can now run: npx ai-agent-selenium');
+      console.log('You can now run: npx selenium-ai-agent');
       console.log('Or configure in your MCP client:');
       console.log('');
       console.log('  {');
       console.log('    "mcpServers": {');
       console.log('      "selenium-mcp": {');
       console.log('        "command": "npx",');
-      console.log('        "args": ["ai-agent-selenium"]');
+      console.log('        "args": ["selenium-ai-agent"]');
       console.log('      }');
       console.log('    }');
       console.log('  }');
@@ -129,7 +129,7 @@ async function main() {
       console.log('');
       console.log('The Python package may not be installed correctly.');
       console.log('You can install it manually with:');
-      console.log('  pip install ai-agent-selenium');
+      console.log('  pip install selenium-ai-agent');
       console.log('');
     }
   });
