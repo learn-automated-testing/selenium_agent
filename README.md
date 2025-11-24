@@ -16,11 +16,21 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ## Quick Start
 
+> **📖 Installation Guides Available**
+> - [INSTALLATION_SUMMARY.md](INSTALLATION_SUMMARY.md) - Quick visual comparison of pip vs npm
+> - [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) - Complete installation guide (both methods)
+
 ### Installation
 
-**Option 1: Install from PyPI (Recommended for Users)**
+**Option 1: Install from PyPI (Python Users)**
 ```bash
-pip install selenium-mcp-server
+pip install mcp-selenium-server
+```
+
+**Option 2: Install from npm (JavaScript/TypeScript Users)**
+```bash
+npm install mcp-selenium-server
+# Auto-installs Python package via post-install script
 ```
 
 **Option 2: Install from Source (Development)**
@@ -178,6 +188,10 @@ The server implements the MCP protocol via JSON-RPC over stdin/stdout:
 
 The Selenium MCP Server now includes **AI-powered test agents** modeled after Playwright's agent architecture. These specialized agents help you create test plans, generate test code, and fix failing tests automatically.
 
+> **📖 Documentation Available**
+> - [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) - Complete three-phase workflow with mandatory human review gates
+> - [FRAMEWORK_STANDARDS.md](FRAMEWORK_STANDARDS.md) - Framework conventions, file naming, and code quality standards
+
 ## Available Agents
 
 ### 🟢 Planner Agent (`selenium-test-planner`)
@@ -188,6 +202,7 @@ The Selenium MCP Server now includes **AI-powered test agents** modeled after Pl
 - Identifies critical user journeys and edge cases
 - Creates detailed, step-by-step test plans in markdown format
 - Organizes scenarios with prerequisites, steps, and expected results
+- **⚠️ STOPS after saving the plan and waits for your review** before code generation
 
 **Key Tools**:
 - `planner_setup_page` - Initialize planning session
@@ -206,13 +221,14 @@ The agent will:
 ```
 
 ### 🔵 Generator Agent (`selenium-test-generator`)
-**Purpose**: Transform test plans into executable Selenium test code
+**Purpose**: Transform **approved test plans** into executable Selenium test code
 
 **What it does**:
-- Reads test plans and understands requirements
+- Reads **approved** test plans and understands requirements
 - Executes each test step in a real browser to validate interactions
 - Records all actions and generates reliable test code
 - Supports pytest, unittest, and Robot Framework
+- **⚠️ Requires an approved test plan** from the Planner agent before starting
 
 **Key Tools**:
 - `generator_setup_page` - Initialize test generation session

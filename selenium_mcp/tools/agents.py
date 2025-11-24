@@ -1123,19 +1123,73 @@ class GeneratorWriteTestTool(BaseTool):
     async def handle(self, context: Context, params: GeneratorWriteTestParams) -> ToolResult:
         """Write test code to file."""
         async def write_test_action():
-            # Create tests directory if it doesn't exist
-            tests_dir = Path.cwd() / "tests"
-            tests_dir.mkdir(exist_ok=True)
+            # Determine the correct file extension based on framework
+            framework_extensions = {
+                'pytest': '.py',
+                'selenium-python-pytest': '.py',
+                'unittest': '.py',
+                'selenium-python-unittest': '.py',
+                'robot': '.robot',
+                'robot-framework': '.robot',
+                'webdriverio-js': '.test.js',
+                'webdriverio-ts': '.test.ts'
+            }
+
+            framework_lower = params.framework.lower()
+            expected_extension = framework_extensions.get(framework_lower, '.py')
+
+            # Validate and fix filename according to framework standards
+            filename = params.filename
 
             # Ensure proper file extension
-            if not params.filename.endswith(('.py', '.robot')):
-                if params.framework == 'robot':
-                    params.filename += '.robot'
-                else:
-                    params.filename += '.py'
+            if not any(filename.endswith(ext) for ext in ['.py', '.robot', '.js', '.ts']):
+                filename += expected_extension
+            elif not filename.endswith(expected_extension):
+                # Wrong extension for framework - warn but allow
+                logger.warning(f"⚠️ Filename extension doesn't match framework {params.framework} standard")
+
+            # Validate naming conventions
+            if framework_lower in ['pytest', 'selenium-python-pytest', 'unittest', 'selenium-python-unittest']:
+                # Python tests should start with 'test_'
+                basename = Path(filename).stem
+                if not basename.startswith('test_'):
+                    logger.warning(f"⚠️ Python test files should start with 'test_' (got: {basename})")
+                    # Auto-fix if it's just missing the prefix
+                    if '/' not in filename and '\\' not in filename:
+                        filename = f"test_{filename}"
+
+            elif framework_lower in ['webdriverio-js', 'webdriverio-ts']:
+                # WebDriverIO tests should end with .test.js/.spec.js or .test.ts/.spec.ts
+                if not any(filename.endswith(suffix) for suffix in ['.test.js', '.spec.js', '.test.ts', '.spec.ts']):
+                    # Fix extension
+                    base = filename.rsplit('.', 1)[0] if '.' in filename else filename
+                    filename = f"{base}{expected_extension}"
+
+            # Determine save location
+            # Check for existing test directory structure
+            cwd = Path.cwd()
+            possible_dirs = [
+                cwd / "tests" / "e2e",
+                cwd / "tests",
+                cwd / "test",
+                cwd / "e2e",
+            ]
+
+            tests_dir = None
+            for dir_path in possible_dirs:
+                if dir_path.exists():
+                    tests_dir = dir_path
+                    logger.info(f"📁 Found existing test directory: {dir_path}")
+                    break
+
+            # If no existing directory, create tests/
+            if tests_dir is None:
+                tests_dir = cwd / "tests"
+                tests_dir.mkdir(exist_ok=True)
+                logger.info(f"📁 Created test directory: {tests_dir}")
 
             # Save the test file
-            test_path = tests_dir / params.filename
+            test_path = tests_dir / filename
             test_path.write_text(params.test_code)
 
             # Clear action history after generating
@@ -1144,11 +1198,27 @@ class GeneratorWriteTestTool(BaseTool):
 
             logger.info(f"✅ Test code saved to: {test_path}")
 
+            # Generate run command based on framework
+            run_commands = {
+                'pytest': f"pytest {test_path}",
+                'selenium-python-pytest': f"pytest {test_path}",
+                'unittest': f"python -m unittest {test_path}",
+                'selenium-python-unittest': f"python -m unittest {test_path}",
+                'robot': f"robot {test_path}",
+                'robot-framework': f"robot {test_path}",
+                'webdriverio-js': f"npx wdio run {test_path}",
+                'webdriverio-ts': f"npx wdio run {test_path}"
+            }
+
+            run_command = run_commands.get(framework_lower, f"# Run with appropriate test runner for {params.framework}")
+
             return {
-                "message": f"Test code saved successfully",
+                "message": f"Test code saved successfully following {params.framework} standards",
                 "file": str(test_path),
                 "framework": params.framework,
-                "lines": len(params.test_code.split('\n'))
+                "lines": len(params.test_code.split('\n')),
+                "run_command": run_command,
+                "directory": str(tests_dir)
             }
 
         code = [

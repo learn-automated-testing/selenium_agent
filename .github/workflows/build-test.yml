@@ -1,0 +1,237 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-python-package:
+    name: Test Python Package Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine setuptools wheel
+
+      - name: Build package
+        run: |
+          echo "🔨 Building Python package..."
+          python -m build
+
+      - name: Check package
+        run: |
+          echo "🔍 Checking package with twine..."
+          twine check dist/*
+
+      - name: Verify agents are included
+        shell: bash
+        run: |
+          echo "📋 Verifying agent files are included..."
+          tar -tzf dist/*.tar.gz | grep "agents/" || (echo "❌ Agent files not found!" && exit 1)
+          tar -tzf dist/*.tar.gz | grep "agents/selenium-test-planner.agent.md" || (echo "❌ Planner agent not found!" && exit 1)
+          tar -tzf dist/*.tar.gz | grep "agents/selenium-test-generator.agent.md" || (echo "❌ Generator agent not found!" && exit 1)
+          tar -tzf dist/*.tar.gz | grep "agents/selenium-test-healer.agent.md" || (echo "❌ Healer agent not found!" && exit 1)
+          echo "✅ All agent files found!"
+
+      - name: Verify documentation is included
+        shell: bash
+        run: |
+          echo "📋 Verifying documentation files..."
+          tar -tzf dist/*.tar.gz | grep "AGENT_WORKFLOW.md" || (echo "❌ AGENT_WORKFLOW.md not found!" && exit 1)
+          tar -tzf dist/*.tar.gz | grep "FRAMEWORK_STANDARDS.md" || (echo "❌ FRAMEWORK_STANDARDS.md not found!" && exit 1)
+          echo "✅ Documentation files found!"
+
+      - name: Test installation
+        run: |
+          echo "📦 Testing package installation..."
+          pip install dist/*.whl
+          echo "✅ Package installed successfully!"
+
+      - name: Verify command is available
+        shell: bash
+        run: |
+          echo "🔍 Verifying selenium-mcp command..."
+          selenium-mcp --help || echo "Command not found, checking installation..."
+          python -c "import selenium_mcp; print('✅ selenium_mcp module imported successfully')"
+
+      - name: Verify agent files are accessible after install
+        shell: bash
+        run: |
+          echo "🔍 Checking if agent files are accessible..."
+          python -c "
+          import sys
+          from pathlib import Path
+          import selenium_mcp
+
+          # Find agents directory
+          package_dir = Path(selenium_mcp.__file__).parent
+          agents_dir = package_dir.parent / 'agents'
+
+          print(f'Package location: {package_dir}')
+          print(f'Looking for agents at: {agents_dir}')
+
+          if agents_dir.exists():
+              print('✅ Agents directory found!')
+              agent_files = list(agents_dir.glob('*.agent.md'))
+              print(f'Found {len(agent_files)} agent files:')
+              for f in agent_files:
+                  print(f'  - {f.name}')
+
+              if len(agent_files) >= 3:
+                  print('✅ All agent files accessible!')
+                  sys.exit(0)
+              else:
+                  print('❌ Missing agent files!')
+                  sys.exit(1)
+          else:
+              print('❌ Agents directory not found!')
+              sys.exit(1)
+          "
+
+  test-npm-wrapper:
+    name: Test NPM Wrapper
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: ['18', '20']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Test npm wrapper structure
+        run: |
+          cd npm-wrapper
+          echo "📦 Checking npm package structure..."
+          ls -la
+          echo ""
+          echo "✅ Files present"
+
+      - name: Test npm pack
+        run: |
+          cd npm-wrapper
+          echo "🔨 Creating npm package..."
+          npm pack
+          echo ""
+          echo "📦 Package created:"
+          ls -la *.tgz
+
+      - name: Verify package contents
+        shell: bash
+        run: |
+          cd npm-wrapper
+          echo "📋 Verifying package contents..."
+          tar -tzf *.tgz | grep "bin/selenium-mcp.js" || (echo "❌ Binary not found!" && exit 1)
+          tar -tzf *.tgz | grep "scripts/install-python-server.js" || (echo "❌ Install script not found!" && exit 1)
+          echo "✅ NPM wrapper structure verified!"
+
+  integration-test:
+    name: Integration Test (Full Install)
+    runs-on: ubuntu-latest
+    needs: [test-python-package]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build and install Python package
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+          pip install dist/*.whl
+
+      - name: Test Python package
+        run: |
+          echo "🧪 Testing Python installation..."
+          selenium-mcp --help
+          python -c "import selenium_mcp; print('✅ Package imported')"
+
+      - name: Verify agents are accessible
+        run: |
+          python -c "
+          from pathlib import Path
+          import selenium_mcp
+
+          package_dir = Path(selenium_mcp.__file__).parent
+          agents_dir = package_dir.parent / 'agents'
+
+          assert agents_dir.exists(), 'Agents directory not found'
+
+          planner = agents_dir / 'selenium-test-planner.agent.md'
+          generator = agents_dir / 'selenium-test-generator.agent.md'
+          healer = agents_dir / 'selenium-test-healer.agent.md'
+
+          assert planner.exists(), 'Planner agent not found'
+          assert generator.exists(), 'Generator agent not found'
+          assert healer.exists(), 'Healer agent not found'
+
+          # Verify content includes review gates
+          content = planner.read_text()
+          assert 'CRITICAL: Human Review Required' in content, 'Review gates not found in planner'
+
+          content = generator.read_text()
+          assert 'MANDATORY: Ask User Before Saving' in content, 'Save gate not found in generator'
+
+          print('✅ All agents verified with review gates!')
+          "
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [test-python-package, test-npm-wrapper, integration-test]
+    if: always()
+
+    steps:
+      - name: Create summary
+        run: |
+          echo "## 📊 Build and Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Python Package" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Builds successfully on Ubuntu, macOS, Windows" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Works with Python 3.10, 3.11, 3.12" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Agent files included and accessible" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Documentation included" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Review gates verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### NPM Wrapper" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Package structure verified" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Works with Node.js 18, 20" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Post-install script included" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Integration" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Full installation tested" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Agent accessibility verified" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY

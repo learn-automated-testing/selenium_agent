@@ -921,3 +921,49 @@ Stacktrace:
 2025-11-23 00:58:56,556 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
 2025-11-23 00:58:56,558 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
 2025-11-23 00:58:56,558 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2025-11-23 07:24:36,952 - selenium_mcp.server - INFO - 🚀 Successfully loaded 47 tools
+2025-11-23 07:24:36,969 - selenium_mcp.server - INFO - 🚀 Selenium MCP Server initialized with 47 tools
+2025-11-23 07:24:36,976 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2025-11-23 07:24:36,977 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2025-11-23 07:24:36,977 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2025-11-23 07:27:39,927 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2025-11-23 07:27:39,930 - selenium_mcp.server - INFO - 🛠️ Executing tool: planner_setup_page
+2025-11-23 07:27:39,930 - selenium_mcp.server - INFO - 📦 Created browser context
+2025-11-23 07:27:39,983 - WDM - INFO - ====== WebDriver manager ======
+2025-11-23 07:27:40,158 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-11-23 07:27:40,258 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-11-23 07:27:40,344 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-11-23 07:27:40,529 - WDM - INFO - WebDriver version 142.0.7444.175 selected
+2025-11-23 07:27:40,532 - WDM - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/142.0.7444.175/mac-arm64/chromedriver-mac-arm64.zip
+2025-11-23 07:27:40,532 - WDM - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/142.0.7444.175/mac-arm64/chromedriver-mac-arm64.zip
+2025-11-23 07:27:40,728 - WDM - INFO - Driver downloading response is 200
+2025-11-23 07:27:40,940 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-11-23 07:27:41,089 - WDM - INFO - Driver has been saved in cache [/Users/r.vanderhorst/.wdm/drivers/chromedriver/mac64/142.0.7444.175]
+2025-11-23 07:27:41,103 - selenium_mcp.context - ERROR - ❌ Failed to initialize browser: Message: Service /Users/r.vanderhorst/.wdm/drivers/chromedriver/mac64/142.0.7444.175/chromedriver-mac-arm64/chromedriver unexpectedly exited. Status code was: -9
+
+2025-11-23 07:27:41,103 - selenium_mcp.context - INFO - 🔄 Trying alternative browser initialization...
+2025-11-23 07:27:43,084 - selenium_mcp.context - INFO - 🌐 Browser initialized (alternative method)
+2025-11-23 07:27:44,464 - selenium_mcp.tools.agents - INFO - 🎯 Planning session started for: Shopping
+2025-11-23 07:27:44,464 - selenium_mcp.tools.agents - INFO - 📊 Exploration depth: section
+2025-11-23 07:27:44,464 - selenium_mcp.tools.agents - INFO - 🔗 Found 6 navigation links
+2025-11-23 07:27:55,022 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2025-11-23 07:27:55,023 - selenium_mcp.server - INFO - 🛠️ Executing tool: click_element
+2025-11-23 07:27:55,023 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Shopping link', ref='e4'
+2025-11-23 07:27:55,082 - selenium_mcp.tools.snapshot - INFO - 🖱️ Clicked: Shopping link
+2025-11-23 07:28:11,739 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2025-11-23 07:28:11,739 - selenium_mcp.server - INFO - 🛠️ Executing tool: capture_page
+2025-11-23 07:28:14,720 - selenium_mcp.tools.snapshot - INFO - 📸 Captured snapshot with 28 elements
+2025-11-23 07:28:19,412 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2025-11-23 07:28:19,413 - selenium_mcp.server - INFO - 🛠️ Executing tool: navigate_to
+2025-11-23 07:28:19,413 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com/shopping'
+2025-11-23 07:28:19,493 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com/shopping
+2025-11-23 07:28:28,354 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2025-11-23 07:28:28,355 - selenium_mcp.server - INFO - 🛠️ Executing tool: take_screenshot
+2025-11-23 07:28:28,663 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: shopping_page.png
+2025-11-23 07:29:39,764 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2025-11-23 07:29:39,766 - selenium_mcp.server - INFO - 🛠️ Executing tool: planner_save_plan
+2025-11-23 07:29:39,767 - selenium_mcp.tools.agents - INFO - 📄 Test plan saved to: /Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/test-plans/shopping_filter_test_plan.md
+2025-11-23 07:31:32,428 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2025-11-23 07:31:32,430 - selenium_mcp.server - INFO - 🛠️ Executing tool: close_session
+2025-11-23 07:31:32,561 - selenium_mcp.context - INFO - 🚪 Browser closed
+2025-11-23 07:31:32,562 - selenium_mcp.tools.common - INFO - 🚪 Browser closed

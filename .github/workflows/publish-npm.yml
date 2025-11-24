@@ -1,0 +1,119 @@
+name: Publish NPM Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (optional, uses package.json if not specified)'
+        required: false
+
+jobs:
+  build-and-publish:
+    name: Build and Publish to npm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Set up Python (for testing)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify npm wrapper structure
+        run: |
+          echo "📦 Checking npm wrapper structure..."
+          cd npm-wrapper
+          ls -la
+          echo ""
+          echo "📄 package.json:"
+          cat package.json
+          echo ""
+          echo "📁 Files to be published:"
+          ls -la bin/ scripts/ 2>/dev/null || echo "Checking directories..."
+
+      - name: Install dependencies (if any)
+        run: |
+          cd npm-wrapper
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "No package-lock.json, skipping npm ci"
+          fi
+
+      - name: Test npm wrapper
+        run: |
+          cd npm-wrapper
+          echo "🧪 Testing npm wrapper installation..."
+          npm pack
+          echo ""
+          echo "📦 Package created:"
+          ls -la *.tgz
+          echo ""
+          echo "📋 Package contents:"
+          tar -tzf *.tgz | head -20
+
+      - name: Verify Python package is available (for post-install)
+        run: |
+          echo "🔍 Checking if Python package will be available..."
+          echo "The npm post-install script will run: pip install mcp-selenium-server"
+          echo "Make sure PyPI package is published first!"
+
+      - name: Publish to npm
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd npm-wrapper
+          echo "📤 Publishing to npm..."
+          npm publish --access public
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: npm-wrapper/*.tgz
+          retention-days: 30
+
+      - name: Create deployment summary
+        run: |
+          cd npm-wrapper
+          VERSION=$(node -p "require('./package.json').version")
+          echo "## 📦 NPM Package Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Package: \`mcp-selenium-server\`" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Version: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "npm install mcp-selenium-server" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### What Happens on Install" >> $GITHUB_STEP_SUMMARY
+          echo "1. npm installs Node.js wrapper" >> $GITHUB_STEP_SUMMARY
+          echo "2. Post-install script checks for Python 3.10+" >> $GITHUB_STEP_SUMMARY
+          echo "3. Automatically runs: \`pip install mcp-selenium-server\`" >> $GITHUB_STEP_SUMMARY
+          echo "4. Python package (with agents) gets installed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "npx mcp-selenium-server" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "## ❌ NPM Package Publish Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
