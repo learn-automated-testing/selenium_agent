@@ -129,6 +129,7 @@ jobs:
           python-version: '3.11'
 
       - name: Test npm wrapper structure
+        shell: bash
         run: |
           cd npm-wrapper
           echo "📦 Checking npm package structure..."
@@ -137,6 +138,7 @@ jobs:
           echo "✅ Files present"
 
       - name: Test npm pack
+        shell: bash
         run: |
           cd npm-wrapper
           echo "🔨 Creating npm package..."
