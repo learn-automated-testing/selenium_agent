@@ -1221,10 +1221,13 @@ class GeneratorWriteTestTool(BaseTool):
                 "directory": str(tests_dir)
             }
 
+        # Calculate line count (avoid backslash in f-string)
+        line_count = len(params.test_code.split('\n'))
+
         code = [
             f"# Save {params.framework} test code",
             f"# File: {params.filename}",
-            f"# Lines: {len(params.test_code.split('\n'))}"
+            f"# Lines: {line_count}"
         ]
 
         return ToolResult(
