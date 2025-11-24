@@ -79,7 +79,7 @@ async function main() {
     console.log('');
     console.log('After installing Python, run: npm install selenium-ai-agent');
     console.log('');
-    return;
+    process.exit(1);
   }
 
   console.log(`✅ Found Python: ${pythonCmd}`);
@@ -103,7 +103,7 @@ async function main() {
     console.log('');
     console.log('After installing Python 3.10+, run: npm install selenium-ai-agent');
     console.log('');
-    return;
+    process.exit(1);
   }
 
   console.log(`✅ Python version is compatible (${versionInfo.major}.${versionInfo.minor})`);
