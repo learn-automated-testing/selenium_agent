@@ -1,5 +1,0 @@
-agents
-dist
-npm-wrapper
-selenium_mcp
-venv
