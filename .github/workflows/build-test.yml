@@ -30,10 +30,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install build twine setuptools wheel
 
+      - name: Clean previous builds
+        run: |
+          echo "🧹 Cleaning dist directory..."
+          rm -rf dist/ build/ *.egg-info
+          echo "✅ Clean complete"
+
       - name: Build package
         run: |
           echo "🔨 Building Python package..."
           python -m build
+          echo ""
+          echo "📦 Built packages:"
+          ls -la dist/
 
       - name: Check package
         run: |
