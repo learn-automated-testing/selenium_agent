@@ -967,3 +967,5 @@ Stacktrace:
 2025-11-23 07:31:32,430 - selenium_mcp.server - INFO - 🛠️ Executing tool: close_session
 2025-11-23 07:31:32,561 - selenium_mcp.context - INFO - 🚪 Browser closed
 2025-11-23 07:31:32,562 - selenium_mcp.tools.common - INFO - 🚪 Browser closed
+2025-11-24 18:46:55,807 - __main__ - INFO - Successfully loaded 47 tools
+2025-11-24 18:46:55,824 - __main__ - INFO - Selenium MCP Server initialized with 47 tools
