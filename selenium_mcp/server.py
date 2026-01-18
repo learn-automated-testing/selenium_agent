@@ -99,8 +99,8 @@ logger.info(f"Selenium MCP Server initialized with {len(tools)} tools")
 
 def main():
     """Main entry point for the Selenium MCP server."""
-    # Run the FastMCP server
-    mcp.run()
+    # Run the FastMCP server with stdio transport (like Playwright MCP)
+    mcp.run(transport="stdio")
 
 if __name__ == "__main__":
     main()
