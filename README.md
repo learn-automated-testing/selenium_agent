@@ -14,11 +14,15 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - **Self-Healing Tests** - Automatically fix failing tests with the Healer agent
 - **Cross-Platform Support** - Works with any Selenium-compatible automation framework
 
+## Workflow Overview
+
+![Selenium Agent Workflow](docs/selenium-agent-workflow.png)
+
 ## Quick Start
 
 > **📖 Installation Guides Available**
-> - [INSTALLATION_SUMMARY.md](INSTALLATION_SUMMARY.md) - Quick visual comparison of pip vs npm
-> - [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) - Complete installation guide (both methods)
+> - [INSTALLATION_SUMMARY.md](docs/INSTALLATION_SUMMARY.md) - Quick visual comparison of pip vs npm
+> - [INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) - Complete installation guide (both methods)
 
 ### Installation
 
@@ -36,8 +40,8 @@ npm install ai-agent-selenium
 **Option 2: Install from Source (Development)**
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/selenium-mcp-server.git
-cd selenium-mcp-server
+git clone https://github.com/yourusername/selenium_agent.git
+cd selenium_agent
 
 # Install in development mode
 pip install -e .
@@ -51,14 +55,14 @@ pip install -e ".[all]"
 
 **Option 3: Install from GitHub (Latest)**
 ```bash
-pip install git+https://github.com/yourusername/selenium-mcp-server.git
+pip install git+https://github.com/yourusername/selenium_agent.git
 ```
 
 **Option 4: Install via npm (Node.js Projects)**
 
 For Node.js/JavaScript developers:
 ```bash
-npm install selenium-mcp-server
+npm install selenium_agent
 # Then run with:
 npx selenium-mcp
 ```
@@ -213,8 +217,8 @@ The server implements the MCP protocol via JSON-RPC over stdin/stdout:
 The Selenium MCP Server now includes **AI-powered test agents** modeled after Playwright's agent architecture. These specialized agents help you create test plans, generate test code, and fix failing tests automatically.
 
 > **📖 Documentation Available**
-> - [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) - Complete three-phase workflow with mandatory human review gates
-> - [FRAMEWORK_STANDARDS.md](FRAMEWORK_STANDARDS.md) - Framework conventions, file naming, and code quality standards
+> - [AGENT_WORKFLOW.md](docs/AGENT_WORKFLOW.md) - Complete three-phase workflow with mandatory human review gates
+> - [FRAMEWORK_STANDARDS.md](docs/FRAMEWORK_STANDARDS.md) - Framework conventions, file naming, and code quality standards
 
 ## Available Agents
 
@@ -451,7 +455,7 @@ These files define:
 1. **Download or clone the project**:
    ```bash
    git clone <your-repo-url>
-   cd selenium-mcp-server
+   cd selenium_agent
    ```
 
 2. **Run the automatic installer**:

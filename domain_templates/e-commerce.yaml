@@ -1,0 +1,669 @@
+# E-Commerce Domain Template
+# =============================================================================
+#
+# DOMAIN    = Architecture of the product type
+# PROCESS   = Standard user journeys in this domain
+# FEATURE   = A step/part within a process
+# USER STORY = Optional input to enrich features (ingested separately)
+#
+# The analyzer walks through PROCESSES to discover FEATURES.
+# User stories can be imported to add context to features.
+#
+# =============================================================================
+
+domain:
+  name: "e-commerce"
+  description: "Online retail, shopping platforms, marketplaces"
+  version: "2.0"
+
+  # How to detect this domain type
+  detection:
+    url_patterns: ["shop", "store", "cart", "checkout", "product"]
+    page_indicators: ["add to cart", "buy now", "shopping cart", "price"]
+
+# =============================================================================
+# STANDARD PROCESSES
+# =============================================================================
+# These are the core user journeys that define an e-commerce application.
+# The analyzer walks through each process to discover what's implemented.
+
+processes:
+
+  # ---------------------------------------------------------------------------
+  # PURCHASE PRODUCT - The core e-commerce journey
+  # ---------------------------------------------------------------------------
+  purchase_product:
+    name: "Purchase Product"
+    risk: critical
+    description: "The complete journey from browsing to order confirmation"
+
+    # The standard steps in sequence
+    steps:
+      - id: browse
+        name: "Browse Products"
+        action: "Find products to purchase"
+        discover:
+          look_for:
+            - "product listing page"
+            - "product cards/tiles"
+            - "product images and prices"
+          navigate_to:
+            - "/products"
+            - "/shop"
+            - "/catalog"
+            - "/"
+        features:
+          - product_listing
+          - product_search
+          - product_filtering
+          - product_sorting
+
+      - id: select
+        name: "Select Product"
+        action: "Choose a product and view details"
+        discover:
+          look_for:
+            - "product detail page"
+            - "product description"
+            - "variant options (size, color)"
+            - "add to cart button"
+          actions:
+            - "click on product card"
+        features:
+          - product_detail
+          - product_variants
+          - product_images
+          - product_reviews
+
+      - id: add_to_cart
+        name: "Add to Cart"
+        action: "Add selected product to shopping cart"
+        risk: critical
+        discover:
+          look_for:
+            - "add to cart button"
+            - "quantity selector"
+          actions:
+            - "click add to cart"
+          verify:
+            - "cart count increases"
+            - "cart total updates"
+            - "confirmation shown"
+        features:
+          - add_to_cart_button
+          - quantity_selection
+          - cart_feedback
+
+      - id: view_cart
+        name: "View Cart"
+        action: "Open and review shopping cart"
+        risk: critical
+        discover:
+          look_for:
+            - "cart icon/button"
+            - "cart page/modal"
+            - "cart items list"
+            - "cart totals"
+          actions:
+            - "click cart icon"
+          navigate_to:
+            - "/cart"
+            - "/basket"
+        features:
+          - cart_display
+          - cart_item_list
+          - cart_quantity_update
+          - cart_item_remove
+          - cart_totals
+
+      - id: checkout
+        name: "Proceed to Checkout"
+        action: "Start the checkout process"
+        risk: critical
+        discover:
+          look_for:
+            - "checkout button"
+            - "proceed to checkout"
+            - "buy now"
+          actions:
+            - "click checkout button"
+          navigate_to:
+            - "/checkout"
+        features:
+          - checkout_button
+          - checkout_page
+
+      - id: shipping
+        name: "Enter Shipping Information"
+        action: "Provide delivery address and shipping method"
+        risk: critical
+        discover:
+          look_for:
+            - "shipping address form"
+            - "delivery address fields"
+            - "shipping method options"
+          verify:
+            - "address fields present"
+            - "shipping options available"
+        features:
+          - shipping_address_form
+          - shipping_method_selection
+          - address_validation
+        compliance:
+          - GDPR  # Personal data
+
+      - id: payment
+        name: "Enter Payment Information"
+        action: "Provide payment details"
+        risk: critical
+        discover:
+          look_for:
+            - "payment form"
+            - "card number input"
+            - "payment method selection"
+            - "pay button"
+          verify:
+            - "secure connection (HTTPS)"
+            - "payment fields present"
+        features:
+          - payment_form
+          - payment_methods
+          - billing_address
+          - payment_validation
+        compliance:
+          - PCI-DSS
+
+      - id: confirmation
+        name: "Order Confirmation"
+        action: "Complete order and receive confirmation"
+        risk: critical
+        discover:
+          look_for:
+            - "order confirmation page"
+            - "order number"
+            - "thank you message"
+            - "order summary"
+          verify:
+            - "order number displayed"
+            - "confirmation email sent"
+        features:
+          - order_confirmation_page
+          - order_number
+          - order_summary
+          - confirmation_email
+
+    # What to test for this process
+    test_strategy:
+      happy_path:
+        priority: 1
+        description: "Complete purchase flow end-to-end"
+      error_handling:
+        priority: 1
+        description: "Invalid inputs, payment failures"
+      edge_cases:
+        priority: 2
+        description: "Empty cart checkout, max quantity"
+
+  # ---------------------------------------------------------------------------
+  # USER REGISTRATION - Account creation journey
+  # ---------------------------------------------------------------------------
+  user_registration:
+    name: "User Registration"
+    risk: high
+    description: "New user account creation process"
+
+    steps:
+      - id: find_registration
+        name: "Find Registration"
+        action: "Locate registration option"
+        discover:
+          look_for:
+            - "sign up link"
+            - "create account"
+            - "register"
+          navigate_to:
+            - "/register"
+            - "/signup"
+            - "/account/create"
+        features:
+          - registration_link
+
+      - id: fill_form
+        name: "Fill Registration Form"
+        action: "Enter account details"
+        discover:
+          look_for:
+            - "email field"
+            - "password field"
+            - "name fields"
+            - "submit button"
+        features:
+          - registration_form
+          - email_input
+          - password_input
+          - password_confirmation
+          - terms_checkbox
+        compliance:
+          - GDPR
+
+      - id: verify_email
+        name: "Email Verification"
+        action: "Verify email address"
+        discover:
+          look_for:
+            - "verification message"
+            - "check your email"
+        features:
+          - email_verification
+          - resend_verification
+
+      - id: complete_profile
+        name: "Complete Profile"
+        action: "Add additional profile information"
+        optional: true
+        discover:
+          look_for:
+            - "profile setup"
+            - "add address"
+            - "preferences"
+        features:
+          - profile_setup
+          - address_book
+          - preferences
+
+    test_strategy:
+      happy_path:
+        priority: 1
+        description: "Successful registration flow"
+      validation:
+        priority: 1
+        description: "Invalid email, weak password, duplicate account"
+
+  # ---------------------------------------------------------------------------
+  # USER LOGIN - Authentication journey
+  # ---------------------------------------------------------------------------
+  user_login:
+    name: "User Login"
+    risk: high
+    description: "Returning user authentication"
+
+    steps:
+      - id: find_login
+        name: "Find Login"
+        action: "Locate login option"
+        discover:
+          look_for:
+            - "login link"
+            - "sign in"
+            - "my account"
+          navigate_to:
+            - "/login"
+            - "/signin"
+            - "/auth"
+        features:
+          - login_link
+
+      - id: enter_credentials
+        name: "Enter Credentials"
+        action: "Provide username and password"
+        discover:
+          look_for:
+            - "email/username field"
+            - "password field"
+            - "login button"
+        features:
+          - login_form
+          - remember_me
+          - forgot_password_link
+
+      - id: authenticated
+        name: "Authenticated State"
+        action: "Verify logged in"
+        discover:
+          look_for:
+            - "user name displayed"
+            - "my account link"
+            - "logout option"
+        features:
+          - logged_in_state
+          - user_menu
+
+    test_strategy:
+      happy_path:
+        priority: 1
+      security:
+        priority: 1
+        description: "Invalid credentials, brute force protection"
+
+  # ---------------------------------------------------------------------------
+  # PRODUCT SEARCH - Finding products journey
+  # ---------------------------------------------------------------------------
+  product_search:
+    name: "Product Search"
+    risk: high
+    description: "Finding products through search"
+
+    steps:
+      - id: find_search
+        name: "Find Search"
+        action: "Locate search functionality"
+        discover:
+          look_for:
+            - "search input"
+            - "search icon"
+            - "search bar"
+        features:
+          - search_input
+          - search_button
+
+      - id: enter_query
+        name: "Enter Search Query"
+        action: "Type search term"
+        discover:
+          look_for:
+            - "search suggestions"
+            - "autocomplete"
+        features:
+          - search_autocomplete
+          - search_suggestions
+
+      - id: view_results
+        name: "View Search Results"
+        action: "Review search results"
+        discover:
+          look_for:
+            - "search results page"
+            - "result count"
+            - "product matches"
+        features:
+          - search_results
+          - result_count
+          - no_results_handling
+          - search_filters
+
+    test_strategy:
+      happy_path:
+        priority: 1
+      edge_cases:
+        priority: 2
+        description: "No results, special characters, empty search"
+
+  # ---------------------------------------------------------------------------
+  # ORDER MANAGEMENT - Post-purchase journey
+  # ---------------------------------------------------------------------------
+  order_management:
+    name: "Order Management"
+    risk: medium
+    description: "Managing orders after purchase"
+    depends_on: ["user_login"]
+
+    steps:
+      - id: view_orders
+        name: "View Order History"
+        action: "Access past orders"
+        discover:
+          look_for:
+            - "my orders"
+            - "order history"
+          navigate_to:
+            - "/orders"
+            - "/account/orders"
+        features:
+          - order_history_list
+          - order_status
+
+      - id: order_details
+        name: "View Order Details"
+        action: "See specific order information"
+        discover:
+          look_for:
+            - "order detail page"
+            - "order items"
+            - "tracking info"
+        features:
+          - order_detail_page
+          - order_tracking
+          - invoice_download
+
+      - id: order_actions
+        name: "Order Actions"
+        action: "Perform actions on orders"
+        discover:
+          look_for:
+            - "cancel order"
+            - "return item"
+            - "reorder"
+        features:
+          - cancel_order
+          - return_request
+          - reorder
+
+    test_strategy:
+      happy_path:
+        priority: 2
+
+  # ---------------------------------------------------------------------------
+  # ACCOUNT MANAGEMENT - Profile management journey
+  # ---------------------------------------------------------------------------
+  account_management:
+    name: "Account Management"
+    risk: medium
+    description: "Managing user account settings"
+    depends_on: ["user_login"]
+
+    steps:
+      - id: access_account
+        name: "Access Account"
+        action: "Navigate to account settings"
+        discover:
+          look_for:
+            - "my account"
+            - "account settings"
+            - "profile"
+          navigate_to:
+            - "/account"
+            - "/profile"
+        features:
+          - account_dashboard
+
+      - id: manage_profile
+        name: "Manage Profile"
+        action: "Update personal information"
+        features:
+          - edit_profile
+          - change_password
+          - email_preferences
+        compliance:
+          - GDPR
+
+      - id: manage_addresses
+        name: "Manage Addresses"
+        action: "Update saved addresses"
+        features:
+          - address_book
+          - add_address
+          - edit_address
+          - delete_address
+          - default_address
+
+      - id: manage_payment
+        name: "Manage Payment Methods"
+        action: "Update saved payment methods"
+        features:
+          - saved_cards
+          - add_card
+          - remove_card
+        compliance:
+          - PCI-DSS
+
+    test_strategy:
+      happy_path:
+        priority: 2
+
+# =============================================================================
+# FEATURE DEFINITIONS
+# =============================================================================
+# Detailed information about individual features.
+# These are referenced by the processes above.
+
+features:
+  # Cart features
+  add_to_cart_button:
+    selectors:
+      - "button:contains('Add to Cart')"
+      - "button:contains('Add to Basket')"
+      - "[data-testid='add-to-cart']"
+      - ".add-to-cart"
+
+  cart_display:
+    selectors:
+      - "[data-testid='cart']"
+      - ".cart-icon"
+      - "button:has(shopping_cart)"
+      - "a[href*='cart']"
+
+  # Search features
+  search_input:
+    selectors:
+      - "input[type='search']"
+      - "input[name='search']"
+      - "input[name='q']"
+      - "input[placeholder*='search']"
+      - "[data-testid='search']"
+
+  # Auth features
+  login_form:
+    selectors:
+      - "form[action*='login']"
+      - "form[action*='signin']"
+      - "[data-testid='login-form']"
+    fields:
+      - email_or_username
+      - password
+      - submit_button
+
+  # Checkout features
+  checkout_button:
+    selectors:
+      - "button:contains('Checkout')"
+      - "button:contains('Proceed')"
+      - "a[href*='checkout']"
+      - "[data-testid='checkout']"
+
+# =============================================================================
+# USER STORY INGESTION
+# =============================================================================
+# User stories can be imported to enrich features with additional context.
+# Stories are mapped to features and add test scenarios.
+
+user_story_mapping:
+  description: |
+    User stories can be imported to add context to features.
+    Stories are mapped by keywords to the relevant process/feature.
+
+  example_mapping:
+    story: "As a user, I want to filter products by price range so I can find affordable items"
+    maps_to:
+      process: "purchase_product"
+      step: "browse"
+      feature: "product_filtering"
+    adds:
+      test_scenarios:
+        - "Filter by minimum price"
+        - "Filter by maximum price"
+        - "Filter by price range"
+        - "Clear price filter"
+
+  keyword_mappings:
+    cart: ["purchase_product.add_to_cart", "purchase_product.view_cart"]
+    checkout: ["purchase_product.checkout", "purchase_product.payment"]
+    login: ["user_login"]
+    register: ["user_registration"]
+    search: ["product_search"]
+    filter: ["purchase_product.browse.product_filtering"]
+    payment: ["purchase_product.payment"]
+    order: ["order_management"]
+
+# =============================================================================
+# COMPLIANCE REQUIREMENTS
+# =============================================================================
+
+compliance:
+  PCI-DSS:
+    applies_to_features:
+      - payment_form
+      - saved_cards
+      - billing_address
+    checks:
+      - https_required: true
+      - no_card_data_in_logs: true
+      - secure_input_fields: true
+
+  GDPR:
+    applies_to_features:
+      - registration_form
+      - shipping_address_form
+      - edit_profile
+    checks:
+      - cookie_consent: true
+      - privacy_policy: true
+      - data_export: true
+      - account_deletion: true
+
+# =============================================================================
+# REGRESSION TEST STRATEGY
+# =============================================================================
+
+regression:
+  # Which processes are critical for regression
+  critical_processes:
+    - purchase_product
+    - user_login
+
+  high_processes:
+    - user_registration
+    - product_search
+
+  medium_processes:
+    - order_management
+    - account_management
+
+  # Pipeline configuration
+  pipeline:
+    pr_checks:
+      run: ["critical_processes"]
+      timeout: "15m"
+
+    pre_deploy:
+      run: ["critical_processes", "high_processes"]
+      timeout: "30m"
+
+    nightly:
+      run: ["all"]
+      timeout: "60m"
+
+# =============================================================================
+# PRODUCT OVERRIDES
+# =============================================================================
+# Products can override/extend this template
+
+overrides:
+  _description: |
+    Products can customize this template:
+    - Skip processes that don't apply (e.g., no user registration)
+    - Add product-specific processes
+    - Change risk levels
+    - Add features to processes
+
+  _example:
+    skip_processes:
+      - user_registration  # Guest checkout only
+
+    add_processes:
+      gift_cards:
+        risk: high
+        steps: [...]
+
+    modify_features:
+      wishlist:
+        risk: critical  # Core feature for gift registry site

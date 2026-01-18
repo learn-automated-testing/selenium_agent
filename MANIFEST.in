@@ -3,18 +3,8 @@ include README.md
 include LICENSE
 
 # Include workflow and standards documentation
-include AGENT_WORKFLOW.md
-include FRAMEWORK_STANDARDS.md
-include WORKFLOW_DIAGRAM.md
-include INSTALLATION_GUIDE.md
-include INSTALLATION_SUMMARY.md
-include MCP_CLIENT_SETUP.md
-include DEPLOYMENT_GUIDE.md
-include CHANGES_SUMMARY.md
-include FINAL_CHANGES_SUMMARY.md
-include CLAUDE_CODE_INSTALLATION.md
-include PUBLISHING_GUIDE.md
-include demo_usage.md
+recursive-include docs *.md
+recursive-include docs *.png
 
 # Include agent definition files
 recursive-include agents *.md

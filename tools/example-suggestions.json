@@ -1,0 +1,182 @@
+{
+  "domain": "e-commerce",
+  "product": "Practice Automated Testing",
+  "url": "https://practiceautomatedtesting.com",
+  "generated_at": "2026-01-03T10:30:00Z",
+  "items": [
+    {
+      "id": "purchase_product",
+      "source": "domain_template",
+      "name": "Purchase Product Flow",
+      "description": "Complete checkout flow from browsing products to order confirmation including cart, shipping, and payment",
+      "llm_suggestion": "regression",
+      "llm_priority": "critical",
+      "reason": "Critical revenue path - must work on every deploy"
+    },
+    {
+      "id": "add_to_cart",
+      "source": "domain_template",
+      "name": "Add to Cart",
+      "description": "Add products to shopping cart with quantity selection",
+      "llm_suggestion": "regression",
+      "llm_priority": "critical",
+      "reason": "Core shopping functionality, high usage"
+    },
+    {
+      "id": "checkout_form",
+      "source": "domain_template",
+      "name": "Checkout Form Validation",
+      "description": "Validate shipping address fields, payment details, and form submission",
+      "llm_suggestion": "regression",
+      "llm_priority": "critical",
+      "reason": "Payment critical - blocks revenue if broken"
+    },
+    {
+      "id": "payment_methods",
+      "source": "domain_template",
+      "name": "Payment Method Selection",
+      "description": "Select between Credit Card, PayPal, and iDeal payment options",
+      "llm_suggestion": "regression",
+      "llm_priority": "high",
+      "reason": "Multiple payment paths need verification"
+    },
+    {
+      "id": "product_search",
+      "source": "domain_template",
+      "name": "Product Search",
+      "description": "Search products by keyword with results filtering",
+      "llm_suggestion": "regression",
+      "llm_priority": "high",
+      "reason": "High usage feature, impacts product discovery"
+    },
+    {
+      "id": "category_filter",
+      "source": "domain_template",
+      "name": "Category Filter",
+      "description": "Filter products by category: Electronics, Accessories, Office Supplies, Furniture",
+      "llm_suggestion": "regression",
+      "llm_priority": "medium",
+      "reason": "Core navigation feature"
+    },
+    {
+      "id": "price_filter",
+      "source": "domain_template",
+      "name": "Price Range Filter",
+      "description": "Filter products by minimum and maximum price",
+      "llm_suggestion": "regression",
+      "llm_priority": "medium",
+      "reason": "Commonly used filter, affects product visibility"
+    },
+    {
+      "id": "rating_filter",
+      "source": "domain_template",
+      "name": "Rating Filter",
+      "description": "Filter products by star rating (3+, 4+, 5+)",
+      "llm_suggestion": "regression",
+      "llm_priority": "low",
+      "reason": "Quality filter, medium usage"
+    },
+    {
+      "id": "user_login",
+      "source": "domain_template",
+      "name": "User Login",
+      "description": "User authentication with email and password",
+      "llm_suggestion": "skip",
+      "reason": "Returns 404 - not implemented on this site"
+    },
+    {
+      "id": "user_registration",
+      "source": "domain_template",
+      "name": "User Registration",
+      "description": "New user account creation flow",
+      "llm_suggestion": "skip",
+      "reason": "Not implemented - login page returns 404"
+    },
+    {
+      "id": "sorting",
+      "source": "domain_template",
+      "name": "Product Sorting",
+      "description": "Sort products by name or price (ascending/descending)",
+      "llm_suggestion": "regression",
+      "llm_priority": "low",
+      "reason": "Medium priority - useful but not critical"
+    },
+    {
+      "id": "pagination",
+      "source": "domain_template",
+      "name": "Pagination",
+      "description": "Navigate between product listing pages",
+      "llm_suggestion": "regression",
+      "llm_priority": "low",
+      "reason": "Required for browsing full catalog"
+    },
+    {
+      "id": "PAT-201",
+      "source": "product_context",
+      "name": "Add Gift Wrapping Option",
+      "description": "As a shopper, I want to add gift wrapping to my order for an additional fee",
+      "llm_suggestion": "regression",
+      "llm_priority": "medium",
+      "reason": "New permanent feature in checkout flow"
+    },
+    {
+      "id": "PAT-202",
+      "source": "product_context",
+      "name": "Fix Cart Total Rounding",
+      "description": "Bug: Cart total shows incorrect cents when applying percentage discount",
+      "llm_suggestion": "one-off",
+      "reason": "Bug fix - verify once, then covered by checkout regression"
+    },
+    {
+      "id": "PAT-203",
+      "source": "product_context",
+      "name": "Migrate to New Payment Gateway",
+      "description": "Technical: Switch from legacy payment API to new Stripe integration",
+      "llm_suggestion": "one-off",
+      "reason": "One-time migration - test during rollout only"
+    },
+    {
+      "id": "PAT-204",
+      "source": "product_context",
+      "name": "Add Express Checkout",
+      "description": "As a returning customer, I want one-click checkout using saved payment methods",
+      "llm_suggestion": "regression",
+      "llm_priority": "high",
+      "reason": "Permanent feature, alternative checkout path"
+    },
+    {
+      "id": "PAT-205",
+      "source": "product_context",
+      "name": "Holiday Theme Banner",
+      "description": "Display seasonal promotional banner on homepage during December",
+      "llm_suggestion": "one-off",
+      "reason": "Temporary seasonal feature"
+    },
+    {
+      "id": "PAT-206",
+      "source": "product_context",
+      "name": "Wishlist Feature",
+      "description": "As a user, I want to save products to a wishlist for later purchase",
+      "llm_suggestion": "regression",
+      "llm_priority": "medium",
+      "reason": "New permanent feature"
+    },
+    {
+      "id": "PAT-207",
+      "source": "product_context",
+      "name": "Remove Legacy Discount Codes",
+      "description": "Technical debt: Remove old discount code system after new one is verified",
+      "llm_suggestion": "skip",
+      "reason": "Cleanup task - no test needed, just code removal"
+    },
+    {
+      "id": "PAT-208",
+      "source": "product_context",
+      "name": "Product Reviews",
+      "description": "As a shopper, I want to read and write product reviews",
+      "llm_suggestion": "regression",
+      "llm_priority": "medium",
+      "reason": "Permanent feature, affects purchase decisions"
+    }
+  ]
+}

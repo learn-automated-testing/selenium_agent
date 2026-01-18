@@ -1,0 +1,85 @@
+# Discovery Summary for Planner Agent
+# Generated: 2026-01-03
+
+product:
+  name: "Practice Automated Testing"
+  url: "https://practiceautomatedtesting.com"
+  domain: "e-commerce"
+  analyzed_date: "2026-01-03"
+
+discovery_summary:
+  processes_analyzed:
+    - purchase_product
+  pages_discovered: 3
+  features_found: 18
+  screenshots_captured: 4
+
+process_status:
+  purchase_product:
+    status: "completed"
+    steps_completed: 5
+    steps_total: 8
+    blocked_at: null
+    key_discovery: "Checkout implemented as modal, not separate page"
+
+features_by_risk:
+  critical:
+    - shopping_cart
+    - add_to_cart
+    - checkout_form
+    - payment_methods
+    - place_order
+  high:
+    - product_search
+    - category_filter
+    - price_range_filter
+    - rating_filter
+  medium:
+    - sort_by_name
+    - sort_by_price
+    - in_stock_filter
+    - on_sale_filter
+    - pagination
+  low:
+    - theme_toggle
+    - login  # Not implemented - 404
+
+advisory_gaps:
+  - area: "user_login"
+    severity: "low"
+    status: "not_implemented"
+    note: "Login page returns 404 - skip auth tests"
+
+  - area: "order_confirmation"
+    severity: "medium"
+    status: "not_tested"
+    note: "Place Order button exists but not clicked - may show confirmation"
+
+key_findings:
+  - "Checkout is a MODAL, not separate page - opens from cart button"
+  - "Full payment form with Credit Card, PayPal, iDeal options"
+  - "Country selector includes: Netherlands, Belgium, Germany, France, UK"
+  - "Rich filtering: category, price range, rating, in stock, on sale"
+  - "Login not implemented - 404 page"
+
+test_recommendations:
+  every_deploy:
+    - "Add item to cart"
+    - "Open checkout modal"
+    - "Fill shipping form"
+    - "Select payment method"
+  every_pr:
+    - "Product search"
+    - "Category filtering"
+    - "Price range filtering"
+    - "Rating filtering"
+  nightly:
+    - "Combined filters"
+    - "Sorting"
+    - "Pagination"
+  skip:
+    - "Login/registration (not implemented)"
+
+documentation_path: "product-discovery/practice-automated-testing/product-discovery.md"
+html_path: "product-discovery/practice-automated-testing/product-discovery.html"
+screenshots_path: "product-discovery/practice-automated-testing/screenshots/"

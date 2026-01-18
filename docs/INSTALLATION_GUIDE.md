@@ -62,9 +62,8 @@ site-packages/selenium_mcp/agents/  # or site-packages/agents/
 site-packages/mcp_selenium_server-1.0.0.dist-info/
 ├── AGENT_WORKFLOW.md              # Complete workflow guide
 ├── FRAMEWORK_STANDARDS.md         # Framework conventions
-├── WORKFLOW_DIAGRAM.md            # Visual diagrams
-├── CHANGES_SUMMARY.md
-├── FINAL_CHANGES_SUMMARY.md
+├── selenium-agent-workflow.png    # Visual workflow diagram
+├── MCP_CLIENT_SETUP.md            # MCP client configuration
 └── README.md
 ```
 

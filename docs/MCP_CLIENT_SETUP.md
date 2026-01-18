@@ -8,6 +8,7 @@ This guide shows how to install and configure `ai-agent-selenium` with various M
 
 - [Installation Methods](#installation-methods)
 - [Claude Desktop](#claude-desktop)
+- [Claude Code (CLI)](#claude-code-cli)
 - [Cursor](#cursor)
 - [Cline (VSCode Extension)](#cline-vscode-extension)
 - [Other MCP Clients](#other-mcp-clients)
@@ -154,6 +155,89 @@ Or with full Python path:
 5. **Save the file**
 6. **Restart Claude Desktop**
 7. **Verify**: Look for the 🔌 icon in Claude Desktop
+
+---
+
+## Claude Code (CLI)
+
+Claude Code is Anthropic's CLI tool for AI-assisted development. It supports MCP servers through its configuration file.
+
+### Configuration File Location
+
+**macOS**:
+```
+~/.claude/claude_code.json
+```
+
+**Windows**:
+```
+%USERPROFILE%\.claude\claude_code.json
+```
+
+**Linux**:
+```
+~/.claude/claude_code.json
+```
+
+### Configuration (Python Installation)
+
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "selenium-mcp"
+    }
+  }
+}
+```
+
+### Configuration (npm Installation)
+
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["ai-agent-selenium"]
+    }
+  }
+}
+```
+
+### Configuration (From Source)
+
+If running from a cloned repository:
+
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "/absolute/path/to/selenium_agent/venv/bin/python",
+      "args": ["/absolute/path/to/selenium_agent/mcp_server.py"],
+      "cwd": "/absolute/path/to/selenium_agent"
+    }
+  }
+}
+```
+
+### Steps to Configure
+
+1. **Install the package** (if not using source):
+   ```bash
+   pip install ai-agent-selenium
+   ```
+
+2. **Create/edit the config file**:
+   ```bash
+   mkdir -p ~/.claude
+   nano ~/.claude/claude_code.json
+   ```
+
+3. **Add the configuration** (see examples above)
+
+4. **Save and restart Claude Code**
+
+5. **Verify**: Ask Claude Code to "List available MCP tools"
 
 ---
 
@@ -759,7 +843,7 @@ Everything works automatically once configured!
 
 ## Additional Resources
 
-- [README.md](README.md) - Main documentation
+- [README.md](../README.md) - Main documentation
 - [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) - Workflow with review gates
 - [FRAMEWORK_STANDARDS.md](FRAMEWORK_STANDARDS.md) - Framework conventions
 - [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) - Detailed installation guide

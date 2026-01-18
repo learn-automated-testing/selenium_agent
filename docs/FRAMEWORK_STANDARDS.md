@@ -668,5 +668,5 @@ The Generator Agent **automatically**:
 
 For more information, see:
 - [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) - Complete workflow guide
-- [README.md](README.md) - Main documentation
+- [README.md](../README.md) - Main documentation
 - Framework official documentation for advanced patterns

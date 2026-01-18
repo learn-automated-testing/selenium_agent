@@ -969,3 +969,298 @@ Stacktrace:
 2025-11-23 07:31:32,562 - selenium_mcp.tools.common - INFO - 🚪 Browser closed
 2025-11-24 18:46:55,807 - __main__ - INFO - Successfully loaded 47 tools
 2025-11-24 18:46:55,824 - __main__ - INFO - Selenium MCP Server initialized with 47 tools
+2026-01-02 16:51:04,783 - selenium_mcp.server - INFO - Successfully loaded 47 tools
+2026-01-02 16:51:04,801 - selenium_mcp.server - INFO - Selenium MCP Server initialized with 47 tools
+2026-01-02 16:51:04,819 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2026-01-02 16:51:04,820 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2026-01-02 16:51:04,821 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest
+2026-01-02 18:55:57,918 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:55:57,946 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-02 18:55:57,947 - selenium_mcp.server - INFO - Created browser context
+2026-01-02 18:55:57,948 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com'
+2026-01-02 18:55:58,178 - WDM - INFO - ====== WebDriver manager ======
+2026-01-02 18:55:58,745 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 18:55:58,928 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 18:55:59,010 - WDM - INFO - There is no [mac64] chromedriver "143.0.7499.169" for browser google-chrome "143.0.7499" in cache
+2026-01-02 18:55:59,014 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 18:55:59,309 - WDM - INFO - WebDriver version 143.0.7499.169 selected
+2026-01-02 18:55:59,311 - WDM - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/143.0.7499.169/mac-arm64/chromedriver-mac-arm64.zip
+2026-01-02 18:55:59,311 - WDM - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/143.0.7499.169/mac-arm64/chromedriver-mac-arm64.zip
+2026-01-02 18:55:59,535 - WDM - INFO - Driver downloading response is 200
+2026-01-02 18:56:00,601 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 18:56:00,784 - WDM - INFO - Driver has been saved in cache [/Users/r.vanderhorst/.wdm/drivers/chromedriver/mac64/143.0.7499.169]
+2026-01-02 18:56:02,410 - selenium_mcp.context - INFO - 🌐 Browser initialized
+2026-01-02 18:56:03,114 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com
+2026-01-02 18:56:15,081 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:56:15,082 - selenium_mcp.server - INFO - Executing tool: capture_page
+2026-01-02 18:56:16,101 - selenium_mcp.tools.snapshot - INFO - 📸 Captured snapshot with 12 elements
+2026-01-02 18:56:57,388 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:56:57,392 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-02 18:56:57,392 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Shopping navigation link', ref='e4'
+2026-01-02 18:56:57,564 - selenium_mcp.tools.snapshot - INFO - 🖱️ Clicked: Shopping navigation link
+2026-01-02 18:57:09,676 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:57:09,676 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-02 18:57:09,677 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Add to Cart button for first product', ref='e21'
+2026-01-02 18:57:09,717 - selenium_mcp.tools.snapshot - INFO - 🖱️ Clicked: Add to Cart button for first product
+2026-01-02 18:57:22,679 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:57:22,680 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-02 18:57:22,680 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Shopping cart button', ref='e8'
+2026-01-02 18:57:22,689 - selenium_mcp.context - ERROR - ❌ Tool execution failed: Message: no such element: Unable to locate element: {"method":"xpath","selector":"//button[contains(text(), "shopping_cart
+1 items
+$59.99")]"}
+  (Session info: chrome=143.0.7499.170); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+0   chromedriver                        0x00000001026c4b2c cxxbridge1$str$ptr + 3033596
+1   chromedriver                        0x00000001026bcb30 cxxbridge1$str$ptr + 3000832
+2   chromedriver                        0x00000001021b6b0c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 74196
+3   chromedriver                        0x00000001021fd9c8 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 364688
+4   chromedriver                        0x000000010223e968 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 630832
+5   chromedriver                        0x00000001021f216c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 317492
+6   chromedriver                        0x0000000102688098 cxxbridge1$str$ptr + 2785128
+7   chromedriver                        0x000000010268b804 cxxbridge1$str$ptr + 2799316
+8   chromedriver                        0x0000000102668850 cxxbridge1$str$ptr + 2656032
+9   chromedriver                        0x000000010268c074 cxxbridge1$str$ptr + 2801476
+10  chromedriver                        0x00000001026591cc cxxbridge1$str$ptr + 2592924
+11  chromedriver                        0x00000001026abcb4 cxxbridge1$str$ptr + 2931588
+12  chromedriver                        0x00000001026abe34 cxxbridge1$str$ptr + 2931972
+13  chromedriver                        0x00000001026bc788 cxxbridge1$str$ptr + 2999896
+14  libsystem_pthread.dylib             0x00000001820d7bc8 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001820d2b80 thread_start + 8
+
+2026-01-02 18:57:31,231 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:57:31,232 - selenium_mcp.server - INFO - Executing tool: capture_page
+2026-01-02 18:57:33,669 - selenium_mcp.tools.snapshot - INFO - 📸 Captured snapshot with 28 elements
+2026-01-02 18:57:45,148 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:57:45,149 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-02 18:57:45,149 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com/shopping/cart'
+2026-01-02 18:57:45,492 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com/shopping/cart
+2026-01-02 18:57:53,734 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:57:53,736 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-02 18:57:53,736 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com/webelements'
+2026-01-02 18:57:53,876 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com/webelements
+2026-01-02 18:58:03,767 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:58:03,768 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-02 18:58:03,769 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Login link', ref='e7'
+2026-01-02 18:58:03,775 - selenium_mcp.context - ERROR - ❌ Tool execution failed: Message: no such element: Unable to locate element: {"method":"xpath","selector":"//a[contains(text(), "login
+Login")]"}
+  (Session info: chrome=143.0.7499.170); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+0   chromedriver                        0x00000001026c4b2c cxxbridge1$str$ptr + 3033596
+1   chromedriver                        0x00000001026bcb30 cxxbridge1$str$ptr + 3000832
+2   chromedriver                        0x00000001021b6b0c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 74196
+3   chromedriver                        0x00000001021fd9c8 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 364688
+4   chromedriver                        0x000000010223e968 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 630832
+5   chromedriver                        0x00000001021f216c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 317492
+6   chromedriver                        0x0000000102688098 cxxbridge1$str$ptr + 2785128
+7   chromedriver                        0x000000010268b804 cxxbridge1$str$ptr + 2799316
+8   chromedriver                        0x0000000102668850 cxxbridge1$str$ptr + 2656032
+9   chromedriver                        0x000000010268c074 cxxbridge1$str$ptr + 2801476
+10  chromedriver                        0x00000001026591cc cxxbridge1$str$ptr + 2592924
+11  chromedriver                        0x00000001026abcb4 cxxbridge1$str$ptr + 2931588
+12  chromedriver                        0x00000001026abe34 cxxbridge1$str$ptr + 2931972
+13  chromedriver                        0x00000001026bc788 cxxbridge1$str$ptr + 2999896
+14  libsystem_pthread.dylib             0x00000001820d7bc8 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001820d2b80 thread_start + 8
+
+2026-01-02 18:58:19,544 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:58:19,546 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-02 18:58:19,546 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com/login'
+2026-01-02 18:58:19,803 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com/login
+2026-01-02 18:58:28,055 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:58:28,055 - selenium_mcp.server - INFO - Executing tool: wait_for
+2026-01-02 18:58:30,060 - selenium_mcp.tools.wait - INFO - ⏱️ Waited for 2.0 seconds
+2026-01-02 18:58:36,836 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:58:36,836 - selenium_mcp.server - INFO - Executing tool: capture_page
+2026-01-02 18:58:37,304 - selenium_mcp.tools.snapshot - INFO - 📸 Captured snapshot with 0 elements
+2026-01-02 18:58:44,451 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:58:44,452 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-02 18:58:44,631 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: login_page.png
+2026-01-02 18:59:19,272 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 18:59:19,273 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-02 18:59:19,274 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com/shopping'
+2026-01-02 18:59:19,598 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com/shopping
+2026-01-02 19:06:57,145 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 19:06:57,146 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-02 19:06:57,200 - selenium_mcp.context - WARNING - ⚠️ Browser session invalid, creating new one...
+2026-01-02 19:06:57,200 - WDM - INFO - ====== WebDriver manager ======
+2026-01-02 19:06:57,330 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 19:06:57,468 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 19:06:57,615 - WDM - INFO - Driver [/Users/r.vanderhorst/.wdm/drivers/chromedriver/mac64/143.0.7499.169/chromedriver-mac-arm64/chromedriver] found in cache
+2026-01-02 19:06:58,378 - selenium_mcp.context - INFO - 🌐 Browser initialized
+2026-01-02 19:06:58,472 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: shopping_page.png
+2026-01-02 19:07:37,842 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 19:07:37,844 - selenium_mcp.server - INFO - Executing tool: tab_list
+2026-01-02 19:07:37,937 - selenium_mcp.tools.tabs - INFO - 📑 Listed 1 tabs
+2026-01-02 19:07:43,715 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 19:07:43,716 - selenium_mcp.server - INFO - Executing tool: reset_automation_session
+2026-01-02 19:07:43,716 - selenium_mcp.tools.reset_session - INFO - 🔄 Force resetting automation browser session...
+2026-01-02 19:07:43,799 - selenium_mcp.tools.reset_session - INFO - ✅ Closed existing WebDriver session
+2026-01-02 19:07:43,843 - selenium_mcp.tools.reset_session - INFO - ✅ Killed automation browser processes only
+2026-01-02 19:07:43,843 - selenium_mcp.tools.reset_session - INFO - ✅ Cleared automation context state
+2026-01-02 19:07:49,085 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 19:07:49,086 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-02 19:07:49,086 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com'
+2026-01-02 19:07:49,086 - WDM - INFO - ====== WebDriver manager ======
+2026-01-02 19:07:49,226 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 19:07:49,313 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-02 19:07:49,418 - WDM - INFO - Driver [/Users/r.vanderhorst/.wdm/drivers/chromedriver/mac64/143.0.7499.169/chromedriver-mac-arm64/chromedriver] found in cache
+2026-01-02 19:07:50,115 - selenium_mcp.context - INFO - 🌐 Browser initialized
+2026-01-02 19:07:50,601 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com
+2026-01-02 19:08:00,792 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 19:08:00,793 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-02 19:08:00,973 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: homepage_check.png
+2026-01-02 19:10:09,961 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 19:10:09,965 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-02 19:10:09,965 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com/shopping'
+2026-01-02 19:10:10,311 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com/shopping
+2026-01-02 19:13:58,748 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-02 19:13:58,749 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-02 19:13:59,127 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: shopping_analysis.png
+2026-01-03 05:43:19,809 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:43:19,821 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-03 05:43:19,822 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com'
+2026-01-03 05:43:19,891 - selenium_mcp.context - WARNING - ⚠️ Browser session invalid, creating new one...
+2026-01-03 05:43:19,892 - WDM - INFO - ====== WebDriver manager ======
+2026-01-03 05:43:20,051 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-03 05:43:20,174 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-03 05:43:20,324 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-03 05:43:20,554 - WDM - INFO - WebDriver version 143.0.7499.169 selected
+2026-01-03 05:43:20,557 - WDM - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/143.0.7499.169/mac-arm64/chromedriver-mac-arm64.zip
+2026-01-03 05:43:20,557 - WDM - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/143.0.7499.169/mac-arm64/chromedriver-mac-arm64.zip
+2026-01-03 05:43:20,679 - WDM - INFO - Driver downloading response is 200
+2026-01-03 05:43:21,084 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2026-01-03 05:43:21,230 - WDM - INFO - Driver has been saved in cache [/Users/r.vanderhorst/.wdm/drivers/chromedriver/mac64/143.0.7499.169]
+2026-01-03 05:43:22,087 - selenium_mcp.context - INFO - 🌐 Browser initialized
+2026-01-03 05:43:22,464 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com
+2026-01-03 05:43:56,512 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:43:56,517 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-03 05:43:56,747 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: /Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/product-discovery/practice-automated-testing/screenshots/homepage.png
+2026-01-03 05:44:11,445 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:44:11,446 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-03 05:44:11,447 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Shopping navigation link', ref='e4'
+2026-01-03 05:44:11,492 - selenium_mcp.tools.snapshot - INFO - 🖱️ Clicked: Shopping navigation link
+2026-01-03 05:44:24,661 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:44:24,661 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-03 05:44:24,860 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: /Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/product-discovery/practice-automated-testing/screenshots/purchase_product_browse.png
+2026-01-03 05:44:46,542 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:44:46,549 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-03 05:44:46,549 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Add to Cart button for first product', ref='e21'
+2026-01-03 05:44:46,602 - selenium_mcp.tools.snapshot - INFO - 🖱️ Clicked: Add to Cart button for first product
+2026-01-03 05:44:57,732 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:44:57,732 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-03 05:44:57,934 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: /Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/product-discovery/practice-automated-testing/screenshots/purchase_product_add_to_cart.png
+2026-01-03 05:45:04,329 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:45:04,329 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-03 05:45:04,330 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Shopping cart button', ref='e8'
+2026-01-03 05:45:04,335 - selenium_mcp.context - ERROR - ❌ Tool execution failed: Message: no such element: Unable to locate element: {"method":"xpath","selector":"//button[contains(text(), "shopping_cart
+1 items
+$59.99")]"}
+  (Session info: chrome=143.0.7499.170); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+0   chromedriver                        0x0000000100fdcb2c cxxbridge1$str$ptr + 3033596
+1   chromedriver                        0x0000000100fd4b30 cxxbridge1$str$ptr + 3000832
+2   chromedriver                        0x0000000100aceb0c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 74196
+3   chromedriver                        0x0000000100b159c8 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 364688
+4   chromedriver                        0x0000000100b56968 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 630832
+5   chromedriver                        0x0000000100b0a16c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 317492
+6   chromedriver                        0x0000000100fa0098 cxxbridge1$str$ptr + 2785128
+7   chromedriver                        0x0000000100fa3804 cxxbridge1$str$ptr + 2799316
+8   chromedriver                        0x0000000100f80850 cxxbridge1$str$ptr + 2656032
+9   chromedriver                        0x0000000100fa4074 cxxbridge1$str$ptr + 2801476
+10  chromedriver                        0x0000000100f711cc cxxbridge1$str$ptr + 2592924
+11  chromedriver                        0x0000000100fc3cb4 cxxbridge1$str$ptr + 2931588
+12  chromedriver                        0x0000000100fc3e34 cxxbridge1$str$ptr + 2931972
+13  chromedriver                        0x0000000100fd4788 cxxbridge1$str$ptr + 2999896
+14  libsystem_pthread.dylib             0x00000001820d7bc8 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001820d2b80 thread_start + 8
+
+2026-01-03 05:45:11,939 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:45:11,940 - selenium_mcp.server - INFO - Executing tool: javascript_execute
+2026-01-03 05:45:11,945 - selenium_mcp.tools.javascript - ERROR - JavaScript execution failed: Message: javascript error: Cannot read properties of null (reading 'click')
+  (Session info: chrome=143.0.7499.170)
+Stacktrace:
+0   chromedriver                        0x0000000100fdcb2c cxxbridge1$str$ptr + 3033596
+1   chromedriver                        0x0000000100fd4b30 cxxbridge1$str$ptr + 3000832
+2   chromedriver                        0x0000000100aceb0c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 74196
+3   chromedriver                        0x0000000100ad49cc _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 98452
+4   chromedriver                        0x0000000100ad6d6c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 107572
+5   chromedriver                        0x0000000100b578c8 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 634768
+6   chromedriver                        0x0000000100b56968 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 630832
+7   chromedriver                        0x0000000100b0a16c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 317492
+8   chromedriver                        0x0000000100fa0098 cxxbridge1$str$ptr + 2785128
+9   chromedriver                        0x0000000100fa3804 cxxbridge1$str$ptr + 2799316
+10  chromedriver                        0x0000000100f80850 cxxbridge1$str$ptr + 2656032
+11  chromedriver                        0x0000000100fa4074 cxxbridge1$str$ptr + 2801476
+12  chromedriver                        0x0000000100f711cc cxxbridge1$str$ptr + 2592924
+13  chromedriver                        0x0000000100fc3cb4 cxxbridge1$str$ptr + 2931588
+14  chromedriver                        0x0000000100fc3e34 cxxbridge1$str$ptr + 2931972
+15  chromedriver                        0x0000000100fd4788 cxxbridge1$str$ptr + 2999896
+16  libsystem_pthread.dylib             0x00000001820d7bc8 _pthread_start + 136
+17  libsystem_pthread.dylib             0x00000001820d2b80 thread_start + 8
+
+2026-01-03 05:45:11,945 - selenium_mcp.context - ERROR - ❌ Tool execution failed: Message: javascript error: Cannot read properties of null (reading 'click')
+  (Session info: chrome=143.0.7499.170)
+Stacktrace:
+0   chromedriver                        0x0000000100fdcb2c cxxbridge1$str$ptr + 3033596
+1   chromedriver                        0x0000000100fd4b30 cxxbridge1$str$ptr + 3000832
+2   chromedriver                        0x0000000100aceb0c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 74196
+3   chromedriver                        0x0000000100ad49cc _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 98452
+4   chromedriver                        0x0000000100ad6d6c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 107572
+5   chromedriver                        0x0000000100b578c8 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 634768
+6   chromedriver                        0x0000000100b56968 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 630832
+7   chromedriver                        0x0000000100b0a16c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 317492
+8   chromedriver                        0x0000000100fa0098 cxxbridge1$str$ptr + 2785128
+9   chromedriver                        0x0000000100fa3804 cxxbridge1$str$ptr + 2799316
+10  chromedriver                        0x0000000100f80850 cxxbridge1$str$ptr + 2656032
+11  chromedriver                        0x0000000100fa4074 cxxbridge1$str$ptr + 2801476
+12  chromedriver                        0x0000000100f711cc cxxbridge1$str$ptr + 2592924
+13  chromedriver                        0x0000000100fc3cb4 cxxbridge1$str$ptr + 2931588
+14  chromedriver                        0x0000000100fc3e34 cxxbridge1$str$ptr + 2931972
+15  chromedriver                        0x0000000100fd4788 cxxbridge1$str$ptr + 2999896
+16  libsystem_pthread.dylib             0x00000001820d7bc8 _pthread_start + 136
+17  libsystem_pthread.dylib             0x00000001820d2b80 thread_start + 8
+
+2026-01-03 05:45:18,937 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:45:18,937 - selenium_mcp.server - INFO - Executing tool: javascript_execute
+2026-01-03 05:45:18,943 - selenium_mcp.tools.javascript - INFO - 🟡 Executed JavaScript: const buttons = document.querySelectorAll('button'); for(let b of buttons) { if(b.textContent.includ...
+2026-01-03 05:45:32,848 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:45:32,849 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-03 05:45:33,188 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: /Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/product-discovery/practice-automated-testing/screenshots/purchase_product_checkout.png
+2026-01-03 05:45:40,762 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:45:40,763 - selenium_mcp.server - INFO - Executing tool: click_element
+2026-01-03 05:45:40,763 - selenium_mcp.tools.snapshot - INFO - 🔍 Click params received: element='Close modal button', ref='e29'
+2026-01-03 05:45:40,770 - selenium_mcp.context - ERROR - ❌ Tool execution failed: Message: no such element: Unable to locate element: {"method":"xpath","selector":"//button[contains(text(), "close")]"}
+  (Session info: chrome=143.0.7499.170); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#nosuchelementexception
+Stacktrace:
+0   chromedriver                        0x0000000100fdcb2c cxxbridge1$str$ptr + 3033596
+1   chromedriver                        0x0000000100fd4b30 cxxbridge1$str$ptr + 3000832
+2   chromedriver                        0x0000000100aceb0c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 74196
+3   chromedriver                        0x0000000100b159c8 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 364688
+4   chromedriver                        0x0000000100b56968 _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 630832
+5   chromedriver                        0x0000000100b0a16c _RNvCsgXDX2mvAJAg_7___rustc35___rust_no_alloc_shim_is_unstable_v2 + 317492
+6   chromedriver                        0x0000000100fa0098 cxxbridge1$str$ptr + 2785128
+7   chromedriver                        0x0000000100fa3804 cxxbridge1$str$ptr + 2799316
+8   chromedriver                        0x0000000100f80850 cxxbridge1$str$ptr + 2656032
+9   chromedriver                        0x0000000100fa4074 cxxbridge1$str$ptr + 2801476
+10  chromedriver                        0x0000000100f711cc cxxbridge1$str$ptr + 2592924
+11  chromedriver                        0x0000000100fc3cb4 cxxbridge1$str$ptr + 2931588
+12  chromedriver                        0x0000000100fc3e34 cxxbridge1$str$ptr + 2931972
+13  chromedriver                        0x0000000100fd4788 cxxbridge1$str$ptr + 2999896
+14  libsystem_pthread.dylib             0x00000001820d7bc8 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001820d2b80 thread_start + 8
+
+2026-01-03 05:45:45,882 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:45:45,884 - selenium_mcp.server - INFO - Executing tool: key_press
+2026-01-03 05:45:45,897 - selenium_mcp.tools.keys - INFO - ⌨️ Pressed key: Escape
+2026-01-03 05:45:54,623 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:45:54,623 - selenium_mcp.server - INFO - Executing tool: navigate_to
+2026-01-03 05:45:54,624 - selenium_mcp.tools.navigate - INFO - 🔍 Navigation request received: URL='https://practiceautomatedtesting.com/webelements'
+2026-01-03 05:45:54,774 - selenium_mcp.tools.navigate - INFO - 🚀 Navigated to: https://practiceautomatedtesting.com/webelements
+2026-01-03 05:46:02,810 - mcp.server.lowlevel.server - INFO - Processing request of type CallToolRequest
+2026-01-03 05:46:02,810 - selenium_mcp.server - INFO - Executing tool: take_screenshot
+2026-01-03 05:46:02,972 - selenium_mcp.tools.screenshot - INFO - 📸 Screenshot saved: /Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/product-discovery/practice-automated-testing/screenshots/page_webelements.png
+2026-01-18 05:28:44,132 - selenium_mcp.server - INFO - Successfully loaded 53 tools
+2026-01-18 05:28:44,153 - selenium_mcp.server - INFO - Selenium MCP Server initialized with 53 tools
+2026-01-18 05:28:44,160 - mcp.server.lowlevel.server - INFO - Processing request of type ListToolsRequest
+2026-01-18 05:28:44,161 - mcp.server.lowlevel.server - INFO - Processing request of type ListPromptsRequest
+2026-01-18 05:28:44,161 - mcp.server.lowlevel.server - INFO - Processing request of type ListResourcesRequest

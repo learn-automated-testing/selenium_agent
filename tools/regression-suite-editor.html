@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regression Suite Editor</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #3a3a5a;
+        }
+
+        h1 {
+            color: #00d9ff;
+            font-size: 1.8em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: #3a3a5a;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #4a4a6a;
+        }
+
+        button.primary {
+            background: #00d9ff;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        button.primary:hover {
+            background: #00b8d9;
+        }
+
+        .meta-info {
+            background: #2a2a4a;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-label {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            color: #00d9ff;
+            font-weight: bold;
+        }
+
+        .stats {
+            margin-left: auto;
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .stat-number.regression { color: #00ff88; }
+        .stat-number.one-off { color: #ffaa00; }
+        .stat-number.skip { color: #ff5555; }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin: 30px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #3a3a5a;
+        }
+
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .item {
+            background: #2a2a4a;
+            border-radius: 8px;
+            padding: 15px 20px;
+            border-left: 4px solid #3a3a5a;
+            transition: border-color 0.2s;
+        }
+
+        .item.regression { border-left-color: #00ff88; }
+        .item.one-off { border-left-color: #ffaa00; }
+        .item.skip { border-left-color: #ff5555; opacity: 0.7; }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .item-title {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .item-id {
+            color: #888;
+            font-size: 12px;
+            background: #1a1a2e;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .item-source {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .item-source.domain_template {
+            background: #3a3a8a;
+            color: #aaaaff;
+        }
+
+        .item-source.product_context {
+            background: #3a5a3a;
+            color: #aaffaa;
+        }
+
+        .item-description {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .item-suggestion {
+            background: #1a1a2e;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .suggestion-icon {
+            font-size: 16px;
+        }
+
+        .suggestion-label {
+            color: #888;
+        }
+
+        .suggestion-value {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .suggestion-value.regression { color: #00ff88; }
+        .suggestion-value.one-off { color: #ffaa00; }
+        .suggestion-value.skip { color: #ff5555; }
+
+        .suggestion-reason {
+            color: #666;
+            margin-left: auto;
+            font-style: italic;
+        }
+
+        .choice-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .choice {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .choice:hover {
+            background: #3a3a5a;
+        }
+
+        .choice input[type="radio"] {
+            accent-color: #00d9ff;
+            width: 16px;
+            height: 16px;
+        }
+
+        .choice-label {
+            font-size: 14px;
+        }
+
+        .choice-label.regression { color: #00ff88; }
+        .choice-label.one-off { color: #ffaa00; }
+        .choice-label.skip { color: #ff5555; }
+
+        .priority-group {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #3a3a5a;
+        }
+
+        .priority-group.visible {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .priority-label {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .priority-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .priority-btn {
+            padding: 4px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            background: #1a1a2e;
+            border: 1px solid #3a3a5a;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .priority-btn:hover {
+            border-color: #00d9ff;
+            color: #fff;
+        }
+
+        .priority-btn.active.critical {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: #fff;
+        }
+
+        .priority-btn.active.high {
+            background: #e67e22;
+            border-color: #e67e22;
+            color: #fff;
+        }
+
+        .priority-btn.active.medium {
+            background: #f1c40f;
+            border-color: #f1c40f;
+            color: #333;
+        }
+
+        .priority-btn.active.low {
+            background: #27ae60;
+            border-color: #27ae60;
+            color: #fff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #3a3a5a;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-top: 20px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #00d9ff;
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .drop-zone p {
+            margin-bottom: 15px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #2a2a4a;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #00d9ff;
+        }
+
+        .modal-field {
+            margin-bottom: 20px;
+        }
+
+        .modal-field label {
+            display: block;
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .modal-field select,
+        .modal-field input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #1a1a2e;
+            border: 1px solid #3a3a5a;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .modal-field select:focus,
+        .modal-field input:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+
+        .modal-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .modal-row .modal-field {
+            flex: 1;
+        }
+
+        .modal pre {
+            background: #1a1a2e;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #aaffaa;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            border-radius: 20px;
+        }
+
+        .filter-btn.active {
+            background: #00d9ff;
+            color: #1a1a2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Regression Suite Editor</h1>
+            <div class="header-actions">
+                <button onclick="document.getElementById('file-input').click()">Load Suggestions</button>
+                <button onclick="loadSampleData()">Load Sample</button>
+                <button class="primary" onclick="exportYAML()">Export YAML</button>
+            </div>
+        </header>
+
+        <input type="file" id="file-input" accept=".json" onchange="handleFileLoad(event)">
+
+        <div id="meta-section" style="display: none;">
+            <div class="meta-info">
+                <div class="meta-item">
+                    <span class="meta-label">Domain:</span>
+                    <span class="meta-value" id="domain-name">-</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Product:</span>
+                    <span class="meta-value" id="product-name">-</span>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-number regression" id="stat-regression">0</div>
+                        <div class="stat-label">Regression</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number one-off" id="stat-one-off">0</div>
+                        <div class="stat-label">One-off</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number skip" id="stat-skip">0</div>
+                        <div class="stat-label">Skip</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterItems('all', this)">All</button>
+                <button class="filter-btn" onclick="filterItems('regression', this)">Regression</button>
+                <button class="filter-btn" onclick="filterItems('one-off', this)">One-off</button>
+                <button class="filter-btn" onclick="filterItems('skip', this)">Skip</button>
+                <button class="filter-btn" onclick="filterItems('domain_template', this)">Domain</button>
+                <button class="filter-btn" onclick="filterItems('product_context', this)">Product</button>
+            </div>
+        </div>
+
+        <div id="empty-state" class="empty-state">
+            <h2>No suggestions loaded</h2>
+            <p>Load a suggestions.json file from the console output or try the sample data.</p>
+            <div class="drop-zone" id="drop-zone">
+                <p>Drag & drop suggestions.json here</p>
+                <p>or</p>
+                <button onclick="document.getElementById('file-input').click()">Browse Files</button>
+            </div>
+        </div>
+
+        <div id="domain-section" style="display: none;">
+            <div class="section-title">Domain Template Processes</div>
+            <div class="item-list" id="domain-items"></div>
+        </div>
+
+        <div id="product-section" style="display: none;">
+            <div class="section-title">Product Context Items</div>
+            <div class="item-list" id="product-items"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="export-modal">
+        <div class="modal">
+            <h2>Export Regression Profile</h2>
+
+            <div class="modal-row">
+                <div class="modal-field">
+                    <label for="export-domain">Domain Template</label>
+                    <select id="export-domain" onchange="updateYAMLPreview()">
+                        <option value="e-commerce">E-Commerce</option>
+                        <option value="saas">SaaS Application</option>
+                        <option value="banking">Banking / Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="media">Media / Content</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label for="export-profile-name">Profile Name</label>
+                    <input type="text" id="export-profile-name" placeholder="my-product-regression" onchange="updateYAMLPreview()">
+                </div>
+            </div>
+
+            <div class="modal-field" id="custom-domain-field" style="display: none;">
+                <label for="export-custom-domain">Custom Domain Name</label>
+                <input type="text" id="export-custom-domain" placeholder="my-custom-domain" onchange="updateYAMLPreview()">
+            </div>
+
+            <div class="modal-field">
+                <label for="export-domain-path">Domain Template Path (optional)</label>
+                <input type="text" id="export-domain-path" placeholder="domain_templates/e-commerce.yaml" onchange="updateYAMLPreview()">
+            </div>
+
+            <pre id="yaml-output"></pre>
+            <div class="modal-actions">
+                <button onclick="closeModal()">Close</button>
+                <button onclick="copyYAML()">Copy to Clipboard</button>
+                <button class="primary" onclick="downloadYAML()">Download YAML</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let data = null;
+        let choices = {};
+        let priorities = {};
+
+        // Drag and drop handling
+        const dropZone = document.getElementById('drop-zone');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) loadFile(file);
+        });
+
+        function handleFileLoad(event) {
+            const file = event.target.files[0];
+            if (file) loadFile(file);
+        }
+
+        function loadFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    data = JSON.parse(e.target.result);
+                    renderData();
+                } catch (err) {
+                    alert('Error parsing JSON file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function loadSampleData() {
+            data = {
+                domain: "e-commerce",
+                product: "My Webshop",
+                generated_at: new Date().toISOString(),
+                items: [
+                    {
+                        id: "purchase_product",
+                        source: "domain_template",
+                        name: "Purchase Product",
+                        description: "Complete checkout flow from browsing to order confirmation",
+                        llm_suggestion: "regression",
+                        reason: "Critical e-commerce process - revenue impact"
+                    },
+                    {
+                        id: "user_login",
+                        source: "domain_template",
+                        name: "User Login",
+                        description: "User authentication flow",
+                        llm_suggestion: "regression",
+                        reason: "Security critical, high usage"
+                    },
+                    {
+                        id: "user_registration",
+                        source: "domain_template",
+                        name: "User Registration",
+                        description: "New user account creation",
+                        llm_suggestion: "skip",
+                        reason: "Product uses SSO only - not applicable"
+                    },
+                    {
+                        id: "product_search",
+                        source: "domain_template",
+                        name: "Product Search",
+                        description: "Search and filter products",
+                        llm_suggestion: "regression",
+                        reason: "High usage, impacts user journey"
+                    },
+                    {
+                        id: "SHOP-101",
+                        source: "product_context",
+                        name: "Gift Card Purchase Flow",
+                        description: "As a user, I want to buy gift cards for friends and family",
+                        llm_suggestion: "regression",
+                        reason: "Permanent feature, maps to checkout process"
+                    },
+                    {
+                        id: "SHOP-102",
+                        source: "product_context",
+                        name: "Payment Provider Migration",
+                        description: "Migrate from Stripe to Adyen payment provider",
+                        llm_suggestion: "one-off",
+                        reason: "One-time migration task"
+                    },
+                    {
+                        id: "SHOP-103",
+                        source: "product_context",
+                        name: "Add PayPal Payment Option",
+                        description: "Enable PayPal as additional payment method",
+                        llm_suggestion: "regression",
+                        reason: "Permanent payment feature"
+                    },
+                    {
+                        id: "SHOP-104",
+                        source: "product_context",
+                        name: "Fix Cart Rounding Error",
+                        description: "Bug fix for price calculation with discounts",
+                        llm_suggestion: "one-off",
+                        reason: "Bug fix, verify once then covered by checkout tests"
+                    },
+                    {
+                        id: "SHOP-105",
+                        source: "product_context",
+                        name: "Wishlist Feature",
+                        description: "Users can save products to wishlist for later",
+                        llm_suggestion: "regression",
+                        reason: "New permanent feature"
+                    }
+                ]
+            };
+            renderData();
+        }
+
+        function renderData() {
+            if (!data) return;
+
+            // Initialize choices and priorities from LLM suggestions
+            data.items.forEach(item => {
+                if (!choices[item.id]) {
+                    choices[item.id] = item.llm_suggestion;
+                }
+                if (!priorities[item.id]) {
+                    priorities[item.id] = item.llm_priority || 'medium';
+                }
+            });
+
+            // Update UI
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('meta-section').style.display = 'block';
+            document.getElementById('domain-name').textContent = data.domain || '-';
+            document.getElementById('product-name').textContent = data.product || '-';
+
+            // Separate items by source
+            const domainItems = data.items.filter(i => i.source === 'domain_template');
+            const productItems = data.items.filter(i => i.source === 'product_context');
+
+            // Render domain items
+            const domainSection = document.getElementById('domain-section');
+            const domainList = document.getElementById('domain-items');
+            if (domainItems.length > 0) {
+                domainSection.style.display = 'block';
+                domainList.innerHTML = domainItems.map(item => renderItem(item)).join('');
+            } else {
+                domainSection.style.display = 'none';
+            }
+
+            // Render product items
+            const productSection = document.getElementById('product-section');
+            const productList = document.getElementById('product-items');
+            if (productItems.length > 0) {
+                productSection.style.display = 'block';
+                productList.innerHTML = productItems.map(item => renderItem(item)).join('');
+            } else {
+                productSection.style.display = 'none';
+            }
+
+            updateStats();
+        }
+
+        function renderItem(item) {
+            const choice = choices[item.id] || item.llm_suggestion;
+            const priority = priorities[item.id] || item.llm_priority || 'medium';
+            const showPriority = choice === 'regression';
+            return `
+                <div class="item ${choice}" data-id="${item.id}" data-source="${item.source}">
+                    <div class="item-header">
+                        <div>
+                            <span class="item-title">${item.name}</span>
+                            <span class="item-id">${item.id}</span>
+                        </div>
+                        <span class="item-source ${item.source}">${item.source === 'domain_template' ? 'Domain' : 'Product'}</span>
+                    </div>
+                    <div class="item-description">${item.description}</div>
+                    <div class="item-suggestion">
+                        <span class="suggestion-icon">🤖</span>
+                        <span class="suggestion-label">LLM suggests:</span>
+                        <span class="suggestion-value ${item.llm_suggestion}">${item.llm_suggestion}</span>
+                        <span class="suggestion-reason">${item.reason}</span>
+                    </div>
+                    <div class="choice-group">
+                        <label class="choice">
+                            <input type="radio" name="choice-${item.id}" value="regression"
+                                ${choice === 'regression' ? 'checked' : ''}
+                                onchange="updateChoice('${item.id}', 'regression')">
+                            <span class="choice-label regression">Regression</span>
+                        </label>
+                        <label class="choice">
+                            <input type="radio" name="choice-${item.id}" value="one-off"
+                                ${choice === 'one-off' ? 'checked' : ''}
+                                onchange="updateChoice('${item.id}', 'one-off')">
+                            <span class="choice-label one-off">One-off</span>
+                        </label>
+                        <label class="choice">
+                            <input type="radio" name="choice-${item.id}" value="skip"
+                                ${choice === 'skip' ? 'checked' : ''}
+                                onchange="updateChoice('${item.id}', 'skip')">
+                            <span class="choice-label skip">Skip</span>
+                        </label>
+                    </div>
+                    <div class="priority-group ${showPriority ? 'visible' : ''}" id="priority-${item.id}">
+                        <span class="priority-label">Priority:</span>
+                        <div class="priority-buttons">
+                            <button class="priority-btn critical ${priority === 'critical' ? 'active' : ''}"
+                                onclick="updatePriority('${item.id}', 'critical')">Critical</button>
+                            <button class="priority-btn high ${priority === 'high' ? 'active' : ''}"
+                                onclick="updatePriority('${item.id}', 'high')">High</button>
+                            <button class="priority-btn medium ${priority === 'medium' ? 'active' : ''}"
+                                onclick="updatePriority('${item.id}', 'medium')">Medium</button>
+                            <button class="priority-btn low ${priority === 'low' ? 'active' : ''}"
+                                onclick="updatePriority('${item.id}', 'low')">Low</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateChoice(id, choice) {
+            choices[id] = choice;
+
+            // Update item styling
+            const item = document.querySelector(`.item[data-id="${id}"]`);
+            item.classList.remove('regression', 'one-off', 'skip');
+            item.classList.add(choice);
+
+            // Show/hide priority group
+            const priorityGroup = document.getElementById(`priority-${id}`);
+            if (choice === 'regression') {
+                priorityGroup.classList.add('visible');
+            } else {
+                priorityGroup.classList.remove('visible');
+            }
+
+            updateStats();
+        }
+
+        function updatePriority(id, priority) {
+            priorities[id] = priority;
+
+            // Update button states
+            const priorityGroup = document.getElementById(`priority-${id}`);
+            priorityGroup.querySelectorAll('.priority-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            priorityGroup.querySelector(`.priority-btn.${priority}`).classList.add('active');
+        }
+
+        function updateStats() {
+            const stats = { regression: 0, 'one-off': 0, skip: 0 };
+            Object.values(choices).forEach(choice => {
+                stats[choice]++;
+            });
+
+            document.getElementById('stat-regression').textContent = stats.regression;
+            document.getElementById('stat-one-off').textContent = stats['one-off'];
+            document.getElementById('stat-skip').textContent = stats.skip;
+        }
+
+        function filterItems(filter, btn) {
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Filter items
+            document.querySelectorAll('.item').forEach(item => {
+                const choice = choices[item.dataset.id];
+                const source = item.dataset.source;
+
+                let show = false;
+                if (filter === 'all') show = true;
+                else if (filter === 'regression' && choice === 'regression') show = true;
+                else if (filter === 'one-off' && choice === 'one-off') show = true;
+                else if (filter === 'skip' && choice === 'skip') show = true;
+                else if (filter === 'domain_template' && source === 'domain_template') show = true;
+                else if (filter === 'product_context' && source === 'product_context') show = true;
+
+                item.style.display = show ? 'block' : 'none';
+            });
+        }
+
+        function generateYAML() {
+            if (!data) return '';
+
+            const regression = { critical: [], high: [], medium: [], low: [] };
+            const oneOff = [];
+            const skip = [];
+
+            data.items.forEach(item => {
+                const choice = choices[item.id];
+                const priority = priorities[item.id] || 'medium';
+                const entry = {
+                    id: item.id,
+                    name: item.name,
+                    source: item.source,
+                    description: item.description
+                };
+
+                if (choice === 'regression') {
+                    regression[priority].push(entry);
+                } else if (choice === 'one-off') {
+                    oneOff.push(entry);
+                } else {
+                    skip.push(entry);
+                }
+            });
+
+            const totalRegression = regression.critical.length + regression.high.length +
+                                   regression.medium.length + regression.low.length;
+
+            // Get export settings
+            const domainSelect = document.getElementById('export-domain');
+            const profileNameInput = document.getElementById('export-profile-name');
+            const customDomainInput = document.getElementById('export-custom-domain');
+            const domainPathInput = document.getElementById('export-domain-path');
+
+            const selectedDomain = domainSelect?.value === 'custom'
+                ? (customDomainInput?.value || 'custom')
+                : (domainSelect?.value || data.domain || 'e-commerce');
+            const profileName = profileNameInput?.value || data.product?.toLowerCase().replace(/\s+/g, '-') + '-regression' || 'regression-profile';
+            const domainPath = domainPathInput?.value || `domain_templates/${selectedDomain}.yaml`;
+
+            // Simple YAML generation
+            let yaml = `# Product Regression Profile\n`;
+            yaml += `# Generated: ${new Date().toISOString()}\n`;
+            yaml += `# Editor: Regression Suite Editor\n\n`;
+
+            yaml += `# Profile metadata\n`;
+            yaml += `profile:\n`;
+            yaml += `  name: "${profileName}"\n`;
+            yaml += `  version: "1.0"\n\n`;
+
+            yaml += `# Domain template this profile extends\n`;
+            yaml += `domain:\n`;
+            yaml += `  name: "${selectedDomain}"\n`;
+            yaml += `  template_path: "${domainPath}"\n\n`;
+
+            yaml += `# Product this profile applies to\n`;
+            yaml += `product:\n`;
+            yaml += `  name: "${data.product}"\n`;
+            yaml += `  url: "${data.url || ''}"\n\n`;
+
+            yaml += `# Tests that run on every deployment (grouped by priority)\n`;
+            yaml += `regression_tests:\n`;
+
+            // Critical priority
+            yaml += `  critical:  # Run first, block deploy if failing\n`;
+            if (regression.critical.length === 0) {
+                yaml += `    []\n`;
+            } else {
+                regression.critical.forEach(item => {
+                    yaml += `    - id: "${item.id}"\n`;
+                    yaml += `      name: "${item.name}"\n`;
+                    yaml += `      source: "${item.source}"\n`;
+                });
+            }
+
+            // High priority
+            yaml += `  high:  # Run on every deploy\n`;
+            if (regression.high.length === 0) {
+                yaml += `    []\n`;
+            } else {
+                regression.high.forEach(item => {
+                    yaml += `    - id: "${item.id}"\n`;
+                    yaml += `      name: "${item.name}"\n`;
+                    yaml += `      source: "${item.source}"\n`;
+                });
+            }
+
+            // Medium priority
+            yaml += `  medium:  # Run on PR merge\n`;
+            if (regression.medium.length === 0) {
+                yaml += `    []\n`;
+            } else {
+                regression.medium.forEach(item => {
+                    yaml += `    - id: "${item.id}"\n`;
+                    yaml += `      name: "${item.name}"\n`;
+                    yaml += `      source: "${item.source}"\n`;
+                });
+            }
+
+            // Low priority
+            yaml += `  low:  # Run nightly\n`;
+            if (regression.low.length === 0) {
+                yaml += `    []\n`;
+            } else {
+                regression.low.forEach(item => {
+                    yaml += `    - id: "${item.id}"\n`;
+                    yaml += `      name: "${item.name}"\n`;
+                    yaml += `      source: "${item.source}"\n`;
+                });
+            }
+
+            yaml += `\n# Tests to run once (migrations, fixes, experiments)\n`;
+            yaml += `one_off_tests:\n`;
+            if (oneOff.length === 0) {
+                yaml += `  []\n`;
+            } else {
+                oneOff.forEach(item => {
+                    yaml += `  - id: "${item.id}"\n`;
+                    yaml += `    name: "${item.name}"\n`;
+                    yaml += `    source: "${item.source}"\n`;
+                    yaml += `    description: "${item.description}"\n`;
+                });
+            }
+
+            yaml += `\n# Features not applicable to this product\n`;
+            yaml += `skip:\n`;
+            if (skip.length === 0) {
+                yaml += `  []\n`;
+            } else {
+                skip.forEach(item => {
+                    yaml += `  - id: "${item.id}"\n`;
+                    yaml += `    name: "${item.name}"\n`;
+                    yaml += `    reason: "Not applicable"\n`;
+                });
+            }
+
+            yaml += `\n# Summary\n`;
+            yaml += `summary:\n`;
+            yaml += `  total_items: ${data.items.length}\n`;
+            yaml += `  regression_count: ${totalRegression}\n`;
+            yaml += `  regression_by_priority:\n`;
+            yaml += `    critical: ${regression.critical.length}\n`;
+            yaml += `    high: ${regression.high.length}\n`;
+            yaml += `    medium: ${regression.medium.length}\n`;
+            yaml += `    low: ${regression.low.length}\n`;
+            yaml += `  one_off_count: ${oneOff.length}\n`;
+            yaml += `  skip_count: ${skip.length}\n`;
+
+            return yaml;
+        }
+
+        function exportYAML() {
+            if (!data) {
+                alert('No data loaded. Please load a suggestions file first.');
+                return;
+            }
+
+            // Set initial values from loaded data
+            const domainSelect = document.getElementById('export-domain');
+            const profileNameInput = document.getElementById('export-profile-name');
+            const domainPathInput = document.getElementById('export-domain-path');
+
+            // Try to match domain from data
+            const loadedDomain = (data.domain || '').toLowerCase();
+            const domainOptions = Array.from(domainSelect.options).map(o => o.value);
+            if (domainOptions.includes(loadedDomain)) {
+                domainSelect.value = loadedDomain;
+            }
+
+            // Set profile name from product name
+            if (!profileNameInput.value && data.product) {
+                profileNameInput.value = data.product.toLowerCase().replace(/\s+/g, '-') + '-regression';
+            }
+
+            // Set domain path
+            if (!domainPathInput.value) {
+                domainPathInput.value = `domain_templates/${domainSelect.value}.yaml`;
+            }
+
+            // Handle custom domain visibility
+            handleDomainChange();
+
+            updateYAMLPreview();
+            document.getElementById('export-modal').classList.add('active');
+        }
+
+        function handleDomainChange() {
+            const domainSelect = document.getElementById('export-domain');
+            const customField = document.getElementById('custom-domain-field');
+            const domainPathInput = document.getElementById('export-domain-path');
+
+            if (domainSelect.value === 'custom') {
+                customField.style.display = 'block';
+            } else {
+                customField.style.display = 'none';
+                domainPathInput.value = `domain_templates/${domainSelect.value}.yaml`;
+            }
+            updateYAMLPreview();
+        }
+
+        function updateYAMLPreview() {
+            const yaml = generateYAML();
+            document.getElementById('yaml-output').textContent = yaml;
+        }
+
+        // Add event listener for domain select
+        document.getElementById('export-domain').addEventListener('change', handleDomainChange);
+
+        function closeModal() {
+            document.getElementById('export-modal').classList.remove('active');
+        }
+
+        function copyYAML() {
+            const yaml = generateYAML();
+            navigator.clipboard.writeText(yaml).then(() => {
+                alert('YAML copied to clipboard!');
+            });
+        }
+
+        function downloadYAML() {
+            const yaml = generateYAML();
+            const profileName = document.getElementById('export-profile-name')?.value
+                || data.product?.replace(/\s+/g, '-').toLowerCase() + '-regression'
+                || 'regression-profile';
+            const blob = new Blob([yaml], { type: 'text/yaml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${profileName}.yaml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Close modal on overlay click
+        document.getElementById('export-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'export-modal') closeModal();
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
+</body>
+</html>

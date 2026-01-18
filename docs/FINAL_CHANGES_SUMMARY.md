@@ -103,15 +103,11 @@ This document summarizes ALL changes made to ensure proper human interaction and
    - Best practices vs anti-patterns
    - Quick reference tables
 
-3. **`CHANGES_SUMMARY.md`**
-   - Original changes summary (Gates 1 & 2)
-
-4. **`WORKFLOW_DIAGRAM.md`**
-   - Visual ASCII workflow diagram
+3. **`selenium-agent-workflow.png`**
+   - Visual workflow diagram
    - Shows all 3 review gates
-   - Decision trees and examples
 
-5. **`FINAL_CHANGES_SUMMARY.md`** (this file)
+4. **`FINAL_CHANGES_SUMMARY.md`** (this file)
    - Complete summary of all changes
 
 ### Updated Files
@@ -352,9 +348,9 @@ GENERATOR:
 |----------|---------|
 | [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) | Complete workflow guide with all 3 gates |
 | [FRAMEWORK_STANDARDS.md](FRAMEWORK_STANDARDS.md) | Framework conventions and standards |
-| [WORKFLOW_DIAGRAM.md](WORKFLOW_DIAGRAM.md) | Visual workflow with review gates |
-| [README.md](README.md) | Main project documentation |
-| [FINAL_CHANGES_SUMMARY.md](FINAL_CHANGES_SUMMARY.md) | This file - complete summary |
+| [selenium-agent-workflow.png](selenium-agent-workflow.png) | Visual workflow diagram |
+| [MCP_CLIENT_SETUP.md](MCP_CLIENT_SETUP.md) | MCP client configuration guide |
+| [README.md](../README.md) | Main project documentation |
 
 ---
 

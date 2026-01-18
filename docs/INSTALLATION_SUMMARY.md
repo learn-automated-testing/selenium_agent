@@ -120,10 +120,9 @@ Python site-packages/
 ✅ README.md                    - Main documentation
 ✅ AGENT_WORKFLOW.md           - Complete workflow with review gates
 ✅ FRAMEWORK_STANDARDS.md      - Framework conventions
-✅ WORKFLOW_DIAGRAM.md         - Visual diagrams
+✅ selenium-agent-workflow.png  - Visual workflow diagram
 ✅ INSTALLATION_GUIDE.md       - Complete installation guide
-✅ CHANGES_SUMMARY.md          - Changes summary
-✅ FINAL_CHANGES_SUMMARY.md    - Complete summary
+✅ MCP_CLIENT_SETUP.md         - MCP client configuration
 ```
 
 ---
@@ -319,4 +318,4 @@ Node.js wrapper for convenience
 - **Complete Guide**: [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
 - **Workflow**: [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md)
 - **Standards**: [FRAMEWORK_STANDARDS.md](FRAMEWORK_STANDARDS.md)
-- **Main Docs**: [README.md](README.md)
+- **Main Docs**: [README.md](../README.md)

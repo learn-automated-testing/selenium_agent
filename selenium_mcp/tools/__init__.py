@@ -33,6 +33,14 @@ from .verification import (
     BrowserVerifyValueTool,
     BrowserVerifyListVisibleTool
 )
+from .analyzer import (
+    AnalyzerSetupTool,
+    AnalyzerImportContextTool,
+    AnalyzerScanProductTool,
+    AnalyzerBuildRiskProfileTool,
+    AnalyzerSaveProfileTool,
+    AnalyzerGenerateDocumentationTool
+)
 
 def get_all_tools():
     """Get all available tools."""
@@ -126,4 +134,12 @@ def get_all_tools():
         BrowserVerifyTextVisibleTool(),
         BrowserVerifyValueTool(),
         BrowserVerifyListVisibleTool(),
+
+        # Analyzer agent tools (regression analysis)
+        AnalyzerSetupTool(),
+        AnalyzerImportContextTool(),
+        AnalyzerScanProductTool(),
+        AnalyzerBuildRiskProfileTool(),
+        AnalyzerSaveProfileTool(),
+        AnalyzerGenerateDocumentationTool(),
     ]
