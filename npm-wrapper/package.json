@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "bin": {
+    "selenium-agent": "./bin/selenium-mcp.js",
     "selenium-mcp": "./bin/selenium-mcp.js"
   },
   "scripts": {
@@ -30,12 +31,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/learn-automated-testing/selenium-mcp-server.git",
+    "url": "https://github.com/learn-automated-testing/selenium_agent.git",
     "directory": "npm-wrapper"
   },
-  "homepage": "https://github.com/learn-automated-testing/selenium-mcp-server#readme",
+  "homepage": "https://github.com/learn-automated-testing/selenium_agent#readme",
   "bugs": {
-    "url": "https://github.com/learn-automated-testing/selenium-mcp-server/issues"
+    "url": "https://github.com/learn-automated-testing/selenium_agent/issues"
   },
   "engines": {
     "node": ">=16.0.0"

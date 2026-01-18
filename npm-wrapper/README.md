@@ -21,7 +21,7 @@ pnpm add selenium-mcp-server
 ### Run the Server
 
 ```bash
-npx selenium-mcp
+npx selenium-agent
 ```
 
 Or add to your `package.json`:
@@ -230,7 +230,7 @@ This npm package is a lightweight wrapper that:
 
 1. Detects your Python installation
 2. Automatically installs the Python `selenium-mcp-server` package
-3. Launches the Python server when you run `npx selenium-mcp`
+3. Launches the Python server when you run `npx selenium-agent`
 4. Provides a Node.js API for programmatic usage
 
 The actual browser automation logic runs in Python using Selenium, which provides:

@@ -64,7 +64,7 @@ For Node.js/JavaScript developers:
 ```bash
 npm install selenium_agent
 # Then run with:
-npx selenium-mcp
+npx selenium-agent
 ```
 
 See the [npm wrapper documentation](npm-wrapper/README.md) for Node.js-specific usage.
