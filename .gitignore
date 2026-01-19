@@ -1,3 +1,23 @@
+# Build outputs
 dist/
 build/
-*.egg-info
+
+# Node.js
+node_modules/
+*.log
+.npm
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Test outputs
+coverage/
+test-results/

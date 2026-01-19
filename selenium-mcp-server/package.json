@@ -1,0 +1,57 @@
+{
+  "name": "selenium-mcp",
+  "version": "2.0.0",
+  "description": "Selenium MCP server for AI-powered browser automation",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "selenium-mcp": "./dist/bin/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/bin/cli.js",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "selenium",
+    "mcp",
+    "browser-automation",
+    "testing",
+    "ai-agents",
+    "model-context-protocol",
+    "claude",
+    "cursor"
+  ],
+  "author": "R. van der Horst",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/learn-automated-testing/selenium_agent.git",
+    "directory": "selenium-mcp-server"
+  },
+  "homepage": "https://github.com/learn-automated-testing/selenium_agent#readme",
+  "bugs": {
+    "url": "https://github.com/learn-automated-testing/selenium_agent/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "selenium-webdriver": "^4.27.0",
+    "yaml": "^2.8.2",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/selenium-webdriver": "^4.1.0",
+    "typescript": "^5.7.0"
+  }
+}
