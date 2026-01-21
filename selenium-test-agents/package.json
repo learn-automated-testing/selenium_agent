@@ -1,0 +1,42 @@
+{
+  "name": "selenium-test-agents",
+  "version": "1.0.0",
+  "description": "AI test agents for Selenium - Planner, Generator, and Healer agents for automated test creation",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "selenium-agents": "./bin/selenium-agents.js"
+  },
+  "keywords": [
+    "selenium",
+    "test-automation",
+    "ai-agents",
+    "test-planner",
+    "test-generator",
+    "test-healer",
+    "playwright-alternative",
+    "mcp",
+    "claude",
+    "cursor"
+  ],
+  "author": "R. van der Horst",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/learn-automated-testing/selenium_agent.git",
+    "directory": "selenium-test-agents"
+  },
+  "homepage": "https://github.com/learn-automated-testing/selenium_agent#readme",
+  "bugs": {
+    "url": "https://github.com/learn-automated-testing/selenium_agent/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "agents/",
+    "bin/",
+    "index.js",
+    "README.md"
+  ]
+}
