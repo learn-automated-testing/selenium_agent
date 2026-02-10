@@ -25,7 +25,7 @@ import { VerifyElementVisibleTool, VerifyTextVisibleTool, VerifyValueTool, Verif
 import { WaitTool, JavaScriptTool, ResizeTool, DialogTool, ConsoleTool, NetworkTool, PDFTool } from './browser/index.js';
 
 // Session
-import { CloseBrowserTool, ResetSessionTool } from './session/index.js';
+import { CloseBrowserTool, ResetSessionTool, SetStealthModeTool } from './session/index.js';
 
 // Recording
 import { StartRecordingTool, StopRecordingTool, RecordingStatusTool, ClearRecordingTool } from './recording/index.js';
@@ -127,9 +127,10 @@ export function getAllTools(): BaseTool[] {
     new NetworkTool(),
     new PDFTool(),
 
-    // Session (2)
+    // Session (3)
     new CloseBrowserTool(),
     new ResetSessionTool(),
+    new SetStealthModeTool(),
 
     // Recording (4)
     new StartRecordingTool(),
@@ -232,6 +233,7 @@ export {
   // Session
   CloseBrowserTool,
   ResetSessionTool,
+  SetStealthModeTool,
   // Recording
   StartRecordingTool,
   StopRecordingTool,
