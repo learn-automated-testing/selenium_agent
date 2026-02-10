@@ -7,6 +7,7 @@ const schema = z.object({
   sessionId: z.string().optional().describe('Custom session ID. Auto-generated if not provided.'),
   browser: z.string().optional().default('chrome').describe('Browser name (chrome, firefox)'),
   tags: z.array(z.string()).optional().default([]).describe('Tags for grouping/filtering sessions'),
+  stealth: z.boolean().optional().describe('Enable stealth mode for this session. Defaults to SELENIUM_STEALTH env var.'),
 });
 
 export class SessionCreateTool extends BaseTool {
@@ -16,19 +17,23 @@ export class SessionCreateTool extends BaseTool {
   readonly category: ToolCategory = 'grid';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { sessionId, browser, tags } = this.parseParams(schema, params);
+    const { sessionId, browser, tags, stealth } = this.parseParams(schema, params);
     const { pool } = await context.ensureGrid();
 
+    const config = stealth !== undefined ? { stealth } : undefined;
     const session = await pool.createSession(
       { browserName: browser },
       sessionId,
-      tags
+      tags,
+      config,
     );
 
+    const stealthActive = stealth ?? (process.env.SELENIUM_STEALTH === 'true');
     return this.success(
       `Session created: ${session.sessionId}\n` +
       `Browser: ${session.browser}\n` +
-      `Tags: ${session.tags.length > 0 ? session.tags.join(', ') : '(none)'}`
+      `Tags: ${session.tags.length > 0 ? session.tags.join(', ') : '(none)'}` +
+      (stealthActive ? '\nStealth: enabled' : '')
     );
   }
 }

@@ -26,7 +26,9 @@ export async function createServer() {
     }
   );
 
-  const context = new Context();
+  const context = new Context({
+    stealth: process.env.SELENIUM_STEALTH === 'true',
+  });
   const tools = getAllTools();
 
   // List available tools — inject expectation property into every tool's schema

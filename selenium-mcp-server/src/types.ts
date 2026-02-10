@@ -97,6 +97,7 @@ export interface BrowserConfig {
   };
   userAgent?: string;
   proxy?: string;
+  stealth?: boolean;
 }
 
 // Console log entry

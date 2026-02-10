@@ -1,7 +1,7 @@
 import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
-import chrome from 'selenium-webdriver/chrome.js';
 import { PageSnapshot, BrowserConfig, TabInfo, ConsoleLogEntry, SnapshotOptions, ConsoleOptions, DiffOptions } from './types.js';
 import { discoverElements, findElementByInfo } from './utils/element-discovery.js';
+import { buildChromeOptions, applyStealthScripts } from './utils/chrome-options.js';
 
 // Forward-declared types for grid support — modules loaded dynamically via ensureGrid()
 import type { SessionPool } from './grid/session-pool.js';
@@ -196,6 +196,18 @@ export class Context {
     };
   }
 
+  getStealthEnabled(): boolean {
+    return this.config.stealth ?? false;
+  }
+
+  setStealthEnabled(enabled: boolean): void {
+    this.config.stealth = enabled;
+  }
+
+  isBrowserRunning(): boolean {
+    return this.driver !== null;
+  }
+
   getGridUrl(): string | null {
     return process.env.SELENIUM_GRID_URL || null;
   }
@@ -249,35 +261,22 @@ export class Context {
       return this.activeGridSession.getDriver();
     }
     if (!this.driver) {
-      const options = new chrome.Options();
-      options.addArguments('--no-sandbox');
-      options.addArguments('--disable-dev-shm-usage');
-      options.setUserPreferences({
-        'protocol_handler.excluded_schemes': {
-          afp: true, data: true, disk: true, disks: true, file: true,
-          hcp: true, intent: true, 'itms-appss': true, 'itms-apps': true,
-          itms: true, market: true, javascript: true, mailto: true,
-          'ms-help': true, news: true, nntp: true, shell: true, sip: true,
-          snews: true, tel: true, vbscript: true, 'view-source': true,
-        },
-      });
+      const options = buildChromeOptions(this.config);
 
-      if (this.config.headless) {
-        options.addArguments('--headless=new');
-      }
-
-      if (this.config.windowSize) {
-        options.addArguments(`--window-size=${this.config.windowSize.width},${this.config.windowSize.height}`);
-      }
-
-      if (this.config.userAgent) {
-        options.addArguments(`--user-agent=${this.config.userAgent}`);
-      }
-
-      this.driver = await new Builder()
+      const builder = new Builder()
         .forBrowser('chrome')
-        .setChromeOptions(options)
-        .build();
+        .setChromeOptions(options);
+
+      // BiDi WebSocket is required for stealth preload scripts
+      if (this.config.stealth) {
+        builder.withCapabilities({ webSocketUrl: true });
+      }
+
+      this.driver = await builder.build();
+
+      if (this.config.stealth) {
+        await applyStealthScripts(this.driver);
+      }
     }
     return this.driver;
   }
