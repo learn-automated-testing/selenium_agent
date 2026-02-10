@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   filePath: z.string().describe('Path where to save the PDF file'),
@@ -14,6 +14,7 @@ export class PDFTool extends BaseTool {
   readonly name = 'pdf_generate';
   readonly description = 'Generate a PDF from the current page';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'browser';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { filePath, format, landscape, printBackground } = this.parseParams(schema, params);

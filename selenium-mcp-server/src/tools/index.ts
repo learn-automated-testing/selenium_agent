@@ -30,9 +30,6 @@ import { CloseBrowserTool, ResetSessionTool } from './session/index.js';
 // Recording
 import { StartRecordingTool, StopRecordingTool, RecordingStatusTool, ClearRecordingTool } from './recording/index.js';
 
-// Generator
-import { GenerateScriptTool } from './generator/index.js';
-
 // Agent tools
 import {
   PlannerSetupTool,
@@ -57,8 +54,32 @@ import {
   AnalyzerGenerateDocumentationTool
 } from './analyzer/index.js';
 
+// Batch
+import { BatchExecuteTool } from './batch/index.js';
+
+// Grid
+import {
+  GridStatusTool,
+  GridStartTool,
+  GridStopTool,
+  GridScaleTool,
+  SessionCreateTool,
+  SessionSelectTool,
+  SessionListTool,
+  SessionDestroyTool,
+  SessionDestroyAllTool,
+  ParallelExploreTool,
+  ParallelExecuteTool,
+  ExplorationMergeTool,
+  ExplorationDiffTool,
+  PlannerGeneratePlanTool,
+} from './grid/index.js';
+
 export function getAllTools(): BaseTool[] {
-  return [
+  const batchTool = new BatchExecuteTool();
+  const parallelExecuteTool = new ParallelExecuteTool();
+
+  const tools: BaseTool[] = [
     // Navigation (4)
     new NavigateTool(),
     new GoBackTool(),
@@ -116,9 +137,6 @@ export function getAllTools(): BaseTool[] {
     new RecordingStatusTool(),
     new ClearRecordingTool(),
 
-    // Generator (1)
-    new GenerateScriptTool(),
-
     // Planner Agent (3)
     new PlannerSetupTool(),
     new PlannerExplorePageTool(),
@@ -142,7 +160,32 @@ export function getAllTools(): BaseTool[] {
     new AnalyzerBuildRiskProfileTool(),
     new AnalyzerSaveProfileTool(),
     new AnalyzerGenerateDocumentationTool(),
+
+    // Batch (1)
+    batchTool,
+
+    // Grid (14)
+    new GridStatusTool(),
+    new GridStartTool(),
+    new GridStopTool(),
+    new GridScaleTool(),
+    new SessionCreateTool(),
+    new SessionSelectTool(),
+    new SessionListTool(),
+    new SessionDestroyTool(),
+    new SessionDestroyAllTool(),
+    new ParallelExploreTool(),
+    parallelExecuteTool,
+    new ExplorationMergeTool(),
+    new ExplorationDiffTool(),
+    new PlannerGeneratePlanTool(),
   ];
+
+  // Inject tool registry into batch and parallel execute tools
+  batchTool.setToolRegistry(tools);
+  parallelExecuteTool.setToolRegistry(tools);
+
+  return tools;
 }
 
 // Re-export all tools for direct access
@@ -194,8 +237,6 @@ export {
   StopRecordingTool,
   RecordingStatusTool,
   ClearRecordingTool,
-  // Generator
-  GenerateScriptTool,
   // Planner Agent
   PlannerSetupTool,
   PlannerExplorePageTool,
@@ -216,4 +257,21 @@ export {
   AnalyzerBuildRiskProfileTool,
   AnalyzerSaveProfileTool,
   AnalyzerGenerateDocumentationTool,
+  // Batch
+  BatchExecuteTool,
+  // Grid
+  GridStatusTool,
+  GridStartTool,
+  GridStopTool,
+  GridScaleTool,
+  SessionCreateTool,
+  SessionSelectTool,
+  SessionListTool,
+  SessionDestroyTool,
+  SessionDestroyAllTool,
+  ParallelExploreTool,
+  ParallelExecuteTool,
+  ExplorationMergeTool,
+  ExplorationDiffTool,
+  PlannerGeneratePlanTool,
 };

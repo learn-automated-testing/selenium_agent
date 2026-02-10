@@ -1,1 +1,1 @@
-export { GenerateScriptTool } from './script.js';
+// generate_script tool removed — LLM writes test code directly

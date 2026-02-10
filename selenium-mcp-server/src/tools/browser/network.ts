@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   action: z.enum(['get_requests', 'clear', 'set_offline']).describe('Network action'),
@@ -12,6 +12,7 @@ export class NetworkTool extends BaseTool {
   readonly name = 'network_monitor';
   readonly description = 'Monitor network requests or control network state';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'browser';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { action, offline } = this.parseParams(schema, params);

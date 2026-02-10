@@ -1,0 +1,52 @@
+services:
+  selenium-hub:
+    image: ${SE_IMAGE_PREFIX:-selenium}/hub:${SE_VERSION:-4.40.0}
+    container_name: selenium-hub
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+    environment:
+      - SE_SESSION_REQUEST_TIMEOUT=300
+      - SE_SESSION_RETRY_INTERVAL=2
+
+  chrome-node:
+    image: ${SE_IMAGE_PREFIX:-selenium}/node-chrome:${SE_VERSION:-4.40.0}
+    platform: linux/amd64
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=1
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+    shm_size: '2gb'
+    deploy:
+      replicas: 4
+
+  firefox-node:
+    image: ${SE_IMAGE_PREFIX:-selenium}/node-firefox:${SE_VERSION:-4.40.0}
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=1
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+    shm_size: '2gb'
+    deploy:
+      replicas: 1
+
+  mcp-server:
+    build:
+      context: ../selenium-mcp-server
+      dockerfile: Dockerfile
+    depends_on:
+      - selenium-hub
+    environment:
+      - SELENIUM_GRID_URL=http://selenium-hub:4444
+    stdin_open: true
+    profiles:
+      - mcp

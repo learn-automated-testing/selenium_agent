@@ -1,168 +1,246 @@
-name: Release and Deploy
+# =============================================================================
+# Release Workflow (Node.js only)
+# =============================================================================
+
+name: Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.0.1)'
+        description: 'Version to release (e.g., 2.1.0)'
         required: true
-      release_type:
-        description: 'Release type'
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      publish_python:
-        description: 'Publish to PyPI'
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
         type: boolean
-        default: true
-      publish_npm:
-        description: 'Publish to npm'
-        type: boolean
-        default: true
+        default: false
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  prepare-release:
+  # ============================================
+  # Validate and Prepare
+  # ============================================
+  prepare:
     name: Prepare Release
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.set-version.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: X.Y.Z or X.Y.Z-suffix"
+            exit 1
+          fi
+          echo "✅ Version format valid: $VERSION"
+
+      - name: Set version outputs
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        run: |
+          TAG="v${{ github.event.inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "❌ Tag $TAG already exists!"
+            exit 1
+          fi
+          echo "✅ Tag $TAG is available"
+
+  # ============================================
+  # Build and Test
+  # ============================================
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    needs: prepare
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          python-version: '3.11'
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
 
-      - name: Set version
-        id: set-version
-        run: |
-          VERSION="${{ github.event.inputs.version }}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Releasing version: $VERSION"
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Update Python version
-        run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
-          echo "📝 Updating pyproject.toml to version $VERSION"
-          sed -i.bak "s/^version = .*/version = \"$VERSION\"/" pyproject.toml
-          rm pyproject.toml.bak
-          cat pyproject.toml | grep "^version"
+      - name: Build
+        run: npm run build
 
-      - name: Update NPM version
+      - name: Run tests
+        run: npm test --if-present
+        continue-on-error: true
+
+      - name: Update version
         run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
-          cd npm-wrapper
-          echo "📝 Updating package.json to version $VERSION"
+          VERSION="${{ needs.prepare.outputs.version }}"
           npm version $VERSION --no-git-tag-version
-          cat package.json | grep "version"
+          echo "✅ Updated package.json to $VERSION"
 
-      - name: Commit version changes
+      - name: Commit and tag
         run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add pyproject.toml npm-wrapper/package.json
-          git commit -m "chore: bump version to $VERSION" || echo "No changes to commit"
-          git push origin main || echo "Nothing to push"
+          VERSION="${{ needs.prepare.outputs.version }}"
+          TAG="${{ needs.prepare.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: release $TAG" || echo "No changes to commit"
+          git tag -a "$TAG" -m "Release $VERSION"
+          git push origin main
+          git push origin "$TAG"
 
-      - name: Create Git tag
-        run: |
-          VERSION="${{ steps.set-version.outputs.version }}"
-          git tag -a "v$VERSION" -m "Release version $VERSION"
-          git push origin "v$VERSION"
+      - name: Create npm package
+        run: npm pack
 
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ steps.set-version.outputs.version }}
-          release_name: Release v${{ steps.set-version.outputs.version }}
-          body: |
-            ## Release v${{ steps.set-version.outputs.version }}
+          name: npm-package
+          path: "*.tgz"
 
-            ### What's Included
-            - ✅ Python package with 40+ browser automation tools
-            - ✅ Three AI agents (Planner, Generator, Healer)
-            - ✅ Agent instructions with 3 review gates
-            - ✅ Framework standards (pytest, Robot, WebDriverIO)
-            - ✅ Complete documentation
+  # ============================================
+  # Create GitHub Release
+  # ============================================
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [prepare, build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: Release ${{ needs.prepare.outputs.version }}
+          body: |
+            ## 🚀 Release ${{ needs.prepare.outputs.version }}
 
             ### Installation
 
-            **Python (pip)**:
             ```bash
-            pip install ai-agent-selenium
+            npm install selenium-mcp-server@${{ needs.prepare.outputs.version }}
             ```
 
-            **Node.js (npm)**:
-            ```bash
-            npm install ai-agent-selenium
-            ```
+            ### What's Changed
+            ${{ steps.changelog.outputs.changelog }}
 
-            ### Documentation
-            - [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) - Complete workflow guide
-            - [FRAMEWORK_STANDARDS.md](FRAMEWORK_STANDARDS.md) - Framework conventions
-            - [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) - Installation guide
+            ### Features
+            - 🔥 **Selenium Grid Support** - True parallel browser automation
+            - 🤖 **AI Test Agents** - Planner, Generator, Healer, Analyzer
+            - 🛠️ **70+ MCP Tools** - Complete browser automation toolkit
+            - 🐳 **Docker Ready** - Production-ready Grid setup
 
-            See the [README](README.md) for full documentation.
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: "*.tgz"
 
-  publish-python:
-    name: Publish to PyPI
-    needs: prepare-release
-    if: github.event.inputs.publish_python == 'true'
-    uses: ./.github/workflows/publish-python.yml
-    secrets: inherit
-
+  # ============================================
+  # Publish to npm
+  # ============================================
   publish-npm:
     name: Publish to npm
-    needs: [prepare-release, publish-python]
-    if: github.event.inputs.publish_npm == 'true'
-    uses: ./.github/workflows/publish-npm.yml
-    secrets: inherit
-
-  summary:
-    name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [prepare-release, publish-python, publish-npm]
+    needs: [prepare, build, github-release]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish --access public
+          echo "✅ Published to npm: selenium-mcp-server@${{ needs.prepare.outputs.version }}"
+
+  # ============================================
+  # Summary
+  # ============================================
+  summary:
+    name: Release Summary
+    runs-on: ubuntu-latest
+    needs: [prepare, github-release, publish-npm]
     if: always()
 
     steps:
-      - name: Create summary
+      - name: Generate Summary
         run: |
-          echo "## 🚀 Release v${{ needs.prepare-release.outputs.version }} Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Release ${{ needs.prepare.outputs.version }} Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Published Packages" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ github.event.inputs.publish_python }}" == "true" ]; then
-            echo "- ✅ PyPI: https://pypi.org/project/ai-agent-selenium/" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "${{ github.event.inputs.publish_npm }}" == "true" ]; then
-            echo "- ✅ npm: https://www.npmjs.com/package/ai-agent-selenium" >> $GITHUB_STEP_SUMMARY
-          fi
-
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Installation Commands" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.publish-npm.result }}" == "success" ]; then
+            echo "✅ **npm**: [selenium-mcp-server@${{ needs.prepare.outputs.version }}](https://www.npmjs.com/package/selenium-mcp-server)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **npm**: Failed to publish" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "# Python" >> $GITHUB_STEP_SUMMARY
-          echo "pip install ai-agent-selenium==${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Node.js" >> $GITHUB_STEP_SUMMARY
-          echo "npm install ai-agent-selenium@${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "npm install selenium-mcp-server@${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

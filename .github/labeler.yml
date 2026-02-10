@@ -1,0 +1,68 @@
+# =============================================================================
+# PR Labeler Configuration
+# =============================================================================
+
+# TypeScript source
+typescript:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**/*.ts'
+
+# Grid functionality
+grid:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/grid/**'
+          - 'src/tools/grid/**'
+          - 'docker-compose*.yml'
+
+# AI Agents
+agents:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'agents/**'
+          - 'src/tools/agents/**'
+          - 'src/tools/analyzer/**'
+
+# Documentation
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+# CI/CD
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+# Docker
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/Dockerfile'
+          - 'docker-compose*.yml'
+          - '.dockerignore'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+
+# Tests
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.ts'
+          - '**/*.spec.ts'
+          - 'test/**'
+          - 'tests/**'
+
+# Tools
+tools:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/tools/**'

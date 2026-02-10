@@ -2,7 +2,7 @@ import { z } from 'zod';
 import path from 'path';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   ref: z.string().describe('File input element reference from page snapshot'),
@@ -13,6 +13,7 @@ export class FileUploadTool extends BaseTool {
   readonly name = 'file_upload';
   readonly description = 'Upload a file through a file input element';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'input';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { ref, filePath } = this.parseParams(schema, params);

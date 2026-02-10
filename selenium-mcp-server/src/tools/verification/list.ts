@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { By } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   items: z.array(z.string()).describe('List of text items that should be visible')
@@ -12,6 +12,7 @@ export class VerifyListVisibleTool extends BaseTool {
   readonly name = 'verify_list_visible';
   readonly description = 'Verify that multiple text items are visible on the page';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'verification';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { items } = this.parseParams(schema, params);

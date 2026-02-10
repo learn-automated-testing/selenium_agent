@@ -1,0 +1,40 @@
+# =============================================================================
+# Welcome New Contributors
+# =============================================================================
+
+name: Welcome
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    name: Welcome New Contributors
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            👋 Hi @${{ github.actor }}, thanks for opening your first issue!
+            
+            We appreciate you taking the time to report this. A maintainer will review it soon.
+            
+            While you wait, check out our [Contributing Guide](CONTRIBUTING.md) and [Documentation](docs/).
+            
+            Thanks for helping make Selenium MCP Server better! ⭐
+          
+          pr-message: |
+            🎉 Hi @${{ github.actor }}, thanks for your first pull request!
+            
+            We're excited to review your contribution. Our CI will run tests automatically.
+            
+            Thanks for contributing to Selenium MCP Server! 🚀

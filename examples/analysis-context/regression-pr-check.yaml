@@ -1,0 +1,72 @@
+# =============================================================================
+# Example: PR Regression Check
+# =============================================================================
+# Use this in CI/CD pipelines to validate pull requests.
+# Tests only the critical paths that could break during development.
+# Designed to run fast (< 5 min) with Selenium Grid parallel execution.
+#
+# Usage:
+#   analyzer_setup({ url, productName, riskAppetite: "standard", ... })
+#   analyzer_import_context({ sourceType: "file", source: "regression-pr-check.yaml", contextType: "test_plan" })
+#   analyzer_scan_product({ scanDepth: "standard", maxPages: 15, walkProcesses: true })
+# =============================================================================
+
+analysis:
+  name: "Acme Logistics - PR Regression"
+  url: "https://your-shipping-app.example.com"
+  risk_appetite: "standard"
+
+scope:
+  mode: "regression"
+  description: |
+    PR validation: test critical paths only.
+    Skip nice-to-haves, focus on things that would block users if broken.
+
+  # Only test critical-priority processes
+  processes:
+    - name: "Package Intake (happy path only)"
+      priority: critical
+      steps:
+        - "Select Suriname as destination"
+        - "Fill minimal sender details (required fields only)"
+        - "Fill minimal receiver details (required fields only)"
+        - "Submit package"
+      verify:
+        - "Package created successfully"
+        - "Appears in shipments list"
+
+    - name: "Shipment Filters"
+      priority: critical
+      verify:
+        - "Destination filter works"
+        - "Status filter works"
+        - "Table renders with data"
+
+    - name: "Customer CRUD"
+      priority: high
+      steps:
+        - "Add new customer (required fields)"
+        - "Search for customer"
+        - "Delete customer"
+
+  # Explicitly skip to keep it fast
+  excluded:
+    - "Palletization (complex setup needed)"
+    - "Manifest creation and PDF export"
+    - "Invoice lifecycle"
+    - "Borderel scanning"
+    - "Navigation/UI regression"
+    - "Cross-module E2E flows"
+    - "Multi-destination testing"
+
+  # Parallel execution config (3 grid nodes)
+  parallel:
+    enabled: true
+    nodes: 3
+    distribution:
+      node_1: ["Package Intake"]
+      node_2: ["Shipment Filters"]
+      node_3: ["Customer CRUD"]
+
+  # Time budget
+  timeout: "5m"

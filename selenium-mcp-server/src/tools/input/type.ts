@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference (e.g., e1, e2) for input field'),
@@ -13,6 +13,7 @@ export class TypeTool extends BaseTool {
   readonly name = 'input_text';
   readonly description = 'Type text into an input field or textarea';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'input';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { ref, text, clear } = this.parseParams(schema, params);

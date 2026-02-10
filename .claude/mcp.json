@@ -1,10 +1,14 @@
 {
   "mcpServers": {
     "selenium-mcp": {
-      "command": "/Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/venv/bin/python",
+      "command": "/usr/local/bin/node",
       "args": [
-        "/Users/r.vanderhorst/Documents/develop/learnportal/selenium_mcp_server/venv/bin/selenium-mcp"
-      ]
+        "/Users/r.vanderhorst/Documents/develop/learnportal/selenium_agent/selenium-mcp-server/dist/bin/cli.js"
+      ],
+      "env": {
+        "SELENIUM_GRID_URL": "http://localhost:4444",
+        "SELENIUM_COMPOSE_FILE": ""
+      }
     }
   }
 }

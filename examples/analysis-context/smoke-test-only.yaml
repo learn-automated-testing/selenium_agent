@@ -1,0 +1,66 @@
+# =============================================================================
+# Example: Smoke Test Only
+# =============================================================================
+# Use this for quick validation that the app is up and key features work.
+# No deep E2E flows — just verify pages load and critical actions respond.
+#
+# Usage:
+#   analyzer_setup({ url, productName, riskAppetite: "startup-mvp", ... })
+#   analyzer_import_context({ sourceType: "file", source: "smoke-test-only.yaml", contextType: "test_plan" })
+#   analyzer_scan_product({ scanDepth: "quick", maxPages: 10, walkProcesses: false })
+# =============================================================================
+
+analysis:
+  name: "Acme Logistics - Smoke Test"
+  url: "https://your-shipping-app.example.com"
+  risk_appetite: "startup-mvp"
+
+scope:
+  mode: "smoke"
+  description: |
+    Quick health check. Verify all pages load without errors
+    and key interactive elements are present and clickable.
+
+  # Pages to check (just load + verify elements exist)
+  pages:
+    - url: "/"
+      verify:
+        - "Page title contains 'Acme Logistics'"
+        - "Navigation sidebar visible"
+        - "4 workflow step cards visible"
+
+    - url: "/intake/"
+      verify:
+        - "Destination buttons visible (SUR, BON, CUR, ARU, STM)"
+        - "Borderel Scannen button present"
+
+    - url: "/shipments/"
+      verify:
+        - "Shipments table renders"
+        - "Filter dropdowns present"
+
+    - url: "/pallets/"
+      verify:
+        - "'Nieuwe Pallet' button present"
+
+    - url: "/manifests/"
+      verify:
+        - "'Nieuw manifest' button present"
+
+    - url: "/invoices/"
+      verify:
+        - "Financial summary cards visible (Totaal, Betaald, Openstaand)"
+        - "Invoice table renders"
+
+    - url: "/customers/"
+      verify:
+        - "'Nieuwe Klant' button present"
+        - "Customer table renders"
+
+  # No E2E flows, no form submissions, no PDF checks
+  excluded:
+    - "Form submissions"
+    - "Multi-step wizards"
+    - "PDF generation"
+    - "Data creation/modification"
+    - "Cross-module workflows"

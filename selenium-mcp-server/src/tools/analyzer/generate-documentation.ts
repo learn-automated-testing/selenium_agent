@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
-import { Context, AnalysisSession } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { Context, type AnalysisSession } from '../../context.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   includeScreenshots: z.boolean().optional().default(true).describe('Include screenshots in the documentation'),
@@ -15,6 +15,7 @@ export class AnalyzerGenerateDocumentationTool extends BaseTool {
   readonly name = 'analyzer_generate_documentation';
   readonly description = 'Generate a comprehensive product discovery document with screenshots - serves as input for the Planner agent';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'analyzer';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { includeScreenshots, includeRiskSummary, outputFormat, outputFilename } = this.parseParams(schema, params);
@@ -97,7 +98,7 @@ export class AnalyzerGenerateDocumentationTool extends BaseTool {
     lines.push(`# Product Discovery: ${session.productName}`);
     lines.push('');
     lines.push(`**URL:** ${session.url}`);
-    lines.push(`**Domain:** ${session.domainType || 'Unknown'}`);
+    lines.push(`**Analysis Type:** Context-driven`);
     lines.push(`**Analysis Date:** ${session.startedAt}`);
     lines.push('');
 
@@ -326,7 +327,7 @@ ${html}
       product: {
         name: session.productName,
         url: session.url,
-        domain: session.domainType
+        domain: 'context-driven'
       },
       analysis: {
         date: session.startedAt,

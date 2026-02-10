@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   action: z.enum(['get_logs', 'clear']).describe('Console action: get_logs or clear'),
@@ -12,6 +12,7 @@ export class ConsoleTool extends BaseTool {
   readonly name = 'console_logs';
   readonly description = 'Get browser console logs or clear console';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'browser';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { action, level } = this.parseParams(schema, params);

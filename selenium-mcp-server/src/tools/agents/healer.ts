@@ -2,34 +2,19 @@ import { z } from 'zod';
 import { spawn } from 'child_process';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 // Healer Run Tests Tool
 const runTestsSchema = z.object({
   testPath: z.string().describe('Path to test file or directory to run'),
-  framework: z.enum([
-    'pytest',
-    'selenium-python-pytest',
-    'selenium-python-unittest',
-    'webdriverio-js',
-    'webdriverio-ts',
-    'robot-framework',
-    'playwright-python',
-    'playwright-js',
-    'selenium-java-maven',
-    'selenium-java-gradle',
-    'selenium-js-mocha',
-    'selenium-js-jest',
-    'selenium-csharp-nunit',
-    'selenium-csharp-mstest',
-    'selenium-csharp-xunit'
-  ]).optional().default('pytest').describe('Test framework to use')
+  framework: z.string().optional().default('pytest').describe('Test framework (e.g. selenium-python-pytest, playwright-js, webdriverio-ts)')
 });
 
 export class HealerRunTestsTool extends BaseTool {
   readonly name = 'healer_run_tests';
-  readonly description = 'Execute test suite and collect failure information for debugging';
+  readonly description = 'Execute test suite and collect failure information for debugging. Use the framework from the test generation session. If not set, ask the user which framework their tests use before running.';
   readonly inputSchema = runTestsSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { testPath, framework } = this.parseParams(runTestsSchema, params);
@@ -53,7 +38,8 @@ export class HealerRunTestsTool extends BaseTool {
       'selenium-csharp-xunit': ['dotnet', 'test', testPath, '--filter', 'FullyQualifiedName~']
     };
 
-    const cmd = commands[frameworkStr] || commands['pytest'];
+    // For known frameworks use the mapped command; for unknown, construct a basic command
+    const cmd = commands[frameworkStr] || [frameworkStr, testPath];
 
     try {
       const result = await this.runCommand(cmd[0], cmd.slice(1));
@@ -95,29 +81,14 @@ export class HealerRunTestsTool extends BaseTool {
 const debugTestSchema = z.object({
   testName: z.string().describe('Name of the specific test to debug'),
   testPath: z.string().describe('Path to the test file'),
-  framework: z.enum([
-    'pytest',
-    'selenium-python-pytest',
-    'selenium-python-unittest',
-    'webdriverio-js',
-    'webdriverio-ts',
-    'robot-framework',
-    'playwright-python',
-    'playwright-js',
-    'selenium-java-maven',
-    'selenium-java-gradle',
-    'selenium-js-mocha',
-    'selenium-js-jest',
-    'selenium-csharp-nunit',
-    'selenium-csharp-mstest',
-    'selenium-csharp-xunit'
-  ]).optional().default('pytest').describe('Test framework to use')
+  framework: z.string().optional().default('pytest').describe('Test framework (e.g. selenium-python-pytest, playwright-js, webdriverio-ts)')
 });
 
 export class HealerDebugTestTool extends BaseTool {
   readonly name = 'healer_debug_test';
-  readonly description = 'Run a specific test in debug mode with enhanced logging';
+  readonly description = 'Run a specific test in debug mode with enhanced logging. Use the framework from the test generation session. If not set, ask the user which framework their tests use before running.';
   readonly inputSchema = debugTestSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { testName, testPath, framework } = this.parseParams(debugTestSchema, params);
@@ -141,7 +112,8 @@ export class HealerDebugTestTool extends BaseTool {
       'selenium-csharp-xunit': ['dotnet', 'test', testPath, '--filter', `FullyQualifiedName~${testName}`, '-v', 'detailed']
     };
 
-    const cmd = commands[frameworkStr] || commands['pytest'];
+    // For known frameworks use the mapped command; for unknown, construct a basic command
+    const cmd = commands[frameworkStr] || [frameworkStr, testPath];
 
     try {
       const result = await this.runCommand(cmd[0], cmd.slice(1));
@@ -190,6 +162,7 @@ export class HealerFixTestTool extends BaseTool {
   readonly name = 'healer_fix_test';
   readonly description = 'Apply fixes to a test file and save the corrected version';
   readonly inputSchema = fixTestSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { testPath, fixedCode, fixDescription } = this.parseParams(fixTestSchema, params);
@@ -232,6 +205,7 @@ export class BrowserGenerateLocatorTool extends BaseTool {
   readonly name = 'browser_generate_locator';
   readonly description = 'Generate a robust locator strategy for a specific element';
   readonly inputSchema = generateLocatorSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { elementDescription } = this.parseParams(generateLocatorSchema, params);
