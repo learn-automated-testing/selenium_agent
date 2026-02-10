@@ -1,0 +1,16 @@
+version: '3.8'
+
+# Scaling override — use with:
+#   docker-compose -f docker-compose.yml -f docker-compose.scale.yml up -d --scale chrome-node=8
+#
+# Or scale dynamically:
+#   docker-compose up -d --scale chrome-node=8 --scale firefox-node=2
+
+services:
+  chrome-node:
+    deploy:
+      replicas: 8
+
+  firefox-node:
+    deploy:
+      replicas: 2

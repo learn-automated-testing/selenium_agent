@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { By } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
+import { getTestPlansDir, resolveOutputDir } from '../../utils/paths.js';
 
 // Planner Setup Tool
 const setupSchema = z.object({
@@ -16,6 +17,7 @@ export class PlannerSetupTool extends BaseTool {
   readonly name = 'planner_setup_page';
   readonly description = 'Initialize the testing environment and navigate to the application for test planning';
   readonly inputSchema = setupSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { url, feature, explorationDepth } = this.parseParams(setupSchema, params);
@@ -78,6 +80,7 @@ export class PlannerExplorePageTool extends BaseTool {
   readonly name = 'planner_explore_page';
   readonly description = 'Explore a specific page in detail, discovering elements and forms';
   readonly inputSchema = exploreSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { pageUrl, pageName } = this.parseParams(exploreSchema, params);
@@ -124,22 +127,24 @@ export class PlannerExplorePageTool extends BaseTool {
 // Planner Save Plan Tool
 const savePlanSchema = z.object({
   planContent: z.string().describe('Complete test plan content in markdown format'),
-  filename: z.string().optional().describe('Filename for the test plan')
+  filename: z.string().optional().describe('Filename for the test plan'),
+  outputDir: z.string().optional().describe('Output directory for the test plan (default: test-plans/)')
 });
 
 export class PlannerSavePlanTool extends BaseTool {
   readonly name = 'planner_save_plan';
   readonly description = 'Save the completed test plan to a markdown file';
   readonly inputSchema = savePlanSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { planContent, filename } = this.parseParams(savePlanSchema, params);
+    const { planContent, filename, outputDir } = this.parseParams(savePlanSchema, params);
 
     const fs = await import('fs/promises');
     const path = await import('path');
 
     const finalFilename = filename || 'test-plan.md';
-    const plansDir = path.join(process.cwd(), 'test-plans');
+    const plansDir = resolveOutputDir(outputDir, getTestPlansDir());
 
     try {
       await fs.mkdir(plansDir, { recursive: true });

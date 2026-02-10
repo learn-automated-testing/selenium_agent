@@ -1,7 +1,7 @@
 {
   "name": "selenium-ai-agent",
   "version": "1.0.5",
-  "description": "Node.js launcher for Selenium MCP Server - AI-powered browser automation with test agents",
+  "description": "Selenium MCP Server with Selenium Grid support - The only browser MCP with true parallel execution for AI agents",
   "main": "index.js",
   "type": "module",
   "bin": {
@@ -14,18 +14,26 @@
   },
   "keywords": [
     "selenium",
+    "selenium-grid",
     "mcp",
+    "mcp-server",
     "model-context-protocol",
     "browser-automation",
+    "parallel-testing",
     "testing",
     "test-automation",
     "ai-agents",
+    "ai-testing",
     "playwright-alternative",
     "web-testing",
     "test-generator",
     "test-healer",
+    "self-healing-tests",
     "claude",
-    "anthropic"
+    "claude-desktop",
+    "anthropic",
+    "cursor",
+    "cline"
   ],
   "author": "R. van der Horst",
   "license": "MIT",

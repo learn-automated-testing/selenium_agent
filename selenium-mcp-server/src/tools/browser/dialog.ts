@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   action: z.enum(['accept', 'dismiss', 'get_text']).describe('Dialog action: accept, dismiss, or get_text'),
@@ -12,6 +12,7 @@ export class DialogTool extends BaseTool {
   readonly name = 'dialog_handle';
   readonly description = 'Handle browser dialogs (alert, confirm, prompt)';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'browser';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { action, text } = this.parseParams(schema, params);

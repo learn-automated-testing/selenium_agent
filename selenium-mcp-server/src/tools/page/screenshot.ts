@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   filename: z.string().optional().describe('Optional filename to save screenshot')
@@ -11,6 +11,7 @@ export class ScreenshotTool extends BaseTool {
   readonly name = 'take_screenshot';
   readonly description = 'Take a screenshot of the current page. Returns the screenshot as base64 image.';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'page';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { filename } = this.parseParams(schema, params);

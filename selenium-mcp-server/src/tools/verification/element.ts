@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { until } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference from page snapshot'),
@@ -13,6 +13,7 @@ export class VerifyElementVisibleTool extends BaseTool {
   readonly name = 'verify_element_visible';
   readonly description = 'Verify that an element is visible on the page';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'verification';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { ref, timeout } = this.parseParams(schema, params);

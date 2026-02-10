@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { By, until } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   text: z.string().describe('Text content to verify is visible on the page'),
@@ -13,6 +13,7 @@ export class VerifyTextVisibleTool extends BaseTool {
   readonly name = 'verify_text_visible';
   readonly description = 'Verify that specific text is visible on the page';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'verification';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { text, timeout } = this.parseParams(schema, params);

@@ -1,20 +1,23 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
+import { getRiskProfilesDir, resolveOutputDir } from '../../utils/paths.js';
 
 const schema = z.object({
   filename: z.string().optional().describe('Output filename (default: product-name-risk-profile.yaml)'),
-  outputFormat: z.enum(['yaml', 'json']).optional().default('yaml').describe("Output format: 'yaml' or 'json'")
+  outputFormat: z.enum(['yaml', 'json']).optional().default('yaml').describe("Output format: 'yaml' or 'json'"),
+  outputDir: z.string().optional().describe('Output directory for the risk profile (default: risk-profiles/)')
 });
 
 export class AnalyzerSaveProfileTool extends BaseTool {
   readonly name = 'analyzer_save_profile';
   readonly description = 'Save the completed risk profile to a file';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'analyzer';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { filename, outputFormat } = this.parseParams(schema, params);
+    const { filename, outputFormat, outputDir: customOutputDir } = this.parseParams(schema, params);
 
     if (!context.analysisSession) {
       return this.error('No analysis session active. Run analyzer_setup first.');
@@ -36,7 +39,7 @@ export class AnalyzerSaveProfileTool extends BaseTool {
     const outputFilename = filename || `${session.productSlug}-risk-profile.${ext}`;
 
     // Create output directory
-    const outputDir = path.join(process.cwd(), 'risk-profiles');
+    const outputDir = resolveOutputDir(customOutputDir, getRiskProfilesDir());
     await fs.mkdir(outputDir, { recursive: true });
 
     const outputPath = path.join(outputDir, outputFilename);

@@ -1,34 +1,29 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
+import { getTestsDir, resolveOutputDir } from '../../utils/paths.js';
 
 // Generator Setup Tool
 const setupSchema = z.object({
   url: z.string().describe('URL of the web application to test'),
   testPlan: z.string().describe('Test plan content or path to test plan file'),
-  framework: z.enum([
-    'selenium-python-pytest',
-    'selenium-python-unittest',
-    'webdriverio-js',
-    'webdriverio-ts',
-    'robot-framework',
-    'playwright-python',
-    'playwright-js',
-    'selenium-java-maven',
-    'selenium-java-gradle',
-    'selenium-js-mocha',
-    'selenium-js-jest',
-    'selenium-csharp-nunit',
-    'selenium-csharp-mstest',
-    'selenium-csharp-xunit'
-  ]).describe('Test framework to generate code for')
+  framework: z.string().describe('Test framework (e.g. selenium-python-pytest, playwright-js, webdriverio-ts)')
 });
 
 export class GeneratorSetupTool extends BaseTool {
   readonly name = 'generator_setup_page';
-  readonly description = 'Initialize the test generation session and navigate to the application';
+  readonly description = `Initialize the test generation session and navigate to the application.
+
+When a framework is provided (e.g., from a skill), use it and apply its standard folder conventions. When no framework is specified, ask the user:
+
+1. Which test framework? (selenium-python-pytest, playwright-js, webdriverio-ts, robot-framework, selenium-js-jest, selenium-js-mocha, selenium-java-maven, etc.)
+2. Use the default structure for that framework? Defaults: pytest: tests/test_*.py, playwright: tests/*.spec.ts, webdriverio: test/specs/*.spec.ts, robot-framework: tests/*.robot, jest/mocha: test/*.test.js, java-maven: src/test/java/*Test.java
+3. If not default, which pattern? (Page Object Model, BDD/Gherkin, Data-driven, Custom)
+
+Pass the chosen framework to all subsequent generator and healer tool calls.`;
   readonly inputSchema = setupSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { url, testPlan, framework } = this.parseParams(setupSchema, params);
@@ -36,8 +31,9 @@ export class GeneratorSetupTool extends BaseTool {
     const driver = await context.ensureBrowser();
     await driver.get(url);
 
-    // Enable recording
+    // Enable recording and persist framework choice
     context.startRecording();
+    context.generatorFramework = framework;
 
     await context.captureSnapshot();
 
@@ -60,6 +56,7 @@ export class GeneratorReadLogTool extends BaseTool {
   readonly name = 'generator_read_log';
   readonly description = 'Retrieve the log of all actions performed during test generation session';
   readonly inputSchema = readLogSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, _params: unknown): Promise<ToolResult> {
     if (context.actionHistory.length === 0) {
@@ -69,11 +66,13 @@ export class GeneratorReadLogTool extends BaseTool {
     const logEntries = context.actionHistory.map((action, i) => ({
       step: i + 1,
       tool: action.tool,
-      params: action.params
+      params: action.params,
+      elements: action.elements
     }));
 
     const result = {
       message: `Retrieved ${logEntries.length} actions`,
+      framework: context.generatorFramework,
       actions: logEntries,
       total: logEntries.length
     };
@@ -86,22 +85,24 @@ export class GeneratorReadLogTool extends BaseTool {
 const writeTestSchema = z.object({
   testCode: z.string().describe('Generated test code'),
   filename: z.string().describe('Filename for the test file'),
-  framework: z.string().optional().default('pytest').describe('Test framework')
+  framework: z.string().describe('Test framework'),
+  outputDir: z.string().optional().describe('Output directory for test files (default: framework-conventional directory)')
 });
 
 export class GeneratorWriteTestTool extends BaseTool {
   readonly name = 'generator_write_test';
-  readonly description = 'Save generated test code to a file';
+  readonly description = 'Save generated test code to a file. Use outputDir to place test files in the framework-conventional directory. Organize using the framework\'s standard naming and folder conventions.';
   readonly inputSchema = writeTestSchema;
+  readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { testCode, filename, framework } = this.parseParams(writeTestSchema, params);
+    const { testCode, filename, framework, outputDir } = this.parseParams(writeTestSchema, params);
 
     const fs = await import('fs/promises');
     const path = await import('path');
 
     // Find or create tests directory
-    const testsDir = path.join(process.cwd(), 'tests');
+    const testsDir = resolveOutputDir(outputDir, getTestsDir());
 
     try {
       await fs.mkdir(testsDir, { recursive: true });
@@ -111,31 +112,11 @@ export class GeneratorWriteTestTool extends BaseTool {
       // Clear action history after generating
       context.clearRecording();
 
-      const frameworkStr = framework || 'pytest';
-      const runCommands: Record<string, string> = {
-        'pytest': `pytest ${testPath}`,
-        'selenium-python-pytest': `pytest ${testPath}`,
-        'selenium-python-unittest': `python -m unittest ${testPath}`,
-        'robot-framework': `robot ${testPath}`,
-        'webdriverio-js': `npx wdio run ${testPath}`,
-        'webdriverio-ts': `npx wdio run ${testPath}`,
-        'playwright-python': `pytest ${testPath}`,
-        'playwright-js': `npx playwright test ${testPath}`,
-        'selenium-java-maven': `mvn test -Dtest=${testPath}`,
-        'selenium-java-gradle': `gradle test --tests ${testPath}`,
-        'selenium-js-mocha': `npx mocha ${testPath}`,
-        'selenium-js-jest': `npx jest ${testPath}`,
-        'selenium-csharp-nunit': `dotnet test ${testPath}`,
-        'selenium-csharp-mstest': `dotnet test ${testPath}`,
-        'selenium-csharp-xunit': `dotnet test ${testPath}`
-      };
-
       const result = {
         message: 'Test code saved successfully',
         file: testPath,
-        framework: frameworkStr,
-        lines: testCode.split('\n').length,
-        runCommand: runCommands[frameworkStr] || `# Run with appropriate test runner for ${frameworkStr}`
+        framework,
+        lines: testCode.split('\n').length
       };
 
       return this.success(JSON.stringify(result, null, 2), false);

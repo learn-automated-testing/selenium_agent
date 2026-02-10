@@ -83,8 +83,17 @@ function zodTypeToJsonSchema(schema: z.ZodType): Record<string, unknown> {
     };
   }
 
+  if (schema instanceof z.ZodRecord) {
+    return { type: 'object', additionalProperties: zodTypeToJsonSchema((schema as z.ZodRecord<z.ZodString, z.ZodType>).valueSchema), description };
+  }
+
   if (schema instanceof z.ZodObject) {
     return zodToJsonSchema(schema);
+  }
+
+  if (schema instanceof z.ZodNullable) {
+    const inner = zodTypeToJsonSchema(schema.unwrap());
+    return { ...inner, nullable: true, description };
   }
 
   // Fallback for unknown types

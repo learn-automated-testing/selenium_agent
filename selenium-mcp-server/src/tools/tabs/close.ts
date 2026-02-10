@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   tabId: z.number().describe('Tab ID to close (0-based index)')
@@ -11,6 +11,7 @@ export class TabCloseTool extends BaseTool {
   readonly name = 'tab_close';
   readonly description = 'Close a specific browser tab';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'browser';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { tabId } = this.parseParams(schema, params);

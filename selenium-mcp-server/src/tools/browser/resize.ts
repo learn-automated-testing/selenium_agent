@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   width: z.number().describe('Window width in pixels'),
@@ -12,6 +12,7 @@ export class ResizeTool extends BaseTool {
   readonly name = 'resize_window';
   readonly description = 'Resize the browser window to specified dimensions';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'browser';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { width, height } = this.parseParams(schema, params);

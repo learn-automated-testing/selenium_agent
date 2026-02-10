@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   sourceType: z.enum(['file', 'text', 'url']).describe("Type of source: 'file' (local file), 'text' (inline text), 'url' (web page)"),
@@ -15,6 +15,7 @@ export class AnalyzerImportContextTool extends BaseTool {
   readonly name = 'analyzer_import_context';
   readonly description = 'Import additional context from local files, inline text, or URLs to enrich the analysis';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'analyzer';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { sourceType, source, contextType, description } = this.parseParams(schema, params);

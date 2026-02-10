@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "projectName": "selenium_agent",
+  "createdAt": "2026-02-10T05:33:25.285Z",
+  "updatedAt": "2026-02-10T07:02:28.859Z",
+  "stacks": [
+    {
+      "id": "custom",
+      "language": "TypeScript",
+      "framework": "None",
+      "naming": {
+        "files": "kebab-case",
+        "components": "PascalCase",
+        "functions": "camelCase",
+        "variables": "camelCase",
+        "constants": "SCREAMING_SNAKE"
+      },
+      "rowCeiling": "modular",
+      "maxRowsPerFile": 300,
+      "testingTools": [],
+      "mockingPhilosophy": "strict",
+      "maxMocksPerTest": 0,
+      "lintingTools": [],
+      "typingTools": [
+        "typescript"
+      ],
+      "commentDensity": "silent",
+      "errorHandling": "result-types",
+      "sideEffectStyle": "service-layer"
+    }
+  ],
+  "architecture": {
+    "pattern": "feature-sliced",
+    "stateManagement": "context",
+    "sideEffectStyle": "service-layer",
+    "folderStructure": [
+      "src/",
+      "lib/",
+      "utils/",
+      "types/"
+    ]
+  },
+  "targets": {
+    "claude": true,
+    "copilot": false,
+    "cursor": false,
+    "gemini": false
+  },
+  "customRules": []
+}

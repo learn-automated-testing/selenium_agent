@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
-import { Context, FeatureAssessment, CoverageRecommendation, RiskGap, DomainTemplate, DiscoveredFeature } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { Context, FeatureAssessment, CoverageRecommendation, RiskGap, DiscoveredFeature } from '../../context.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   includeRecommendations: z.boolean().optional().default(true)
@@ -14,6 +14,7 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
   readonly name = 'analyzer_build_risk_profile';
   readonly description = 'Build comprehensive risk profile from discovered features and context';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'analyzer';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { includeRecommendations, includePipelineConfig } = this.parseParams(schema, params);
@@ -28,11 +29,11 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
       return this.error('No features discovered. Run analyzer_scan_product first.');
     }
 
-    const domainTemplate = session.domainTemplate;
     const discoveredFeatures = session.discoveredFeatures;
     const criticalFlows = session.criticalFlows;
     const compliance = session.compliance;
     const riskAppetite = session.riskAppetite;
+    const importedContext = session.importedContext;
 
     // Build feature risk assessments
     const featureAssessments: FeatureAssessment[] = [];
@@ -40,10 +41,10 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
     for (const feature of discoveredFeatures) {
       const assessment = this.assessFeatureRisk(
         feature,
-        domainTemplate,
         criticalFlows,
         compliance,
-        riskAppetite
+        riskAppetite,
+        importedContext
       );
       featureAssessments.push(assessment);
     }
@@ -59,22 +60,22 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
     // Build pipeline config if requested
     let pipelineConfig = undefined;
     if (includePipelineConfig) {
-      pipelineConfig = this.buildPipelineConfig(featureAssessments, domainTemplate);
+      pipelineConfig = this.buildPipelineConfig(featureAssessments);
     }
 
-    // Identify gaps
-    const gaps = this.identifyGaps(featureAssessments, domainTemplate);
+    // Identify gaps from imported context
+    const gaps = this.identifyGaps(featureAssessments, importedContext);
 
     // Build the complete profile
     const riskProfile = {
       product: {
         name: session.productName,
         url: session.url,
-        domain: session.domainType || 'unknown',
+        domain: 'auto-detected',
         analyzedDate: new Date().toISOString()
       },
       businessContext: {
-        type: session.domainType || 'unknown',
+        type: 'context-driven',
         compliance,
         riskAppetite,
         criticalFlows
@@ -110,10 +111,10 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
 
   private assessFeatureRisk(
     feature: DiscoveredFeature,
-    domainTemplate: DomainTemplate | null,
     criticalFlows: string[],
     compliance: string[],
-    riskAppetite: string
+    riskAppetite: string,
+    importedContext: { fullContent: string; contextType: string }[]
   ): FeatureAssessment {
     const featureName = feature.name;
     const featureNameLower = featureName.toLowerCase();
@@ -125,37 +126,16 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
     let complexity = 0.3;
     let complianceScore = 0.0;
 
-    // Check domain template
-    if (domainTemplate) {
-      const templateFeatures = domainTemplate.features || {};
-      for (const [tplName, tplInfo] of Object.entries(templateFeatures)) {
-        if (tplName.toLowerCase().includes(featureNameLower) || featureNameLower.includes(tplName.toLowerCase())) {
-          const riskLevel = tplInfo.risk || 'medium';
+    // Check imported context for mentions of this feature
+    const contextMentionCount = importedContext.reduce((count, ctx) => {
+      const content = ctx.fullContent.toLowerCase();
+      return count + (content.includes(featureNameLower) ? 1 : 0);
+    }, 0);
 
-          if (riskLevel === 'critical') {
-            revenueImpact = 0.9;
-            userImpact = 0.9;
-          } else if (riskLevel === 'high') {
-            revenueImpact = 0.7;
-            userImpact = 0.7;
-          } else if (riskLevel === 'medium') {
-            revenueImpact = 0.4;
-            userImpact = 0.5;
-          } else {
-            revenueImpact = 0.2;
-            userImpact = 0.2;
-          }
-
-          // Check compliance
-          if (tplInfo.compliance) {
-            if (tplInfo.compliance.some(c => compliance.includes(c))) {
-              complianceScore = 0.8;
-            }
-          }
-
-          break;
-        }
-      }
+    // Features mentioned in imported context are likely more important
+    if (contextMentionCount > 0) {
+      revenueImpact = Math.max(revenueImpact, 0.5 + contextMentionCount * 0.1);
+      userImpact = Math.max(userImpact, 0.5 + contextMentionCount * 0.1);
     }
 
     // Boost if in critical flows
@@ -164,11 +144,29 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
       userImpact = Math.max(userImpact, 0.8);
     }
 
+    // Check if compliance requirements mention this feature
+    if (compliance.length > 0) {
+      const complianceContext = importedContext
+        .filter(ctx => ctx.contextType === 'prd' || ctx.contextType === 'general')
+        .map(ctx => ctx.fullContent.toLowerCase())
+        .join(' ');
+      if (compliance.some(c => complianceContext.includes(c.toLowerCase()) && complianceContext.includes(featureNameLower))) {
+        complianceScore = 0.8;
+      }
+    }
+
     // Detect high-risk patterns in feature name
-    const highRiskPatterns = ['payment', 'checkout', 'login', 'auth', 'password', 'account', 'transaction'];
+    const highRiskPatterns = ['payment', 'checkout', 'login', 'auth', 'password', 'account', 'transaction', 'invoice', 'order', 'billing'];
     if (highRiskPatterns.some(p => featureNameLower.includes(p))) {
       revenueImpact = Math.max(revenueImpact, 0.7);
       userImpact = Math.max(userImpact, 0.7);
+    }
+
+    // Detect medium-risk patterns
+    const mediumRiskPatterns = ['form', 'submit', 'create', 'delete', 'edit', 'update', 'upload', 'download', 'export', 'import'];
+    if (mediumRiskPatterns.some(p => featureNameLower.includes(p))) {
+      revenueImpact = Math.max(revenueImpact, 0.5);
+      complexity = Math.max(complexity, 0.5);
     }
 
     // Calculate final score
@@ -261,8 +259,7 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
   }
 
   private buildPipelineConfig(
-    assessments: FeatureAssessment[],
-    domainTemplate: DomainTemplate | null
+    assessments: FeatureAssessment[]
   ): { stages: { name: string; tests: string[]; parallel?: boolean }[] } {
     const stages: { name: string; tests: string[]; parallel?: boolean }[] = [];
 
@@ -311,44 +308,40 @@ export class AnalyzerBuildRiskProfileTool extends BaseTool {
 
   private identifyGaps(
     assessments: FeatureAssessment[],
-    domainTemplate: DomainTemplate | null
+    importedContext: { fullContent: string; contextType: string }[]
   ): RiskGap[] {
     const gaps: RiskGap[] = [];
 
-    if (!domainTemplate) return gaps;
+    if (importedContext.length === 0) return gaps;
 
-    // Check for expected features not found
-    const templateFeatures = domainTemplate.features || {};
     const assessmentNames = assessments.map(a => a.name.toLowerCase());
 
-    for (const [featureName, featureInfo] of Object.entries(templateFeatures)) {
-      const found = assessmentNames.some(name =>
-        name.includes(featureName.toLowerCase()) ||
-        featureName.toLowerCase().includes(name)
-      );
+    // Extract keywords from imported context that might indicate expected features
+    const criticalKeywords = ['critical', 'must have', 'required', 'essential', 'mandatory'];
+    const contextContent = importedContext.map(ctx => ctx.fullContent).join('\n');
 
-      if (!found && featureInfo.risk && ['critical', 'high'].includes(featureInfo.risk)) {
-        gaps.push({
-          expected: featureName,
-          status: 'not_found',
-          recommendation: `Expected ${featureInfo.risk}-risk feature "${featureName}" was not discovered. Verify it exists or update scan parameters.`
-        });
-      }
-    }
+    // Check critical flows mentioned in context but not found in discovered features
+    const lines = contextContent.split('\n');
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      const isCritical = criticalKeywords.some(kw => lineLower.includes(kw));
+      if (!isCritical) continue;
 
-    // Check for expected processes not completed
-    const templateProcesses = domainTemplate.processes || {};
-    for (const [processName, processInfo] of Object.entries(templateProcesses)) {
-      if (processInfo.risk === 'critical') {
+      // Look for feature-like terms in critical lines
+      const featurePatterns = /(?:feature|flow|process|workflow|function):\s*(.+?)(?:\.|$)/gi;
+      let match;
+      while ((match = featurePatterns.exec(line)) !== null) {
+        const expectedFeature = match[1].trim();
         const found = assessmentNames.some(name =>
-          name.includes(processName.toLowerCase())
+          name.includes(expectedFeature.toLowerCase()) ||
+          expectedFeature.toLowerCase().includes(name)
         );
 
         if (!found) {
           gaps.push({
-            expected: `Process: ${processName}`,
-            status: 'not_verified',
-            recommendation: `Critical process "${processName}" could not be fully verified. Manual testing recommended.`
+            expected: expectedFeature,
+            status: 'not_found',
+            recommendation: `Expected critical feature "${expectedFeature}" (from imported context) was not discovered. Verify it exists or update scan parameters.`
           });
         }
       }

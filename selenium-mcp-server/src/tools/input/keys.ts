@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Key } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const keyMap: Record<string, string> = {
   'enter': Key.ENTER,
@@ -45,6 +45,7 @@ export class KeyPressTool extends BaseTool {
   readonly name = 'key_press';
   readonly description = 'Press a keyboard key, optionally with modifiers (ctrl, alt, shift, meta)';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'input';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { key, ref, modifiers } = this.parseParams(schema, params);

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { until, By } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   condition: z.enum(['element_visible', 'element_clickable', 'element_present', 'url_contains', 'title_contains']).describe('Condition to wait for'),
@@ -14,6 +14,7 @@ export class WaitTool extends BaseTool {
   readonly name = 'wait_for';
   readonly description = 'Wait for a condition to be met (element visible, URL contains, etc.)';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'wait';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { condition, value, timeout } = this.parseParams(schema, params);

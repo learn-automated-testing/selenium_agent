@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { By } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference for select element'),
@@ -15,6 +15,7 @@ export class SelectTool extends BaseTool {
   readonly name = 'select_option';
   readonly description = 'Select an option from a dropdown/select element by value, text, or index';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'interaction';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { ref, value, text, index } = this.parseParams(schema, params);

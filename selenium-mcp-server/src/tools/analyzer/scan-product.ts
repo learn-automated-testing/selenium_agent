@@ -1,27 +1,24 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
-import { Context, DiscoveredFeature, DiscoveredPage, ProcessResult, ProcessStepResult, ScreenshotInfo } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { Context, DiscoveredFeature, DiscoveredPage } from '../../context.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 import { By } from 'selenium-webdriver';
 
 const schema = z.object({
   scanDepth: z.enum(['quick', 'standard', 'deep']).optional().default('standard')
     .describe("Scan depth: 'quick' (homepage only), 'standard' (main navigation), 'deep' (follow all links)"),
   maxPages: z.number().optional().default(20).describe('Maximum number of pages to scan'),
-  focusAreas: z.array(z.string()).optional().describe("Specific areas to focus on (e.g., ['checkout', 'account'])"),
-  walkProcesses: z.boolean().optional().default(true)
-    .describe('Walk through domain template processes (active discovery). Combined with page scanning.'),
-  processesToWalk: z.array(z.string()).optional()
-    .describe("Specific processes to walk (e.g., ['purchase_product', 'user_login']). If null, walks all.")
+  focusAreas: z.array(z.string()).optional().describe("Specific areas to focus on (e.g., ['checkout', 'account'])")
 });
 
 export class AnalyzerScanProductTool extends BaseTool {
   readonly name = 'analyzer_scan_product';
-  readonly description = 'Explore the product using both process walking (from domain template) and page scanning';
+  readonly description = 'Explore the product using both process walking (from imported context) and page scanning';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'analyzer';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { scanDepth, maxPages, focusAreas, walkProcesses, processesToWalk } = this.parseParams(schema, params);
+    const { scanDepth, maxPages, focusAreas } = this.parseParams(schema, params);
 
     if (!context.analysisSession) {
       return this.error('No analysis session active. Run analyzer_setup first.');
@@ -29,8 +26,6 @@ export class AnalyzerScanProductTool extends BaseTool {
 
     const driver = await context.getDriver();
     const baseUrl = context.analysisSession.url;
-    const domainTemplate = context.analysisSession.domainTemplate;
-    const useDomainTemplate = context.analysisSession.useDomainTemplate;
 
     const url = new URL(baseUrl);
     const baseDomain = url.hostname;
@@ -38,54 +33,10 @@ export class AnalyzerScanProductTool extends BaseTool {
     const discoveredFeatures: DiscoveredFeature[] = [];
     const discoveredPages: DiscoveredPage[] = [];
     const visitedUrls = new Set<string>();
-    const processResults: Record<string, ProcessResult> = {};
-    const advisoryGaps: { process: string; expected: string; status: string }[] = [];
 
-    // Phase 1: Process Walking (if domain template and enabled)
-    if (walkProcesses && domainTemplate && useDomainTemplate) {
-      const processes = domainTemplate.processes || {};
-      const toWalk = processesToWalk || Object.keys(processes);
-
-      for (const processName of toWalk) {
-        const processDef = processes[processName];
-        if (!processDef) continue;
-
-        const result = await this.walkProcess(
-          context,
-          driver,
-          processName,
-          processDef,
-          baseUrl
-        );
-
-        processResults[processName] = result;
-
-        // Track discovered features from process
-        for (const step of result.steps) {
-          if (step.status === 'found' || step.status === 'completed') {
-            discoveredFeatures.push({
-              name: `${processDef.name || processName}: ${step.stepName}`,
-              url: step.url || baseUrl,
-              type: 'process_step',
-              description: step.stepAction
-            });
-          }
-        }
-
-        // Track gaps
-        if (result.status === 'incomplete') {
-          advisoryGaps.push({
-            process: processName,
-            expected: processDef.name || processName,
-            status: `Only ${result.stepsCompleted}/${result.stepsTotal} steps completed`
-          });
-        }
-      }
-    }
-
-    // Phase 2: Page Scanning
-    const depth = scanDepth || 'standard';
-    const maxPagesNum = maxPages || 20;
+    // Phase 1: Page Scanning
+    const depth = scanDepth ?? 'standard';
+    const maxPagesNum = maxPages ?? 20;
 
     // Start from base URL
     await driver.get(baseUrl);
@@ -94,7 +45,7 @@ export class AnalyzerScanProductTool extends BaseTool {
     // Capture homepage screenshot
     await this.captureScreenshot(context, driver, 'homepage');
 
-    // Discover links on current page
+    // Discover features on current page
     const pageFeatures = await this.discoverPageFeatures(context, driver);
     discoveredFeatures.push(...pageFeatures);
 
@@ -117,7 +68,7 @@ export class AnalyzerScanProductTool extends BaseTool {
 
         try {
           await driver.get(link);
-          await new Promise(r => setTimeout(r, 1000)); // Wait for page load
+          await new Promise(r => setTimeout(r, 1000));
 
           const pageUrl = await driver.getCurrentUrl();
           const pageTitle = await driver.getTitle();
@@ -146,7 +97,6 @@ export class AnalyzerScanProductTool extends BaseTool {
             }
           }
         } catch {
-          // Skip pages that fail to load
           continue;
         }
       }
@@ -155,120 +105,40 @@ export class AnalyzerScanProductTool extends BaseTool {
     // Store results in session
     context.analysisSession.discoveredFeatures = discoveredFeatures;
     context.analysisSession.discoveredPages = discoveredPages;
-    context.analysisSession.processResults = processResults;
-    context.analysisSession.advisoryGaps = advisoryGaps;
 
-    // Build summary
+    // Check imported context for focus areas or critical flows
+    const importedContextSummary = context.analysisSession.importedContext.length > 0
+      ? `${context.analysisSession.importedContext.length} context(s) imported — used for risk profiling`
+      : 'No context imported — use analyzer_import_context to provide PRD or scope';
+
     const result = {
       message: 'Product scan completed',
-      scanMode: useDomainTemplate ? 'domain_focused' : 'scan_all',
       scanDepth: depth,
+      importedContext: importedContextSummary,
       summary: {
         pagesVisited: visitedUrls.size,
-        featuresDiscovered: discoveredFeatures.length,
-        processesWalked: Object.keys(processResults).length,
-        advisoryGaps: advisoryGaps.length
+        featuresDiscovered: discoveredFeatures.length
       },
-      processResults: Object.entries(processResults).map(([name, r]) => ({
-        process: name,
-        status: r.status,
-        completed: `${r.stepsCompleted}/${r.stepsTotal}`
+      pages: discoveredPages.map(p => ({
+        url: p.url,
+        title: p.title,
+        featureCount: p.features.length
       })),
-      topFeatures: discoveredFeatures.slice(0, 10).map(f => ({
+      topFeatures: discoveredFeatures.slice(0, 15).map(f => ({
         name: f.name,
         type: f.type,
         url: f.url
       })),
-      advisoryGaps: advisoryGaps.slice(0, 5),
       nextSteps: [
-        'Review discovered features for accuracy',
+        ...(context.analysisSession.importedContext.length === 0
+          ? ['Use analyzer_import_context to provide PRD, user stories, or scope (recommended)']
+          : []),
         'Use analyzer_build_risk_profile to generate risk assessment',
         'Use analyzer_generate_documentation to create documentation'
       ]
     };
 
     return this.success(JSON.stringify(result, null, 2), true);
-  }
-
-  private async walkProcess(
-    context: Context,
-    driver: any,
-    processName: string,
-    processDef: any,
-    baseUrl: string
-  ): Promise<ProcessResult> {
-    const steps = processDef.steps || [];
-    const stepResults: ProcessStepResult[] = [];
-    const screenshots: ScreenshotInfo[] = [];
-    let stepsCompleted = 0;
-
-    // Navigate to base URL to start
-    await driver.get(baseUrl);
-    await new Promise(r => setTimeout(r, 1000));
-
-    for (const step of steps) {
-      const stepResult: ProcessStepResult = {
-        stepName: step.name,
-        stepAction: step.action,
-        status: 'pending',
-        url: undefined
-      };
-
-      try {
-        // Try to find element based on step definition
-        if (step.selector) {
-          const element = await driver.findElement(By.css(step.selector));
-          if (await element.isDisplayed()) {
-            stepResult.status = 'found';
-            stepResult.url = await driver.getCurrentUrl();
-
-            // Capture screenshot for this step
-            const screenshotName = `${processName}_${step.name}`.replace(/\s+/g, '_').toLowerCase();
-            await this.captureScreenshot(context, driver, screenshotName, step.name, processName);
-
-            stepsCompleted++;
-          }
-        } else if (step.url) {
-          // Navigate to step URL
-          await driver.get(step.url.startsWith('http') ? step.url : baseUrl + step.url);
-          await new Promise(r => setTimeout(r, 1000));
-          stepResult.status = 'navigated';
-          stepResult.url = await driver.getCurrentUrl();
-          stepsCompleted++;
-
-          // Capture screenshot
-          const screenshotName = `${processName}_${step.name}`.replace(/\s+/g, '_').toLowerCase();
-          await this.captureScreenshot(context, driver, screenshotName, step.name, processName);
-        } else {
-          // Try to find by text content
-          const textToFind = step.action.toLowerCase();
-          const elements = await driver.findElements(By.xpath(`//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '${textToFind.slice(0, 20)}')]`));
-
-          if (elements.length > 0) {
-            stepResult.status = 'found';
-            stepResult.url = await driver.getCurrentUrl();
-            stepsCompleted++;
-          } else {
-            stepResult.status = 'not_found';
-          }
-        }
-      } catch (err) {
-        stepResult.status = 'error';
-      }
-
-      stepResults.push(stepResult);
-    }
-
-    return {
-      processDisplayName: processDef.name || processName,
-      description: processDef.description,
-      risk: processDef.risk || 'medium',
-      status: stepsCompleted === steps.length ? 'complete' : stepsCompleted > 0 ? 'incomplete' : 'not_started',
-      stepsCompleted,
-      stepsTotal: steps.length,
-      steps: stepResults,
-      screenshots
-    };
   }
 
   private async captureScreenshot(
@@ -301,7 +171,7 @@ export class AnalyzerScanProductTool extends BaseTool {
     }
   }
 
-  private async discoverPageFeatures(context: Context, driver: any): Promise<DiscoveredFeature[]> {
+  private async discoverPageFeatures(_context: Context, driver: any): Promise<DiscoveredFeature[]> {
     const features: DiscoveredFeature[] = [];
     const currentUrl = await driver.getCurrentUrl();
 
@@ -387,7 +257,6 @@ export class AnalyzerScanProductTool extends BaseTool {
       }
     } catch { /* skip */ }
 
-    // Remove duplicates
     return [...new Set(links)];
   }
 }

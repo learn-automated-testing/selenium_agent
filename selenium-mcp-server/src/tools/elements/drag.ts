@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
-import { ToolResult } from '../../types.js';
+import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   sourceRef: z.string().describe('Source element reference from page snapshot'),
@@ -12,6 +12,7 @@ export class DragDropTool extends BaseTool {
   readonly name = 'drag_drop';
   readonly description = 'Drag and drop from source element to target element';
   readonly inputSchema = schema;
+  readonly category: ToolCategory = 'interaction';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { sourceRef, targetRef } = this.parseParams(schema, params);
