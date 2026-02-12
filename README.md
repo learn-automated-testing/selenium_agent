@@ -1,9 +1,12 @@
-# 🤖 Selenium MCP Server
+# Selenium MCP Server
 
 [![npm version](https://img.shields.io/npm/v/selenium-ai-agent.svg)](https://www.npmjs.com/package/selenium-ai-agent)
-[![PyPI version](https://img.shields.io/pypi/v/ai-agent-selenium.svg)](https://pypi.org/project/ai-agent-selenium/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium Grid](https://img.shields.io/badge/Selenium%20Grid-Parallel-blue.svg)](https://www.selenium.dev/documentation/grid/)
+
+### One-Click Install
+
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
 
 **The first MCP server with true parallel browser automation using Selenium Grid.**
 
@@ -13,7 +16,7 @@ While other browser MCP servers run a single browser instance, Selenium MCP Serv
   <img src="docs/selenium-agent-workflow.png" alt="Selenium Agent Workflow" width="700"/>
 </p>
 
-## ⚡ Why This Over Playwright MCP?
+## Why This Over Playwright MCP?
 
 | Feature | Playwright MCP | Selenium MCP Server |
 |---------|---------------|---------------------|
@@ -26,37 +29,91 @@ While other browser MCP servers run a single browser instance, Selenium MCP Serv
 
 **Perfect for:** AI agents that need to explore large applications fast, cross-browser testing, and enterprise automation at scale.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install
 
 ```bash
-# npm (recommended)
+# Install globally
 npm install -g selenium-ai-agent
 
-# or pip
-pip install ai-agent-selenium
+# Or run directly with npx (no install needed)
+npx selenium-ai-agent
 ```
 
-### 2. Start Selenium Grid
+### 2. Configure Your MCP Client
+
+**Claude Code:**
+```bash
+claude mcp add selenium-mcp -- npx selenium-ai-agent
+```
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["selenium-ai-agent"]
+    }
+  }
+}
+```
+
+**Cursor** (`.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["selenium-ai-agent"]
+    }
+  }
+}
+```
+
+**GitHub Copilot** (`.vscode/mcp.json`):
+```json
+{
+  "servers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["selenium-ai-agent"],
+      "type": "stdio"
+    }
+  }
+}
+```
+
+> See [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) for all 6 clients (Claude Code, Claude Desktop, Cursor, Copilot, Cline, Windsurf).
+
+### 3. Try It!
+
+```
+"Navigate to https://example.com and take a screenshot"
+```
+
+## Parallel Exploration with Selenium Grid
+
+Explore your entire application in seconds, not minutes:
+
+### Start the Grid
 
 ```bash
-# Clone and start the Grid
 git clone https://github.com/learn-automated-testing/selenium_agent.git
-cd selenium_agent
+cd selenium_agent/selenium-grid
 docker-compose up -d
 
 # Verify Grid is running
 open http://localhost:4444  # Grid console
 ```
 
-### 3. Configure Your MCP Client
+### Configure with Grid
 
-**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "selenium": {
+    "selenium-mcp": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "env": {
@@ -67,18 +124,14 @@ open http://localhost:4444  # Grid console
 }
 ```
 
-### 4. Try It!
+### Explore in Parallel
 
 ```
-"Explore the e-commerce site at https://practiceautomatedtesting.com in parallel — 
+"Explore the e-commerce site at https://practiceautomatedtesting.com in parallel —
 check the homepage, products, cart, and checkout sections simultaneously"
 ```
 
 The agent will spin up 4 browser sessions on your Grid and explore all sections at once.
-
-## 🔥 Killer Feature: Parallel Exploration
-
-Explore your entire application in seconds, not minutes:
 
 ```typescript
 // What happens behind the scenes:
@@ -96,29 +149,25 @@ parallel_explore({
 // → Complete site map in one call
 ```
 
-**Grid Status:**
-```
-Grid Status: READY
-Capacity: 0/5 slots used (5 available)
-
-Nodes (5):
-  - chrome-node-1 | UP | 0/1 sessions | chrome 144.0
-  - chrome-node-2 | UP | 0/1 sessions | chrome 144.0
-  - chrome-node-3 | UP | 0/1 sessions | chrome 144.0
-  - chrome-node-4 | UP | 0/1 sessions | chrome 144.0
-  - firefox-node  | UP | 0/1 sessions | firefox 147.0
+**Scale up anytime:**
+```bash
+docker-compose up -d --scale chrome-node=10
 ```
 
-## 🛠️ 70+ Tools Organized by Category
+## 69 Tools
 
-### Grid & Parallel Execution (NEW!)
+### Grid & Parallel Execution
 | Tool | Description |
 |------|-------------|
 | `grid_status` | Check Grid health, nodes, and capacity |
+| `grid_start` | Start Docker Compose Grid |
+| `grid_stop` | Stop Docker Compose Grid |
+| `grid_scale` | Scale Grid nodes up/down |
 | `session_create` | Create browser session on Grid |
 | `session_select` | Switch active session |
 | `session_list` | List all Grid sessions |
 | `session_destroy` | Clean up a session |
+| `session_destroy_all` | Clean up all sessions |
 | `parallel_explore` | Explore multiple URLs simultaneously |
 | `parallel_execute` | Run tasks in parallel across sessions |
 | `exploration_merge` | Combine exploration results |
@@ -137,27 +186,36 @@ Nodes (5):
 ### Input
 `input_text` · `key_press` · `file_upload`
 
+### Mouse
+`mouse_move` · `mouse_click` · `mouse_drag`
+
 ### Verification
 `verify_element_visible` · `verify_text_visible` · `verify_value` · `verify_list_visible`
 
 ### Browser Management
-`wait_for` · `execute_javascript` · `dialog_handle` · `console_logs` · `network_monitor` · `resize_window`
+`wait_for` · `execute_javascript` · `dialog_handle` · `console_logs` · `network_monitor` · `resize_window` · `pdf_generate`
 
 ### Tabs
 `tab_list` · `tab_select` · `tab_new` · `tab_close`
 
-### Recording & Generation
-`start_recording` · `stop_recording` · `recording_status` · `generate_script`
+### Session
+`close_browser` · `reset_session` · `set_stealth_mode`
+
+### Recording
+`start_recording` · `stop_recording` · `recording_status` · `clear_recording`
+
+### Batch
+`batch_execute`
 
 ### AI Agent Tools
 | Agent | Tools |
 |-------|-------|
 | **Planner** | `planner_setup_page`, `planner_explore_page`, `planner_save_plan` |
 | **Generator** | `generator_setup_page`, `generator_read_log`, `generator_write_test` |
-| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test` |
-| **Analyzer** | `analyzer_setup`, `analyzer_scan_product`, `analyzer_build_risk_profile` |
+| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `browser_generate_locator` |
+| **Analyzer** | `analyzer_setup`, `analyzer_import_context`, `analyzer_scan_product`, `analyzer_build_risk_profile`, `analyzer_save_profile`, `analyzer_generate_documentation` |
 
-## 🤖 AI Test Agents
+## AI Test Agents
 
 A complete testing pipeline with human review gates:
 
@@ -175,47 +233,50 @@ A complete testing pipeline with human review gates:
 ```bash
 # 1. Analyze risk (optional)
 "Analyze https://myshop.com and identify high-risk areas for testing"
-→ Output: risk-profiles/myshop-risk-profile.yaml
+# → Output: risk-profiles/myshop-risk-profile.yaml
 
 # 2. Create test plan
 "Create a test plan for the checkout flow"
-→ Output: test-plans/checkout-flow.md
-→ REVIEW AND APPROVE
+# → Output: test-plans/checkout-flow.md
+# → REVIEW AND APPROVE
 
 # 3. Generate tests
-"Generate pytest tests from the checkout flow test plan"
-→ Output: tests/test_checkout.py
+"Generate tests from the checkout flow test plan"
+# → Output: tests/test_checkout.py
 
 # 4. Run and heal
 "Run the tests and fix any failures"
-→ Auto-fixes: selectors, waits, assertions
+# → Auto-fixes: selectors, waits, assertions
 ```
 
-## 📁 Project Structure
+## Configuration
 
-```
-selenium_agent/
-├── selenium-mcp-server/     # TypeScript MCP server
-│   └── src/
-│       ├── server.ts        # MCP protocol handler
-│       ├── context.ts       # Browser session management
-│       ├── grid/            # Selenium Grid integration
-│       │   ├── grid-client.ts
-│       │   ├── session-pool.ts
-│       │   └── exploration-coordinator.ts
-│       └── tools/           # 70+ tools
-│           ├── navigation/
-│           ├── elements/
-│           ├── grid/        # Parallel execution tools
-│           ├── agents/      # AI agent tools
-│           └── analyzer/    # Risk analysis
-│
-├── docker-compose.yml       # Selenium Grid setup
-├── agents/                  # Agent prompt definitions
-└── docs/                    # Guides and diagrams
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SELENIUM_GRID_URL` | — | Grid hub URL (enables parallel features) |
+| `SELENIUM_BROWSER` | `chrome` | Browser to use (`chrome`, `firefox`, `edge`) |
+| `SELENIUM_HEADLESS` | `false` | Run browser in headless mode |
+| `SELENIUM_TIMEOUT` | `30000` | Default timeout in ms |
+| `SE_AVOID_STATS` | — | Set to `true` to disable Selenium usage statistics |
+
+### Local Browser (No Grid)
+
+Works without Grid — just don't set `SELENIUM_GRID_URL`:
+
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["selenium-ai-agent"]
+    }
+  }
+}
 ```
 
-## 🐳 Docker Compose
+## Docker Compose
 
 The included `docker-compose.yml` gives you a production-ready Grid:
 
@@ -237,46 +298,39 @@ services:
       replicas: 1  # 1 Firefox browser
 ```
 
-**Scale up anytime:**
-```bash
-docker-compose up -d --scale chrome-node=10
+## Project Structure
+
+```
+selenium_agent/
+├── selenium-mcp-server/     # TypeScript MCP server (npm: selenium-ai-agent)
+│   └── src/
+│       ├── server.ts        # MCP protocol handler
+│       ├── context.ts       # Browser session management
+│       ├── grid/            # Selenium Grid integration
+│       │   ├── grid-client.ts
+│       │   ├── session-pool.ts
+│       │   └── exploration-coordinator.ts
+│       └── tools/           # 69 tools
+│           ├── navigation/
+│           ├── elements/
+│           ├── grid/        # Parallel execution tools
+│           ├── agents/      # AI agent tools
+│           └── analyzer/    # Risk analysis
+│
+├── selenium-grid/
+│   └── docker-compose.yml   # Selenium Grid setup
+├── agents/                  # Agent prompt definitions
+└── docs/                    # Guides and diagrams
 ```
 
-## 📖 Documentation
+## Documentation
 
-- [Installation Guide](docs/INSTALLATION_GUIDE.md) — All installation options
-- [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) — Claude Desktop, Cursor, Cline, Continue.dev
+- [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) — Claude Code, Claude Desktop, Cursor, Copilot, Cline, Windsurf
 - [Agent Workflow](docs/AGENT_WORKFLOW.md) — End-to-end testing pipeline
 - [Framework Standards](docs/FRAMEWORK_STANDARDS.md) — Code generation conventions
 - [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) — Production deployment
 
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SELENIUM_GRID_URL` | — | Grid hub URL (enables parallel features) |
-| `SELENIUM_BROWSER` | `chrome` | Default browser |
-| `SELENIUM_HEADLESS` | `false` | Run headless |
-| `SELENIUM_TIMEOUT` | `30000` | Default timeout (ms) |
-
-### Local Browser (No Grid)
-
-Works without Grid too — just don't set `SELENIUM_GRID_URL`:
-
-```json
-{
-  "mcpServers": {
-    "selenium": {
-      "command": "npx",
-      "args": ["selenium-ai-agent"]
-    }
-  }
-}
-```
-
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please read our contributing guidelines and submit PRs.
 
@@ -286,11 +340,11 @@ Contributions welcome! Please read our contributing guidelines and submit PRs.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 MIT — see [LICENSE](LICENSE) for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Selenium](https://www.selenium.dev/) — The browser automation framework
 - [Model Context Protocol](https://modelcontextprotocol.io/) — The AI agent communication standard
@@ -299,6 +353,6 @@ MIT — see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <b>If this project helps you, please give it a ⭐!</b><br>
+  <b>If this project helps you, please give it a star!</b><br>
   <a href="https://github.com/learn-automated-testing/selenium_agent">Star on GitHub</a>
 </p>
