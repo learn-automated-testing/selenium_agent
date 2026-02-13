@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["selenium-ai-agent"],
+      "env": {
+        "SELENIUM_GRID_URL": "http://localhost:4444",
+        "SE_AVOID_STATS": "true"
+      }
+    }
+  }
+}

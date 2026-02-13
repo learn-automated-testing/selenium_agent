@@ -21,6 +21,13 @@ node_modules/
 # Environment
 .env
 
+# Local MCP config (contains absolute paths)
+.mcp.json
+.claude/mcp.json
+
+# Temp/test directories
+tesat/
+
 # Test outputs
 coverage/
 test-results/
