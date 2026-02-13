@@ -189,7 +189,53 @@ Python output using the `selenium-python-pytest` framework.
 
 ---
 
-## Example 6: Run Tests & Heal Failures
+## Example 6: Generate Robot Framework Tests
+
+Robot Framework output using the `robot-framework` framework.
+
+**You say:**
+> Generate Robot Framework tests for the contact form at https://practiceautomatedtesting.com
+
+**What happens:**
+1. Sets up the project if needed — creates `venv`, installs `robotframework` and `robotframework-seleniumlibrary` via pip
+2. `generator_setup_page` — opens the site with `framework: "robot-framework"`, starts recording
+3. `navigate_to` — goes to the contact page
+4. `input_text` — fills in name, email, message fields
+5. `click_element` — submits the form
+6. `verify_text_visible` — confirms success message
+7. `stop_recording` — ends the recording session
+8. `generator_write_test` — generates a `.robot` file
+
+**AI responds:**
+> I set up a Robot Framework environment, recorded the contact form flow, and generated `tests/contact_form.robot`:
+>
+> ```robot
+> *** Settings ***
+> Library    SeleniumLibrary
+>
+> *** Variables ***
+> ${URL}    https://practiceautomatedtesting.com/contact
+>
+> *** Test Cases ***
+> Submit Contact Form With Valid Data
+>     Open Browser    ${URL}    chrome
+>     Input Text    css=[data-testid="name"]    Jane Doe
+>     Input Text    css=[data-testid="email"]    jane@example.com
+>     Input Text    css=[data-testid="message"]    Hello, I have a question about your products.
+>     Click Element    css=[data-testid="submit-button"]
+>     Wait Until Element Is Visible    css=[data-testid="success-message"]
+>     Element Should Contain    css=[data-testid="success-message"]    Thank you
+>     [Teardown]    Close Browser
+> ```
+>
+> Run with:
+> ```bash
+> robot tests/contact_form.robot
+> ```
+
+---
+
+## Example 7: Run Tests & Heal Failures
 
 Use the **Healer** agent to run tests, diagnose failures, and auto-fix them.
 
@@ -218,7 +264,7 @@ Use the **Healer** agent to run tests, diagnose failures, and auto-fix them.
 
 ---
 
-## Example 7: Parallel Grid Exploration
+## Example 8: Parallel Grid Exploration
 
 Use Selenium Grid to explore multiple sections simultaneously. Requires [Grid setup](../README.md#parallel-exploration-with-selenium-grid).
 

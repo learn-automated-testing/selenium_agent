@@ -219,6 +219,43 @@ Copy-paste these prompts into your AI assistant after configuring the MCP server
 
 ---
 
+### Generate Robot Framework Tests
+
+**You say:**
+> Generate Robot Framework tests for the contact form at https://practiceautomatedtesting.com
+
+**What happens:**
+1. Sets up the project if needed — creates `venv`, installs `robotframework` and `robotframework-seleniumlibrary` via pip
+2. `generator_setup_page` — opens the site with `framework: "robot-framework"`, starts recording
+3. Navigates to the contact page and fills in the form
+4. `stop_recording` → `generator_write_test` — generates a `.robot` file
+
+**AI responds:**
+> I set up a Robot Framework environment, recorded the contact form flow, and generated `tests/contact_form.robot`:
+>
+> ```robot
+> *** Settings ***
+> Library    SeleniumLibrary
+>
+> *** Variables ***
+> ${URL}    https://practiceautomatedtesting.com/contact
+>
+> *** Test Cases ***
+> Submit Contact Form With Valid Data
+>     Open Browser    ${URL}    chrome
+>     Input Text    css=[data-testid="name"]    Jane Doe
+>     Input Text    css=[data-testid="email"]    jane@example.com
+>     Input Text    css=[data-testid="message"]    Hello, I have a question about your products.
+>     Click Element    css=[data-testid="submit-button"]
+>     Wait Until Element Is Visible    css=[data-testid="success-message"]
+>     Element Should Contain    css=[data-testid="success-message"]    Thank you
+>     [Teardown]    Close Browser
+> ```
+>
+> Run with: `robot tests/contact_form.robot`
+
+---
+
 ### Run Tests & Heal Failures
 
 **You say:**
