@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context, type AnalysisSession } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { validateOutputPath } from '../../utils/sandbox.js';
 
 const schema = z.object({
   includeScreenshots: z.boolean().optional().default(true).describe('Include screenshots in the documentation'),
@@ -34,6 +35,8 @@ export class AnalyzerGenerateDocumentationTool extends BaseTool {
     const path = await import('path');
 
     const outputDir = session.outputDir;
+    const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
+    validateOutputPath(outputDir, unrestricted);
     const screenshotsDir = session.screenshotsDir;
     const baseFilename = outputFilename || 'product-discovery';
 

@@ -1,6 +1,7 @@
 import chrome from 'selenium-webdriver/chrome.js';
 import { WebDriver } from 'selenium-webdriver';
 import { BrowserConfig } from '../types.js';
+import { rewriteBidiWebSocketUrl } from './bidi-helpers.js';
 
 /** Chrome prefs that suppress xdg-open dialogs for non-HTTP protocols. */
 const EXCLUDED_SCHEMES: Record<string, unknown> = {
@@ -95,19 +96,9 @@ const STEALTH_PRELOAD_FUNCTION = `() => {
  *                 reach the node's internal Docker IP directly.
  */
 export async function applyStealthScripts(driver: WebDriver, gridUrl?: string): Promise<void> {
-  // When running through a grid, the webSocketUrl capability contains the
-  // node's internal Docker IP which is unreachable from the host.  Rewrite
-  // the host portion to route through the grid hub instead.
+  // Rewrite BiDi WebSocket URL to route through the grid hub
   if (gridUrl) {
-    const caps = await driver.getCapabilities();
-    const wsUrl = caps.get('webSocketUrl') as string | undefined;
-    if (wsUrl) {
-      const hubHost = new URL(gridUrl).host;
-      const corrected = wsUrl.replace(/^ws:\/\/[^/]+/, `ws://${hubHost}`);
-      // Capabilities are backed by a Map; overwrite the entry so getBidi()
-      // connects through the hub.
-      (caps as unknown as { map_: Map<string, unknown> }).map_.set('webSocketUrl', corrected);
-    }
+    await rewriteBidiWebSocketUrl(driver, gridUrl);
   }
 
   const createScriptManager = (await import('selenium-webdriver/bidi/scriptManager.js')).default;

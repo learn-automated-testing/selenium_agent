@@ -10,6 +10,7 @@ export class RecordingStatusTool extends BaseTool {
   readonly description = 'Check if recording is active and show recorded actions';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'recording';
+  readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
   async execute(context: Context, _params: unknown): Promise<ToolResult> {
     const status = context.getRecordingStatus();

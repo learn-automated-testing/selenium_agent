@@ -4,6 +4,7 @@ import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { getTestPlansDir, resolveOutputDir } from '../../utils/paths.js';
+import { validateOutputPath } from '../../utils/sandbox.js';
 
 // Planner Setup Tool
 const setupSchema = z.object({
@@ -149,6 +150,8 @@ export class PlannerSavePlanTool extends BaseTool {
     try {
       await fs.mkdir(plansDir, { recursive: true });
       const planPath = path.join(plansDir, finalFilename);
+      const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
+      validateOutputPath(planPath, unrestricted);
       await fs.writeFile(planPath, planContent);
 
       return this.success(`Test plan saved to: ${planPath}`, false);

@@ -3,6 +3,7 @@ import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { getProductDiscoveryDir } from '../../utils/paths.js';
+import { validateOutputPath } from '../../utils/sandbox.js';
 
 const schema = z.object({
   url: z.string().describe('Base URL of the product to analyze'),
@@ -37,6 +38,8 @@ export class AnalyzerSetupTool extends BaseTool {
     const baseOutputDir = outputDirParam || getProductDiscoveryDir(productSlug);
     const screenshotsDir = path.join(baseOutputDir, 'screenshots');
 
+    const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
+    validateOutputPath(baseOutputDir, unrestricted);
     await fs.mkdir(screenshotsDir, { recursive: true });
 
     // Initialize analysis session

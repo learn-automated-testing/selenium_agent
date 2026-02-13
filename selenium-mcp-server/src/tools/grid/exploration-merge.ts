@@ -12,6 +12,7 @@ export class ExplorationMergeTool extends BaseTool {
   readonly description = 'Merge results from multiple parallel explorations, deduplicating pages and building a unified site map.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
+  readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { explorationIds } = this.parseParams(schema, params);

@@ -13,6 +13,7 @@ export class ExplorationDiffTool extends BaseTool {
   readonly description = 'Compare two exploration results to find added, removed, and changed pages.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
+  readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { baselineId, currentId } = this.parseParams(schema, params);

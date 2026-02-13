@@ -3,43 +3,8 @@ import { spawn } from 'child_process';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
-
-// ============================================================================
-// Test Manifest reader
-//
-// Reads .test-manifest.json created by the generator.
-// Provides the healer with framework, run command, project root, etc.
-// ============================================================================
-
-interface TestManifest {
-  version: number;
-  projectRoot: string;
-  baseUrl: string;
-  framework: string;
-  runCommand: { command: string; args: string[] } | null;
-  configFile: string | null;
-  tests: Array<{ file: string; framework: string; createdAt: string }>;
-  updatedAt: string;
-}
-
-const MANIFEST_FILENAME = '.test-manifest.json';
-
-async function findManifest(startPath: string): Promise<TestManifest | null> {
-  const fs = await import('fs/promises');
-  const path = await import('path');
-
-  // Walk up from the test file path looking for .test-manifest.json
-  let dir = path.dirname(path.resolve(startPath));
-  const root = '/';
-  while (dir !== root) {
-    try {
-      const content = await fs.readFile(path.join(dir, MANIFEST_FILENAME), 'utf-8');
-      return JSON.parse(content) as TestManifest;
-    } catch { /* not found, keep walking */ }
-    dir = path.dirname(dir);
-  }
-  return null;
-}
+import { TestManifest, findManifest } from '../../types/manifest.js';
+import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 
 // ============================================================================
 // Shared command runner
@@ -123,6 +88,8 @@ Explicit mode examples:
     let finalArgs: string[];
     let finalCwd: string;
 
+    let manifest: TestManifest | null = null;
+
     if (explicitCmd && explicitArgs) {
       // Explicit mode — LLM provided everything
       finalCmd = explicitCmd;
@@ -130,7 +97,7 @@ Explicit mode examples:
       finalCwd = explicitCwd || process.cwd();
     } else if (testPath) {
       // Manifest mode — discover from .test-manifest.json
-      const manifest = await findManifest(testPath);
+      manifest = await findManifest(testPath);
       if (!manifest) {
         return this.error(
           `No .test-manifest.json found near ${testPath}. ` +
@@ -151,6 +118,28 @@ Explicit mode examples:
     }
 
     try {
+      // Run seed tests first if manifest has them
+      if (manifest?.seedTests && manifest.seedTests.length > 0) {
+        for (const seed of manifest.seedTests) {
+          const seedResult = await runCommand(
+            manifest.runCommand!.command,
+            [...manifest.runCommand!.args, '--spec', seed.file],
+            finalCwd,
+            timeout
+          );
+          if (seedResult.exitCode !== 0) {
+            return this.success(JSON.stringify({
+              message: 'Seed test failed — skipping main test',
+              seedFile: seed.file,
+              seedDescription: seed.description,
+              exitCode: seedResult.exitCode,
+              stdout: seedResult.stdout.slice(0, 4000),
+              stderr: seedResult.stderr.slice(0, 2000),
+            }, null, 2), false);
+          }
+        }
+      }
+
       const result = await runCommand(finalCmd, finalArgs, finalCwd, timeout);
 
       return this.success(JSON.stringify({
@@ -251,6 +240,7 @@ const fixTestSchema = z.object({
   testPath: z.string().describe('Absolute path to the test file to fix'),
   fixedCode: z.string().describe('The corrected test code'),
   fixDescription: z.string().describe('Description of what was fixed'),
+  verify: z.boolean().optional().describe('Validate selectors in fixed code before writing (default: false)'),
 });
 
 export class HealerFixTestTool extends BaseTool {
@@ -259,12 +249,33 @@ export class HealerFixTestTool extends BaseTool {
   readonly inputSchema = fixTestSchema;
   readonly category: ToolCategory = 'agent';
 
-  async execute(_context: Context, params: unknown): Promise<ToolResult> {
-    const { testPath, fixedCode, fixDescription } = this.parseParams(fixTestSchema, params);
+  async execute(context: Context, params: unknown): Promise<ToolResult> {
+    const { testPath, fixedCode, fixDescription, verify } = this.parseParams(fixTestSchema, params);
 
     const fs = await import('fs/promises');
 
     try {
+      // Selector verification (non-blocking)
+      let validationReport: string | undefined;
+      if (verify) {
+        try {
+          const selectors = extractSelectors(fixedCode);
+          if (selectors.length > 0) {
+            const driver = await context.getDriver();
+            const results = await validateSelectorsLive(driver, selectors);
+            const invalid = results.filter(r => !r.valid);
+            if (invalid.length > 0) {
+              validationReport = `Selector validation: ${results.length - invalid.length}/${results.length} valid. ` +
+                `Invalid: ${invalid.map(r => `"${r.selector}"`).join(', ')}`;
+            } else {
+              validationReport = `Selector validation: all ${results.length} selectors valid`;
+            }
+          }
+        } catch {
+          // Validation is non-blocking
+        }
+      }
+
       // Create backup
       const backupPath = `${testPath}.bak`;
       try {
@@ -275,12 +286,17 @@ export class HealerFixTestTool extends BaseTool {
       // Write fixed code
       await fs.writeFile(testPath, fixedCode);
 
-      return this.success(JSON.stringify({
+      const result: Record<string, unknown> = {
         message: 'Test fixed and saved',
         file: testPath,
         backup: backupPath,
         fix: fixDescription,
-      }, null, 2), false);
+      };
+      if (validationReport) {
+        result.selectorValidation = validationReport;
+      }
+
+      return this.success(JSON.stringify(result, null, 2), false);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return this.error(`Failed to fix test: ${message}`);
@@ -341,5 +357,107 @@ export class BrowserGenerateLocatorTool extends BaseTool {
     }
 
     return this.error(`No matching element found for: ${elementDescription}`);
+  }
+}
+
+// ============================================================================
+// Healer Inspect Page Tool
+//
+// Captures a fresh snapshot and compares expected locators vs actual elements.
+// Helps understand UI drift before applying a fix.
+// ============================================================================
+
+const inspectPageSchema = z.object({
+  locators: z.array(z.object({
+    name: z.string().describe('Human-readable name for this locator'),
+    strategy: z.string().describe('Locator strategy (id, css, xpath, text)'),
+    value: z.string().describe('Locator value'),
+  })).describe('Expected locators to validate against the live page'),
+});
+
+export class HealerInspectPageTool extends BaseTool {
+  readonly name = 'healer_inspect_page';
+  readonly description = `Inspect the current page and compare expected locators against actual elements.
+
+Use after a test failure to understand UI drift before applying a fix. Reports:
+- Found elements (locator still works)
+- Missing elements (locator broken, may need update)
+- Suggested updated locators based on element discovery`;
+  readonly inputSchema = inspectPageSchema;
+  readonly category: ToolCategory = 'agent';
+
+  async execute(context: Context, params: unknown): Promise<ToolResult> {
+    const { locators } = this.parseParams(inspectPageSchema, params);
+
+    const driver = await context.ensureBrowser();
+    await context.captureSnapshot();
+    const snapshot = await context.getSnapshot();
+
+    const results: Array<{
+      name: string;
+      strategy: string;
+      value: string;
+      status: 'found' | 'missing';
+      matchCount?: number;
+      suggestion?: string;
+    }> = [];
+
+    for (const loc of locators) {
+      try {
+        let matchCount = 0;
+
+        if (loc.strategy === 'css' || loc.strategy === 'id') {
+          const selector = loc.strategy === 'id' ? `#${loc.value}` : loc.value;
+          matchCount = await driver.executeScript(
+            `return document.querySelectorAll(arguments[0]).length;`,
+            selector
+          ) as number;
+        } else if (loc.strategy === 'xpath') {
+          const xpathResult = await driver.executeScript(
+            `const r = document.evaluate(arguments[0], document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); return r.snapshotLength;`,
+            loc.value
+          ) as number;
+          matchCount = xpathResult;
+        } else if (loc.strategy === 'text') {
+          // Search snapshot elements for text match
+          for (const [, info] of snapshot.elements) {
+            if (info.text?.includes(loc.value) || info.ariaLabel?.includes(loc.value)) {
+              matchCount++;
+            }
+          }
+        }
+
+        if (matchCount > 0) {
+          results.push({ name: loc.name, strategy: loc.strategy, value: loc.value, status: 'found', matchCount });
+        } else {
+          // Try to find a suggestion from the snapshot
+          let suggestion: string | undefined;
+          const searchTerm = loc.value.toLowerCase();
+          for (const [ref, info] of snapshot.elements) {
+            const text = (info.text || '').toLowerCase();
+            const label = (info.ariaLabel || '').toLowerCase();
+            if (text.includes(searchTerm) || label.includes(searchTerm)) {
+              const id = info.attributes['id'];
+              suggestion = id ? `Try id="${id}" (ref: ${ref})` : `Try ref="${ref}" (${info.tagName}: ${info.text?.slice(0, 30)})`;
+              break;
+            }
+          }
+          results.push({ name: loc.name, strategy: loc.strategy, value: loc.value, status: 'missing', suggestion });
+        }
+      } catch {
+        results.push({ name: loc.name, strategy: loc.strategy, value: loc.value, status: 'missing', suggestion: 'Error evaluating locator' });
+      }
+    }
+
+    const found = results.filter(r => r.status === 'found').length;
+    const missing = results.filter(r => r.status === 'missing').length;
+
+    return this.success(JSON.stringify({
+      message: `Page inspection complete: ${found} found, ${missing} missing`,
+      url: snapshot.url,
+      title: snapshot.title,
+      totalElements: snapshot.elements.size,
+      locatorResults: results,
+    }, null, 2), false);
   }
 }

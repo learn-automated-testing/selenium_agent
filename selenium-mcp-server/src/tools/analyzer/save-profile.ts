@@ -3,6 +3,7 @@ import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { getRiskProfilesDir, resolveOutputDir } from '../../utils/paths.js';
+import { validateOutputPath } from '../../utils/sandbox.js';
 
 const schema = z.object({
   filename: z.string().optional().describe('Output filename (default: product-name-risk-profile.yaml)'),
@@ -40,6 +41,8 @@ export class AnalyzerSaveProfileTool extends BaseTool {
 
     // Create output directory
     const outputDir = resolveOutputDir(customOutputDir, getRiskProfilesDir());
+    const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
+    validateOutputPath(outputDir, unrestricted);
     await fs.mkdir(outputDir, { recursive: true });
 
     const outputPath = path.join(outputDir, outputFilename);

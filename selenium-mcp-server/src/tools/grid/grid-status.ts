@@ -10,6 +10,7 @@ export class GridStatusTool extends BaseTool {
   readonly description = 'Check the status of the Selenium Grid, including available nodes, browsers, and capacity. Requires SELENIUM_GRID_URL environment variable.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
+  readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
   async execute(context: Context, _params: unknown): Promise<ToolResult> {
     const { client } = await context.ensureGrid();

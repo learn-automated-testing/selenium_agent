@@ -12,6 +12,7 @@ export class SessionListTool extends BaseTool {
   readonly description = 'List all active browser sessions on the Selenium Grid, optionally filtered by tags.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
+  readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { tags } = this.parseParams(schema, params);

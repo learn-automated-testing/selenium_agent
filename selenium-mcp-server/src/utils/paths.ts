@@ -54,6 +54,11 @@ export function getTestsDir(): string {
   return path.join(getOutputDir(), 'tests');
 }
 
+/** Directory for test specs: <output>/specs/ */
+export function getSpecsDir(): string {
+  return path.join(getOutputDir(), 'specs');
+}
+
 /** Directory for risk profiles: <output>/risk-profiles/ */
 export function getRiskProfilesDir(): string {
   return path.join(getOutputDir(), 'risk-profiles');

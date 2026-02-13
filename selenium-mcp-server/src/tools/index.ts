@@ -38,10 +38,14 @@ import {
   GeneratorSetupTool,
   GeneratorReadLogTool,
   GeneratorWriteTestTool,
+  GeneratorWriteSeedTestTool,
   HealerRunTestsTool,
   HealerDebugTestTool,
   HealerFixTestTool,
-  BrowserGenerateLocatorTool
+  BrowserGenerateLocatorTool,
+  HealerInspectPageTool,
+  GeneratorSaveSpecTool,
+  GeneratorReadSpecTool,
 } from './agents/index.js';
 
 // Analyzer tools
@@ -143,16 +147,20 @@ export function getAllTools(): BaseTool[] {
     new PlannerExplorePageTool(),
     new PlannerSavePlanTool(),
 
-    // Generator Agent (3)
+    // Generator Agent (6)
     new GeneratorSetupTool(),
     new GeneratorReadLogTool(),
     new GeneratorWriteTestTool(),
+    new GeneratorWriteSeedTestTool(),
+    new GeneratorSaveSpecTool(),
+    new GeneratorReadSpecTool(),
 
-    // Healer Agent (4)
+    // Healer Agent (5)
     new HealerRunTestsTool(),
     new HealerDebugTestTool(),
     new HealerFixTestTool(),
     new BrowserGenerateLocatorTool(),
+    new HealerInspectPageTool(),
 
     // Analyzer (6)
     new AnalyzerSetupTool(),
@@ -247,11 +255,15 @@ export {
   GeneratorSetupTool,
   GeneratorReadLogTool,
   GeneratorWriteTestTool,
+  GeneratorWriteSeedTestTool,
+  GeneratorSaveSpecTool,
+  GeneratorReadSpecTool,
   // Healer Agent
   HealerRunTestsTool,
   HealerDebugTestTool,
   HealerFixTestTool,
   BrowserGenerateLocatorTool,
+  HealerInspectPageTool,
   // Analyzer
   AnalyzerSetupTool,
   AnalyzerImportContextTool,

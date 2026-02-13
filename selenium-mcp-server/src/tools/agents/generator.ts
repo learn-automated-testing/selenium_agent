@@ -3,58 +3,12 @@ import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { getTestsDir, resolveOutputDir } from '../../utils/paths.js';
-
-// ============================================================================
-// Test Manifest
-//
-// Persisted as .test-manifest.json in the test output directory.
-// Bridges generator → healer: when the generator creates tests, it records
-// everything the healer needs to know to run them later.
-// ============================================================================
-
-interface TestManifestEntry {
-  file: string;
-  framework: string;
-  createdAt: string;
-}
-
-interface TestManifest {
-  version: 1;
-  projectRoot: string;
-  baseUrl: string;
-  framework: string;
-  runCommand: RunCommand | null;
-  configFile: string | null;
-  tests: TestManifestEntry[];
-  updatedAt: string;
-}
-
-interface RunCommand {
-  command: string;
-  args: string[];
-}
-
-const MANIFEST_FILENAME = '.test-manifest.json';
-
-async function readManifest(dir: string): Promise<TestManifest | null> {
-  const fs = await import('fs/promises');
-  const path = await import('path');
-  const manifestPath = path.join(dir, MANIFEST_FILENAME);
-  try {
-    const content = await fs.readFile(manifestPath, 'utf-8');
-    return JSON.parse(content) as TestManifest;
-  } catch {
-    return null;
-  }
-}
-
-async function writeManifest(dir: string, manifest: TestManifest): Promise<string> {
-  const fs = await import('fs/promises');
-  const path = await import('path');
-  const manifestPath = path.join(dir, MANIFEST_FILENAME);
-  await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
-  return manifestPath;
-}
+import {
+  TestManifest, RunCommand, SeedTestEntry,
+  readManifest, writeManifest,
+} from '../../types/manifest.js';
+import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
+import { validateOutputPath } from '../../utils/sandbox.js';
 
 /**
  * Detect the run command for a framework based on common conventions.
@@ -205,6 +159,8 @@ const writeTestSchema = z.object({
     args: z.array(z.string()),
   }).optional().describe('Custom run command override. If omitted, a default is suggested based on framework.'),
   configFile: z.string().optional().describe('Path to framework config file (e.g. wdio.conf.ts, playwright.config.ts). Auto-detected if omitted.'),
+  verify: z.boolean().optional().describe('Validate selectors against the live page before writing (default: true)'),
+  specFile: z.string().optional().describe('Path to the spec file this test was generated from'),
 });
 
 export class GeneratorWriteTestTool extends BaseTool {
@@ -225,7 +181,8 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const {
       testCode, filename, framework, outputDir,
-      projectRoot: explicitProjectRoot, baseUrl, runCommand, configFile: explicitConfig
+      projectRoot: explicitProjectRoot, baseUrl, runCommand, configFile: explicitConfig,
+      verify, specFile,
     } = this.parseParams(writeTestSchema, params);
 
     const fs = await import('fs/promises');
@@ -235,8 +192,31 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
     const testsDir = resolveOutputDir(outputDir, getTestsDir());
 
     try {
+      // Selector verification (non-blocking — file still written even if some fail)
+      let validationReport: string | undefined;
+      if (verify !== false) {
+        try {
+          const selectors = extractSelectors(testCode);
+          if (selectors.length > 0) {
+            const driver = await context.getDriver();
+            const results = await validateSelectorsLive(driver, selectors);
+            const invalid = results.filter(r => !r.valid);
+            if (invalid.length > 0) {
+              validationReport = `Selector validation: ${results.length - invalid.length}/${results.length} valid. ` +
+                `Invalid: ${invalid.map(r => `"${r.selector}"`).join(', ')}`;
+            } else {
+              validationReport = `Selector validation: all ${results.length} selectors valid`;
+            }
+          }
+        } catch {
+          // Validation is non-blocking
+        }
+      }
+
+      const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
       await fs.mkdir(testsDir, { recursive: true });
       const testPath = path.join(testsDir, filename);
+      validateOutputPath(testPath, unrestricted);
       await fs.writeFile(testPath, testCode);
 
       // Clear action history after generating
@@ -263,6 +243,7 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
             file: testPath,
             framework,
             createdAt: new Date().toISOString(),
+            specFile,
           });
         }
       } else {
@@ -278,6 +259,7 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
             file: testPath,
             framework,
             createdAt: new Date().toISOString(),
+            specFile,
           }],
           updatedAt: new Date().toISOString(),
         };
@@ -285,7 +267,7 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
 
       const manifestPath = await writeManifest(projectRoot, manifest);
 
-      const result = {
+      const result: Record<string, unknown> = {
         message: 'Test code saved successfully',
         file: testPath,
         framework,
@@ -293,11 +275,106 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
         manifest: manifestPath,
         runCommand: suggestedRun,
       };
+      if (validationReport) {
+        result.selectorValidation = validationReport;
+      }
+      if (specFile) {
+        result.specFile = specFile;
+      }
 
       return this.success(JSON.stringify(result, null, 2), false);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return this.error(`Failed to save test: ${message}`);
+    }
+  }
+}
+
+// ============================================================================
+// Generator Write Seed Test Tool
+//
+// Writes a seed/bootstrap test (auth, fixtures, env setup) and registers
+// it in the manifest under seedTests[].
+// ============================================================================
+
+const writeSeedSchema = z.object({
+  testCode: z.string().describe('Seed test code (auth helper, fixture setup, etc.)'),
+  filename: z.string().describe('Filename for the seed test file'),
+  framework: z.string().describe('Test framework'),
+  description: z.string().describe('What this seed test does (e.g. "Login and save auth cookies")'),
+  outputDir: z.string().optional().describe('Output directory'),
+  projectRoot: z.string().optional().describe('Project root directory (for manifest)'),
+});
+
+export class GeneratorWriteSeedTestTool extends BaseTool {
+  readonly name = 'generator_write_seed';
+  readonly description = `Write a seed/bootstrap test (authentication, fixtures, environment setup).
+
+Seed tests are registered in the manifest under seedTests[] and are run before
+the main test suite by the healer. Use this for:
+- Login/auth flows that save cookies or tokens
+- Database seeding scripts
+- Environment validation checks`;
+  readonly inputSchema = writeSeedSchema;
+  readonly category: ToolCategory = 'generator';
+
+  async execute(_context: Context, params: unknown): Promise<ToolResult> {
+    const { testCode, filename, framework, description, outputDir, projectRoot: explicitRoot } = this.parseParams(writeSeedSchema, params);
+
+    const fs = await import('fs/promises');
+    const path = await import('path');
+
+    const testsDir = resolveOutputDir(outputDir, getTestsDir());
+
+    try {
+      const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
+      await fs.mkdir(testsDir, { recursive: true });
+      const seedPath = path.join(testsDir, filename);
+      validateOutputPath(seedPath, unrestricted);
+      await fs.writeFile(seedPath, testCode);
+
+      // Update manifest
+      const projectRoot = explicitRoot || path.dirname(testsDir);
+      let manifest = await readManifest(projectRoot);
+      if (!manifest) {
+        manifest = {
+          version: 1,
+          projectRoot,
+          baseUrl: '',
+          framework,
+          runCommand: suggestRunCommand(framework, null),
+          configFile: null,
+          tests: [],
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      const seedEntry: SeedTestEntry = {
+        file: seedPath,
+        framework,
+        description,
+        createdAt: new Date().toISOString(),
+      };
+
+      if (!manifest.seedTests) {
+        manifest.seedTests = [];
+      }
+      if (!manifest.seedTests.some(s => s.file === seedPath)) {
+        manifest.seedTests.push(seedEntry);
+      }
+      manifest.updatedAt = new Date().toISOString();
+
+      const manifestPath = await writeManifest(projectRoot, manifest);
+
+      return this.success(JSON.stringify({
+        message: 'Seed test saved',
+        file: seedPath,
+        description,
+        manifest: manifestPath,
+      }, null, 2), false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return this.error(`Failed to save seed test: ${message}`);
     }
   }
 }

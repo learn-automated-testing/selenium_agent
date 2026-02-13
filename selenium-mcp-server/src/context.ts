@@ -2,6 +2,8 @@ import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
 import { PageSnapshot, BrowserConfig, TabInfo, ConsoleLogEntry, SnapshotOptions, ConsoleOptions, DiffOptions } from './types.js';
 import { discoverElements, findElementByInfo } from './utils/element-discovery.js';
 import { buildChromeOptions, applyStealthScripts } from './utils/chrome-options.js';
+import { EventCollector } from './bidi/event-collector.js';
+import { SessionTracer } from './trace/session-tracer.js';
 
 // Forward-declared types for grid support — modules loaded dynamically via ensureGrid()
 import type { SessionPool } from './grid/session-pool.js';
@@ -188,6 +190,12 @@ export class Context {
   private activeGridSession: GridSession | null = null;
   public activeSessionId: string | null = null;
 
+  // BiDi event collection
+  public eventCollector: EventCollector | null = null;
+
+  // Session tracing
+  public tracer: SessionTracer | null = null;
+
   constructor(config: BrowserConfig = {}) {
     this.config = {
       headless: false,
@@ -198,6 +206,10 @@ export class Context {
 
   getStealthEnabled(): boolean {
     return this.config.stealth ?? false;
+  }
+
+  getOutputMode(): 'stdout' | 'file' {
+    return this.config.outputMode ?? 'stdout';
   }
 
   setStealthEnabled(enabled: boolean): void {
@@ -267,15 +279,21 @@ export class Context {
         .forBrowser('chrome')
         .setChromeOptions(options);
 
-      // BiDi WebSocket is required for stealth preload scripts
-      if (this.config.stealth) {
-        builder.withCapabilities({ webSocketUrl: true });
-      }
+      // Always enable BiDi WebSocket — needed for stealth, screenshots, PDF, event collection
+      builder.withCapabilities({ webSocketUrl: true });
 
       this.driver = await builder.build();
 
       if (this.config.stealth) {
         await applyStealthScripts(this.driver);
+      }
+
+      // Start BiDi event collection
+      try {
+        this.eventCollector = new EventCollector();
+        await this.eventCollector.subscribe(this.driver);
+      } catch {
+        this.eventCollector = null;
       }
     }
     return this.driver;
@@ -412,6 +430,14 @@ export class Context {
       this.gridClient = null;
       this.explorationCoordinator = null;
     }
+
+    // Save trace if active
+    if (this.tracer && this.tracer.entryCount > 0) {
+      try { await this.tracer.save(); } catch { /* best effort */ }
+    }
+
+    // Clean up event collector
+    this.eventCollector = null;
 
     if (this.driver) {
       await this.driver.quit();

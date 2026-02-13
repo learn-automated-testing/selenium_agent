@@ -2,7 +2,10 @@
 export { PlannerSetupTool, PlannerExplorePageTool, PlannerSavePlanTool } from './planner.js';
 
 // Generator tools
-export { GeneratorSetupTool, GeneratorReadLogTool, GeneratorWriteTestTool } from './generator.js';
+export { GeneratorSetupTool, GeneratorReadLogTool, GeneratorWriteTestTool, GeneratorWriteSeedTestTool } from './generator.js';
 
 // Healer tools
-export { HealerRunTestsTool, HealerDebugTestTool, HealerFixTestTool, BrowserGenerateLocatorTool } from './healer.js';
+export { HealerRunTestsTool, HealerDebugTestTool, HealerFixTestTool, BrowserGenerateLocatorTool, HealerInspectPageTool } from './healer.js';
+
+// Spec tools
+export { GeneratorSaveSpecTool, GeneratorReadSpecTool } from './spec.js';

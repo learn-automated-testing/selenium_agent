@@ -10,6 +10,7 @@ export class StartRecordingTool extends BaseTool {
   readonly description = 'Start recording browser actions to generate test scripts later';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'recording';
+  readonly annotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 
   async execute(context: Context, _params: unknown): Promise<ToolResult> {
     context.startRecording();

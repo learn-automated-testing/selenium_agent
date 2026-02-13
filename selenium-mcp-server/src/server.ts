@@ -9,6 +9,7 @@ import { Context } from './context.js';
 import { zodToJsonSchema } from './utils/schema.js';
 import { ExpectationSchema } from './tools/base.js';
 import { Expectation } from './types.js';
+import { SessionTracer } from './trace/session-tracer.js';
 
 // Pre-compute the expectation JSON schema once
 const expectationJsonSchema = zodToJsonSchema(ExpectationSchema.unwrap());
@@ -26,9 +27,18 @@ export async function createServer() {
     }
   );
 
+  const outputMode = (process.env.SELENIUM_MCP_OUTPUT_MODE === 'file' ? 'file' : 'stdout') as 'stdout' | 'file';
+  const saveTrace = process.env.SELENIUM_MCP_SAVE_TRACE === 'true';
   const context = new Context({
     stealth: process.env.SELENIUM_STEALTH === 'true',
+    outputMode,
   });
+
+  // Enable session tracing if configured
+  if (saveTrace) {
+    context.tracer = new SessionTracer();
+  }
+
   const tools = getAllTools();
 
   // List available tools — inject expectation property into every tool's schema
@@ -46,7 +56,8 @@ export async function createServer() {
       return {
         name: t.name,
         description: t.description,
-        inputSchema: schema
+        inputSchema: schema,
+        annotations: t.getAnnotations(),
       };
     })
   }));
@@ -71,7 +82,17 @@ export async function createServer() {
       const cleanArgs = { ...(args || {}) };
       delete (cleanArgs as Record<string, unknown>).expectation;
 
+      // Record tool call in tracer
+      if (context.tracer) {
+        context.tracer.recordToolCall(name, cleanArgs);
+      }
+
       const result = await tool.execute(context, cleanArgs);
+
+      // Record result in tracer
+      if (context.tracer) {
+        context.tracer.recordToolResult(name, { content: result.content, isError: result.isError });
+      }
 
       // Record action if recording is enabled (just a Map lookup, no browser calls)
       if (!result.isError) {
@@ -110,6 +131,14 @@ export async function createServer() {
         }
       }
 
+      // Append network summary if requested
+      if (expectation.includeNetwork && context.eventCollector?.isActive) {
+        const networkSummary = context.eventCollector.getNetworkSummary();
+        if (networkSummary) {
+          result.content = `${result.content}\n\n[NETWORK]\n${networkSummary}`;
+        }
+      }
+
       const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
         { type: 'text', text: result.content }
       ];
@@ -120,6 +149,15 @@ export async function createServer() {
           type: 'image',
           data: result.base64Image,
           mimeType: 'image/png'
+        });
+      }
+
+      // Add base64 resource if present (PDF, etc.)
+      if (result.base64Resource) {
+        content.push({
+          type: 'resource',
+          data: result.base64Resource.data,
+          mimeType: result.base64Resource.mimeType,
         });
       }
 

@@ -38,10 +38,8 @@ export class SessionPool {
 
     const caps: Record<string, unknown> = { browserName, ...capabilities };
 
-    // BiDi WebSocket is required for stealth preload scripts
-    if (stealth) {
-      caps.webSocketUrl = true;
-    }
+    // Always enable BiDi WebSocket — needed for stealth, screenshots, PDF, event collection
+    caps.webSocketUrl = true;
 
     builder.withCapabilities(caps);
 

@@ -32,6 +32,7 @@ export interface ToolResult {
   isError?: boolean;
   captureSnapshot?: boolean;
   base64Image?: string;
+  base64Resource?: { data: string; mimeType: string };
 }
 
 // Expectation types for controlling tool response content
@@ -53,6 +54,7 @@ export interface DiffOptions {
 export interface Expectation {
   includeSnapshot?: boolean;
   includeConsole?: boolean;
+  includeNetwork?: boolean;
   snapshotOptions?: SnapshotOptions;
   consoleOptions?: ConsoleOptions;
   diffOptions?: DiffOptions;
@@ -98,6 +100,7 @@ export interface BrowserConfig {
   userAgent?: string;
   proxy?: string;
   stealth?: boolean;
+  outputMode?: 'stdout' | 'file';
 }
 
 // Console log entry
