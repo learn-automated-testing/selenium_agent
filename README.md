@@ -93,6 +93,8 @@ claude mcp add selenium-mcp -- npx selenium-ai-agent
 "Navigate to https://example.com and take a screenshot"
 ```
 
+> See [Example Chats](docs/EXAMPLE_CHATS.md) for complete workflow examples (test plans, WDIO, Playwright, pytest, healing).
+
 ## Parallel Exploration with Selenium Grid
 
 Explore your entire application in seconds, not minutes:
