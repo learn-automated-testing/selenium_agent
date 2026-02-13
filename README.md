@@ -93,7 +93,173 @@ claude mcp add selenium-mcp -- npx selenium-ai-agent
 "Navigate to https://example.com and take a screenshot"
 ```
 
-> See [Example Chats](docs/EXAMPLE_CHATS.md) for complete workflow examples (test plans, WDIO, Playwright, pytest, healing).
+## Example Chats
+
+Copy-paste these prompts into your AI assistant after configuring the MCP server.
+
+### Navigate & Screenshot
+
+**You say:**
+> Go to https://practiceautomatedtesting.com and take a screenshot
+
+**What happens:**
+1. `navigate_to` — opens the URL in a local Chrome browser
+2. `take_screenshot` — captures the full page
+
+**AI responds:**
+> I navigated to practiceautomatedtesting.com and took a screenshot. The page shows an e-commerce storefront with a navigation bar, featured products section, and a footer.
+
+---
+
+### Explore & Create Test Plan
+
+**You say:**
+> Explore the checkout flow at https://practiceautomatedtesting.com and create a test plan
+
+**What happens:**
+1. `planner_setup_page` — navigates to the site, captures the initial page snapshot
+2. `planner_explore_page` — explores the homepage, discovers links to products
+3. `planner_explore_page` — follows the product → add-to-cart → cart page flow
+4. `planner_explore_page` — continues through checkout, captures form fields and validation
+5. `planner_save_plan` — writes the test plan to a markdown file
+
+**AI responds:**
+> I explored the checkout flow across 4 pages and saved a test plan to `test-plans/checkout-flow.md`. The plan covers 6 test scenarios including add to cart, checkout form validation, and successful order. Please review the plan before I generate test code.
+
+---
+
+### Generate WebdriverIO Tests
+
+**You say:**
+> Generate WebdriverIO tests for the login flow at https://practiceautomatedtesting.com
+
+**What happens:**
+1. `generator_setup_page` — opens the site with `framework: "webdriverio-ts"`, starts recording
+2. `navigate_to` → `input_text` → `click_element` → `verify_text_visible` — interacts with the login form
+3. `stop_recording` — ends the recording session
+4. `generator_write_test` — generates a `.test.ts` file from the recorded steps
+
+**AI responds:**
+> I recorded the login flow and generated `tests/login.test.ts`:
+>
+> ```typescript
+> describe('Login Flow', () => {
+>   it('should log in with valid credentials', async () => {
+>     await browser.url('https://practiceautomatedtesting.com/login');
+>     await $('[data-testid="email"]').setValue('user@example.com');
+>     await $('[data-testid="password"]').setValue('password123');
+>     await $('[data-testid="login-button"]').click();
+>     await expect($('[data-testid="welcome-message"]')).toBeDisplayed();
+>   });
+> });
+> ```
+>
+> Run with: `npx wdio run wdio.conf.ts`
+
+---
+
+### Generate Playwright Tests
+
+**You say:**
+> Create Playwright tests for the product search feature at https://practiceautomatedtesting.com
+
+**What happens:**
+1. `generator_setup_page` — opens the site with `framework: "playwright-js"`, starts recording
+2. Navigates and interacts with the search feature
+3. `stop_recording` → `generator_write_test` — generates a Playwright test file
+
+**AI responds:**
+> I recorded the product search flow and generated `tests/product-search.spec.js`:
+>
+> ```javascript
+> const { test, expect } = require('@playwright/test');
+>
+> test('should search for products and display results', async ({ page }) => {
+>   await page.goto('https://practiceautomatedtesting.com/products');
+>   await page.locator('[data-testid="search-input"]').fill('laptop');
+>   await page.locator('[data-testid="search-button"]').click();
+>   await expect(page.locator('[data-testid="results-count"]')).toBeVisible();
+> });
+> ```
+>
+> Run with: `npx playwright test`
+
+---
+
+### Generate Selenium Python (pytest) Tests
+
+**You say:**
+> Generate pytest Selenium tests for the registration form at https://practiceautomatedtesting.com
+
+**What happens:**
+1. `generator_setup_page` — opens the site with `framework: "selenium-python-pytest"`, starts recording
+2. Navigates and fills in the registration form
+3. `stop_recording` → `generator_write_test` — generates a pytest file
+
+**AI responds:**
+> I recorded the registration flow and generated `tests/test_registration.py`:
+>
+> ```python
+> class TestRegistration:
+>     def test_register_new_user(self, driver):
+>         driver.get("https://practiceautomatedtesting.com/register")
+>         driver.find_element(By.CSS_SELECTOR, '[data-testid="name"]').send_keys("Jane Doe")
+>         driver.find_element(By.CSS_SELECTOR, '[data-testid="email"]').send_keys("jane@example.com")
+>         driver.find_element(By.CSS_SELECTOR, '[data-testid="password"]').send_keys("SecurePass123!")
+>         driver.find_element(By.CSS_SELECTOR, '[data-testid="register-button"]').click()
+>         assert "Welcome" in WebDriverWait(driver, 10).until(
+>             EC.visibility_of_element_located((By.CSS_SELECTOR, '[data-testid="success-message"]'))
+>         ).text
+> ```
+>
+> Run with: `pytest tests/test_registration.py -v`
+
+---
+
+### Run Tests & Heal Failures
+
+**You say:**
+> Run my tests and fix any failures
+
+**What happens:**
+1. `healer_run_tests` — executes the test suite; 1 of 3 tests fails
+2. `healer_debug_test` — analyzes the failure (stale selector `#old-login-btn` not found)
+3. `healer_inspect_page` — opens the page to find the correct selector
+4. `healer_fix_test` — updates the selector to `[data-testid="login-button"]`
+5. `healer_run_tests` — re-runs the suite; all 3 tests pass
+
+**AI responds:**
+> I ran your test suite and found 1 failure: selector `#old-login-btn` not found. I inspected the page, updated it to `[data-testid="login-button"]`, and re-ran — **3 passed, 0 failed**.
+
+---
+
+### Parallel Grid Exploration
+
+Requires [Grid setup](#parallel-exploration-with-selenium-grid).
+
+**You say:**
+> Explore the entire site at https://practiceautomatedtesting.com in parallel using 4 browsers
+
+**What happens:**
+1. `parallel_explore` — spins up 4 Grid sessions exploring Homepage, Products, Cart, and Account simultaneously
+2. `exploration_merge` — combines all 4 results into a single site map
+3. `planner_generate_plan` — produces a comprehensive test plan from the merged data
+
+**AI responds:**
+> I explored the site in parallel using 4 browsers on your Selenium Grid:
+>
+> | Session | Section | Pages | Elements |
+> |---------|---------|-------|----------|
+> | 1 | Homepage | 3 | 42 |
+> | 2 | Products | 8 | 156 |
+> | 3 | Cart & Checkout | 4 | 67 |
+> | 4 | Account & Auth | 3 | 38 |
+>
+> **18 unique pages, 303 elements** discovered in ~12 seconds. Test plan saved to `test-plans/full-site-plan.md`.
+
+---
+
+> The Generator supports 14 frameworks: `webdriverio-ts`, `playwright-js`, `selenium-python-pytest`, `robot-framework`, `selenium-java-maven`, and [more](docs/FRAMEWORK_STANDARDS.md). Examples 1–6 work with a local browser. Only parallel exploration requires Selenium Grid.
 
 ## Parallel Exploration with Selenium Grid
 
@@ -230,26 +396,7 @@ A complete testing pipeline with human review gates:
                         human review       human review
 ```
 
-### Example Workflow
-
-```bash
-# 1. Analyze risk (optional)
-"Analyze https://myshop.com and identify high-risk areas for testing"
-# → Output: risk-profiles/myshop-risk-profile.yaml
-
-# 2. Create test plan
-"Create a test plan for the checkout flow"
-# → Output: test-plans/checkout-flow.md
-# → REVIEW AND APPROVE
-
-# 3. Generate tests
-"Generate tests from the checkout flow test plan"
-# → Output: tests/test_checkout.py
-
-# 4. Run and heal
-"Run the tests and fix any failures"
-# → Auto-fixes: selectors, waits, assertions
-```
+See [Example Chats](#example-chats) above for full copy-paste prompts covering each stage.
 
 ## Configuration
 
