@@ -134,13 +134,14 @@ Copy-paste these prompts into your AI assistant after configuring the MCP server
 > Generate WebdriverIO tests for the login flow at https://practiceautomatedtesting.com
 
 **What happens:**
-1. `generator_setup_page` — opens the site with `framework: "webdriverio-ts"`, starts recording
-2. `navigate_to` → `input_text` → `click_element` → `verify_text_visible` — interacts with the login form
-3. `stop_recording` — ends the recording session
-4. `generator_write_test` — generates a `.test.ts` file from the recorded steps
+1. Initializes the project if needed — `npm init`, installs `@wdio/cli`, creates `wdio.conf.ts`
+2. `generator_setup_page` — opens the site with `framework: "webdriverio-ts"`, starts recording
+3. `navigate_to` → `input_text` → `click_element` → `verify_text_visible` — interacts with the login form
+4. `stop_recording` — ends the recording session
+5. `generator_write_test` — generates a `.test.ts` file from the recorded steps
 
 **AI responds:**
-> I recorded the login flow and generated `tests/login.test.ts`:
+> I set up a WebdriverIO project, recorded the login flow, and generated `tests/login.test.ts`:
 >
 > ```typescript
 > describe('Login Flow', () => {
@@ -164,12 +165,13 @@ Copy-paste these prompts into your AI assistant after configuring the MCP server
 > Create Playwright tests for the product search feature at https://practiceautomatedtesting.com
 
 **What happens:**
-1. `generator_setup_page` — opens the site with `framework: "playwright-js"`, starts recording
-2. Navigates and interacts with the search feature
-3. `stop_recording` → `generator_write_test` — generates a Playwright test file
+1. Initializes the project if needed — `npm init`, installs `@playwright/test`, runs `npx playwright install`
+2. `generator_setup_page` — opens the site with `framework: "playwright-js"`, starts recording
+3. Navigates and interacts with the search feature
+4. `stop_recording` → `generator_write_test` — generates a Playwright test file
 
 **AI responds:**
-> I recorded the product search flow and generated `tests/product-search.spec.js`:
+> I set up a Playwright project, recorded the search flow, and generated `tests/product-search.spec.js`:
 >
 > ```javascript
 > const { test, expect } = require('@playwright/test');
@@ -192,12 +194,13 @@ Copy-paste these prompts into your AI assistant after configuring the MCP server
 > Generate pytest Selenium tests for the registration form at https://practiceautomatedtesting.com
 
 **What happens:**
-1. `generator_setup_page` — opens the site with `framework: "selenium-python-pytest"`, starts recording
-2. Navigates and fills in the registration form
-3. `stop_recording` → `generator_write_test` — generates a pytest file
+1. Sets up the project if needed — creates `venv`, installs `selenium` and `pytest` via pip
+2. `generator_setup_page` — opens the site with `framework: "selenium-python-pytest"`, starts recording
+3. Navigates and fills in the registration form
+4. `stop_recording` → `generator_write_test` — generates a pytest file
 
 **AI responds:**
-> I recorded the registration flow and generated `tests/test_registration.py`:
+> I set up a Python virtual environment with selenium and pytest, recorded the registration flow, and generated `tests/test_registration.py`:
 >
 > ```python
 > class TestRegistration:

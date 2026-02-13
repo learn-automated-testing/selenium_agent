@@ -55,17 +55,18 @@ Use the **Generator** agent to record interactions and produce WebdriverIO TypeS
 > Generate WebdriverIO tests for the login flow at https://practiceautomatedtesting.com
 
 **What happens:**
-1. `generator_setup_page` — opens the site with `framework: "webdriverio-ts"`, starts recording
-2. `navigate_to` — goes to the login page
-3. `input_text` — types a username into the email field
-4. `input_text` — types a password into the password field
-5. `click_element` — clicks the login button
-6. `verify_text_visible` — confirms the success message appears
-7. `stop_recording` — ends the recording session
-8. `generator_write_test` — generates a `.test.ts` file from the recorded steps
+1. Initializes the project if needed — `npm init`, installs `@wdio/cli`, creates `wdio.conf.ts`
+2. `generator_setup_page` — opens the site with `framework: "webdriverio-ts"`, starts recording
+3. `navigate_to` — goes to the login page
+4. `input_text` — types a username into the email field
+5. `input_text` — types a password into the password field
+6. `click_element` — clicks the login button
+7. `verify_text_visible` — confirms the success message appears
+8. `stop_recording` — ends the recording session
+9. `generator_write_test` — generates a `.test.ts` file from the recorded steps
 
 **AI responds:**
-> I recorded the login flow and generated a test file at `tests/login.test.ts`:
+> I set up a WebdriverIO project, recorded the login flow, and generated `tests/login.test.ts`:
 >
 > ```typescript
 > import { browser, expect } from '@wdio/globals';
@@ -104,16 +105,17 @@ Same recording workflow, different framework output.
 > Create Playwright tests for the product search feature at https://practiceautomatedtesting.com
 
 **What happens:**
-1. `generator_setup_page` — opens the site with `framework: "playwright-js"`, starts recording
-2. `navigate_to` — goes to the products page
-3. `input_text` — types a search query
-4. `click_element` — clicks the search button
-5. `verify_text_visible` — confirms search results appear
-6. `stop_recording` — ends the recording session
-7. `generator_write_test` — generates a Playwright test file
+1. Initializes the project if needed — `npm init`, installs `@playwright/test`, runs `npx playwright install`
+2. `generator_setup_page` — opens the site with `framework: "playwright-js"`, starts recording
+3. `navigate_to` — goes to the products page
+4. `input_text` — types a search query
+5. `click_element` — clicks the search button
+6. `verify_text_visible` — confirms search results appear
+7. `stop_recording` — ends the recording session
+8. `generator_write_test` — generates a Playwright test file
 
 **AI responds:**
-> I recorded the product search flow and generated `tests/product-search.spec.js`:
+> I set up a Playwright project, recorded the product search flow, and generated `tests/product-search.spec.js`:
 >
 > ```javascript
 > const { test, expect } = require('@playwright/test');
@@ -144,16 +146,17 @@ Python output using the `selenium-python-pytest` framework.
 > Generate pytest Selenium tests for the registration form at https://practiceautomatedtesting.com
 
 **What happens:**
-1. `generator_setup_page` — opens the site with `framework: "selenium-python-pytest"`, starts recording
-2. `navigate_to` — goes to the registration page
-3. `input_text` — fills in name, email, password fields
-4. `click_element` — submits the form
-5. `verify_text_visible` — confirms success message
-6. `stop_recording` — ends the recording session
-7. `generator_write_test` — generates a pytest file
+1. Sets up the project if needed — creates `venv`, installs `selenium` and `pytest` via pip
+2. `generator_setup_page` — opens the site with `framework: "selenium-python-pytest"`, starts recording
+3. `navigate_to` — goes to the registration page
+4. `input_text` — fills in name, email, password fields
+5. `click_element` — submits the form
+6. `verify_text_visible` — confirms success message
+7. `stop_recording` — ends the recording session
+8. `generator_write_test` — generates a pytest file
 
 **AI responds:**
-> I recorded the registration flow and generated `tests/test_registration.py`:
+> I set up a Python virtual environment with selenium and pytest, recorded the registration flow, and generated `tests/test_registration.py`:
 >
 > ```python
 > import pytest
