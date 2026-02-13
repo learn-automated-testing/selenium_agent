@@ -154,7 +154,7 @@ parallel_explore({
 docker-compose up -d --scale chrome-node=10
 ```
 
-## 69 Tools
+## 73 Tools
 
 ### Grid & Parallel Execution
 | Tool | Description |
@@ -211,8 +211,8 @@ docker-compose up -d --scale chrome-node=10
 | Agent | Tools |
 |-------|-------|
 | **Planner** | `planner_setup_page`, `planner_explore_page`, `planner_save_plan` |
-| **Generator** | `generator_setup_page`, `generator_read_log`, `generator_write_test` |
-| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `browser_generate_locator` |
+| **Generator** | `generator_setup_page`, `generator_read_log`, `generator_write_test`, `generator_write_seed`, `generator_save_spec`, `generator_read_spec` |
+| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `healer_inspect_page`, `browser_generate_locator` |
 | **Analyzer** | `analyzer_setup`, `analyzer_import_context`, `analyzer_scan_product`, `analyzer_build_risk_profile`, `analyzer_save_profile`, `analyzer_generate_documentation` |
 
 ## AI Test Agents
@@ -310,7 +310,7 @@ selenium_agent/
 │       │   ├── grid-client.ts
 │       │   ├── session-pool.ts
 │       │   └── exploration-coordinator.ts
-│       └── tools/           # 69 tools
+│       └── tools/           # 73 tools
 │           ├── navigation/
 │           ├── elements/
 │           ├── grid/        # Parallel execution tools
