@@ -1,11 +1,12 @@
 {
-  "name": "selenium-mcp",
-  "version": "2.0.0",
+  "name": "selenium-ai-agent",
+  "version": "2.0.2",
   "description": "Selenium MCP server with Grid support for parallel browser automation - 70+ tools for AI agents",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
+    "selenium-ai-agent": "./dist/bin/cli.js",
     "selenium-mcp": "./dist/bin/cli.js"
   },
   "scripts": {
@@ -53,7 +54,8 @@
   },
   "files": [
     "dist/",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

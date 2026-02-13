@@ -1,776 +1,256 @@
 # MCP Client Setup Guide
 
-This guide shows how to install and configure `ai-agent-selenium` with various MCP clients including Claude Desktop, Cursor, Cline (VSCode), and other compatible clients.
+How to configure `selenium-ai-agent` with every major MCP client.
 
 ---
 
-## Table of Contents
+## Installation
 
-- [Installation Methods](#installation-methods)
-- [Claude Desktop](#claude-desktop)
-- [Claude Code (CLI)](#claude-code-cli)
-- [Cursor](#cursor)
-- [Cline (VSCode Extension)](#cline-vscode-extension)
-- [Other MCP Clients](#other-mcp-clients)
-- [Verification](#verification)
-- [Troubleshooting](#troubleshooting)
+```bash
+# Install globally
+npm install -g selenium-ai-agent
+
+# Or use npx (no install needed)
+npx selenium-ai-agent
+```
+
+Requirements: Node.js 18+, Chrome browser.
 
 ---
 
-## Installation Methods
+## Claude Code
 
-Before configuring MCP clients, install the package:
+### CLI (recommended)
 
-### Python Installation (Recommended for Python users)
 ```bash
-pip install ai-agent-selenium
+claude mcp add selenium-mcp -- npx selenium-ai-agent
 ```
 
-### Node.js Installation (Recommended for JavaScript/TypeScript users)
+With environment variables:
+
 ```bash
-npm install -g ai-agent-selenium
-# OR locally in your project
-npm install ai-agent-selenium
+claude mcp add selenium-mcp -- npx selenium-ai-agent \
+  -e SELENIUM_HEADLESS=true \
+  -e SE_AVOID_STATS=true
 ```
 
-### Using npx (No installation needed)
-```bash
-npx ai-agent-selenium
+### Project config (`.mcp.json`)
+
+Create `.mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["selenium-ai-agent"]
+    }
+  }
+}
 ```
 
 ---
 
 ## Claude Desktop
 
-### Configuration File Location
+### Config file location
 
-**macOS**:
-```
-~/Library/Application Support/Claude/claude_desktop_config.json
-```
+| OS | Path |
+|----|------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
 
-**Windows**:
-```
-%APPDATA%\Claude\claude_desktop_config.json
-```
-
-**Linux**:
-```
-~/.config/Claude/claude_desktop_config.json
-```
-
-### Configuration (Python Installation)
-
-If you installed via `pip install ai-agent-selenium`:
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "selenium-mcp"
-    }
-  }
-}
-```
-
-### Configuration (npm Installation)
-
-If you installed via npm globally:
+### Configuration
 
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["ai-agent-selenium"]
+      "args": ["selenium-ai-agent"]
     }
   }
 }
 ```
 
-If installed locally in a project:
+### Steps
 
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "node",
-      "args": ["/absolute/path/to/node_modules/ai-agent-selenium/bin/selenium-mcp.js"]
-    }
-  }
-}
-```
-
-### Using Python Path Directly
-
-If `selenium-mcp` command is not in PATH:
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "python",
-      "args": ["-m", "selenium_mcp.server"]
-    }
-  }
-}
-```
-
-Or with full Python path:
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "/usr/local/bin/python3",
-      "args": ["-m", "selenium_mcp.server"]
-    }
-  }
-}
-```
-
-### Multiple Configurations Example
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "selenium-mcp"
-    },
-    "other-mcp-server": {
-      "command": "other-server"
-    }
-  }
-}
-```
-
-### Steps to Configure
-
-1. **Quit Claude Desktop** completely
-2. **Open the config file**:
-   - macOS: `open ~/Library/Application\ Support/Claude/`
-   - Windows: Navigate to `%APPDATA%\Claude\`
-3. **Edit `claude_desktop_config.json`** (create if doesn't exist)
-4. **Add the configuration** (see examples above)
-5. **Save the file**
-6. **Restart Claude Desktop**
-7. **Verify**: Look for the 🔌 icon in Claude Desktop
-
----
-
-## Claude Code (CLI)
-
-Claude Code is Anthropic's CLI tool for AI-assisted development. It supports MCP servers through its configuration file.
-
-### Configuration File Location
-
-**macOS**:
-```
-~/.claude/claude_code.json
-```
-
-**Windows**:
-```
-%USERPROFILE%\.claude\claude_code.json
-```
-
-**Linux**:
-```
-~/.claude/claude_code.json
-```
-
-### Configuration (Python Installation)
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "selenium-mcp"
-    }
-  }
-}
-```
-
-### Configuration (npm Installation)
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "npx",
-      "args": ["ai-agent-selenium"]
-    }
-  }
-}
-```
-
-### Configuration (From Source)
-
-If running from a cloned repository:
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "/absolute/path/to/selenium_agent/venv/bin/python",
-      "args": ["/absolute/path/to/selenium_agent/mcp_server.py"],
-      "cwd": "/absolute/path/to/selenium_agent"
-    }
-  }
-}
-```
-
-### Steps to Configure
-
-1. **Install the package** (if not using source):
-   ```bash
-   pip install ai-agent-selenium
-   ```
-
-2. **Create/edit the config file**:
-   ```bash
-   mkdir -p ~/.claude
-   nano ~/.claude/claude_code.json
-   ```
-
-3. **Add the configuration** (see examples above)
-
-4. **Save and restart Claude Code**
-
-5. **Verify**: Ask Claude Code to "List available MCP tools"
+1. Quit Claude Desktop completely
+2. Open the config file (create if it doesn't exist)
+3. Add the configuration above
+4. Save and restart Claude Desktop
+5. Look for the hammer icon in the input area
 
 ---
 
 ## Cursor
 
-Cursor supports MCP servers through its settings.
+### Config file location
 
-### Configuration Location
+| Scope | Path |
+|-------|------|
+| Project | `.cursor/mcp.json` |
+| Global | `~/.cursor/mcp.json` |
 
-**Settings → MCP Servers**
-
-Or edit the config file directly:
-
-**macOS**:
-```
-~/Library/Application Support/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-```
-
-**Windows**:
-```
-%APPDATA%\Cursor\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json
-```
-
-**Linux**:
-```
-~/.config/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json
-```
-
-### Configuration (Python Installation)
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "selenium-mcp"
-    }
-  }
-}
-```
-
-### Configuration (npm Installation)
+### Configuration
 
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["ai-agent-selenium"]
+      "args": ["selenium-ai-agent"]
     }
   }
 }
 ```
 
-### Using UI in Cursor
+### Alternative: Settings UI
 
-1. Open **Cursor**
-2. Go to **Settings** (Cmd/Ctrl + ,)
-3. Search for **"MCP"** or **"MCP Servers"**
-4. Click **"Edit MCP Settings"**
-5. Add the configuration
-6. Click **"Save"**
-7. Restart Cursor
-
-### Alternative: Command Palette
-
-1. Open Command Palette (Cmd/Ctrl + Shift + P)
-2. Type: **"MCP: Edit Server Configuration"**
-3. Add your configuration
-4. Save and restart
+1. Open Settings (Cmd/Ctrl + ,)
+2. Search for "MCP"
+3. Click "Add new MCP server"
+4. Add the configuration
+5. Restart Cursor
 
 ---
 
-## Cline (VSCode Extension)
+## GitHub Copilot (VS Code 1.99+)
 
-Cline is a VSCode extension that supports MCP servers.
+### Config file
 
-### Installation
-
-1. Install **Cline** extension from VSCode Marketplace
-2. Search for "Cline" or "Claude Dev"
-3. Click Install
-
-### Configuration Location
-
-**Settings → Extensions → Cline → MCP Servers**
-
-Or edit directly:
-
-**macOS/Linux**:
-```
-~/.vscode/extensions/saoudrizwan.claude-dev-*/settings/cline_mcp_settings.json
-```
-
-**Windows**:
-```
-%USERPROFILE%\.vscode\extensions\saoudrizwan.claude-dev-*\settings\cline_mcp_settings.json
-```
-
-### Configuration (Python Installation)
+`.vscode/mcp.json` in your project:
 
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "selenium-mcp": {
-      "command": "selenium-mcp"
+      "command": "npx",
+      "args": ["selenium-ai-agent"],
+      "type": "stdio"
     }
   }
 }
 ```
 
-### Configuration (npm Installation)
+> **Important:** Copilot uses `"servers"` — not `"mcpServers"`.
+
+---
+
+## Cline
+
+### Steps
+
+1. Click the MCP Servers icon in the Cline panel
+2. Click **Configure** → **Advanced MCP Settings**
+3. Add the configuration:
 
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["ai-agent-selenium"]
+      "args": ["selenium-ai-agent"]
     }
   }
 }
 ```
 
-### Using VSCode Settings UI
-
-1. Open **VSCode**
-2. Go to **Settings** (Cmd/Ctrl + ,)
-3. Search for **"Cline MCP"**
-4. Click **"Edit in settings.json"**
-5. Add MCP server configuration
-6. Save
-7. Reload Cline extension
+4. Save and reload Cline
 
 ---
 
-## Other MCP Clients
+## Windsurf
 
-### Generic MCP Client Configuration
+### Config file location
 
-Most MCP clients follow a similar pattern:
+| Scope | Path |
+|-------|------|
+| Global | `~/.codeium/windsurf/mcp_config.json` |
+| Project | `.windsurf/mcp_config.json` |
 
-```json
-{
-  "mcpServers": {
-    "server-name": {
-      "command": "command-to-run",
-      "args": ["optional", "arguments"]
-    }
-  }
-}
-```
-
-### Continue.dev (VSCode)
-
-Similar to Cline, edit the MCP settings:
+### Configuration
 
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
-      "command": "selenium-mcp"
+      "command": "npx",
+      "args": ["selenium-ai-agent"]
     }
   }
 }
 ```
 
-### Zed Editor
+---
 
-Check Zed's MCP documentation for config location:
+## With Selenium Grid
+
+To enable parallel browser automation, add `SELENIUM_GRID_URL` to any config:
+
+### Claude Code
+
+```bash
+claude mcp add selenium-mcp -- npx selenium-ai-agent \
+  -e SELENIUM_GRID_URL=http://localhost:4444
+```
+
+### All other clients
+
+Add an `env` block to the config:
 
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
-      "command": "selenium-mcp"
-    }
-  }
-}
-```
-
-### Custom MCP Client
-
-If building your own MCP client:
-
-```javascript
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-
-const transport = new StdioClientTransport({
-  command: 'selenium-mcp',  // or 'npx', 'python', etc.
-  args: []                  // or ['ai-agent-selenium'], ['-m', 'selenium_mcp.server']
-});
-
-const client = new Client({
-  name: 'my-client',
-  version: '1.0.0'
-});
-
-await client.connect(transport);
-```
-
----
-
-## Verification
-
-### Check if MCP Server is Running
-
-After configuration, verify the server is accessible:
-
-1. **Open your MCP client** (Claude Desktop, Cursor, etc.)
-2. **Look for indicators**:
-   - Claude Desktop: 🔌 icon in the input area
-   - Cursor: MCP servers listed in settings
-   - Cline: MCP servers appear in extension panel
-
-3. **Test with a command**:
-   ```
-   User: "List available MCP tools"
-
-   Expected: Should see selenium-mcp tools like:
-   - navigate_to
-   - click_element
-   - capture_page
-   - planner_setup_page
-   - generator_setup_page
-   - healer_run_tests
-   - ... (40+ tools)
-   ```
-
-### Test Agent Functionality
-
-Verify agents are working with review gates:
-
-```
-User: "Create a test plan for login functionality at https://example.com"
-
-Expected behavior:
-1. Planner agent starts exploring
-2. Creates test plan
-3. Saves to test-plans/
-4. STOPS and asks for your approval ✋
-5. Waits for you to review and approve
-
-If this happens, agents are working correctly!
-```
-
-### Check Command Availability
-
-**Test Python installation**:
-```bash
-# Should show version info
-selenium-mcp --help
-
-# Should show installed package
-pip show ai-agent-selenium
-```
-
-**Test npm installation**:
-```bash
-# Should start the server
-npx ai-agent-selenium --help
-
-# Should show installed package
-npm list -g ai-agent-selenium
-```
-
----
-
-## Troubleshooting
-
-### Issue: "Command not found: selenium-mcp"
-
-**Cause**: Package not installed or not in PATH
-
-**Solutions**:
-
-1. **Install the package**:
-   ```bash
-   pip install ai-agent-selenium
-   ```
-
-2. **Find where it's installed**:
-   ```bash
-   which selenium-mcp
-   # Or
-   pip show ai-agent-selenium
-   ```
-
-3. **Use full path in config**:
-   ```json
-   {
-     "mcpServers": {
-       "selenium-mcp": {
-         "command": "/Users/yourname/.local/bin/selenium-mcp"
-       }
-     }
-   }
-   ```
-
-4. **Or use Python directly**:
-   ```json
-   {
-     "mcpServers": {
-       "selenium-mcp": {
-         "command": "python",
-         "args": ["-m", "selenium_mcp.server"]
-       }
-     }
-   }
-   ```
-
-### Issue: "npx command fails"
-
-**Cause**: npm package not installed or Node.js not found
-
-**Solutions**:
-
-1. **Install globally**:
-   ```bash
-   npm install -g ai-agent-selenium
-   ```
-
-2. **Use full npx path**:
-   ```json
-   {
-     "mcpServers": {
-       "selenium-mcp": {
-         "command": "/usr/local/bin/npx",
-         "args": ["ai-agent-selenium"]
-       }
-     }
-   }
-   ```
-
-3. **Use local installation**:
-   ```bash
-   cd your-project
-   npm install ai-agent-selenium
-   ```
-
-   Then use node directly:
-   ```json
-   {
-     "mcpServers": {
-       "selenium-mcp": {
-         "command": "node",
-         "args": ["./node_modules/ai-agent-selenium/bin/selenium-mcp.js"]
-       }
-     }
-   }
-   ```
-
-### Issue: "Python not found" (npm installation)
-
-**Cause**: npm post-install script couldn't find Python
-
-**Solutions**:
-
-1. **Install Python 3.10+** from https://www.python.org/
-
-2. **Manually install Python package**:
-   ```bash
-   pip install ai-agent-selenium
-   ```
-
-3. **Then npm wrapper will work**:
-   ```bash
-   npm install ai-agent-selenium
-   ```
-
-### Issue: "MCP server not showing in client"
-
-**Causes & Solutions**:
-
-1. **Config file syntax error**:
-   - Validate JSON at https://jsonlint.com/
-   - Check for missing commas, brackets
-
-2. **Wrong config file location**:
-   - Double-check the path for your OS
-   - Make sure file is named correctly
-
-3. **MCP client needs restart**:
-   - Completely quit the application
-   - Restart it
-   - Wait a few seconds for server to connect
-
-4. **Permissions issue**:
-   ```bash
-   # Make script executable (macOS/Linux)
-   chmod +x $(which selenium-mcp)
-   ```
-
-### Issue: "Agent files not found"
-
-**Cause**: Package installed incorrectly or agents not included
-
-**Verify**:
-```bash
-python -c "
-from pathlib import Path
-import selenium_mcp
-
-pkg_dir = Path(selenium_mcp.__file__).parent
-agents_dir = pkg_dir.parent / 'agents'
-
-print(f'Package: {pkg_dir}')
-print(f'Agents: {agents_dir}')
-print(f'Exists: {agents_dir.exists()}')
-
-if agents_dir.exists():
-    print('Agent files:')
-    for f in agents_dir.glob('*.md'):
-        print(f'  - {f.name}')
-"
-```
-
-**Solution**: Reinstall package:
-```bash
-pip uninstall ai-agent-selenium
-pip install ai-agent-selenium
-```
-
-### Issue: "Review gates not working"
-
-**Cause**: Old version or corrupted installation
-
-**Solution**:
-```bash
-# Upgrade to latest version
-pip install --upgrade ai-agent-selenium
-
-# Verify review gates
-python -c "
-from pathlib import Path
-import selenium_mcp
-
-pkg_dir = Path(selenium_mcp.__file__).parent
-planner = pkg_dir.parent / 'agents' / 'selenium-test-planner.agent.md'
-content = planner.read_text()
-
-if 'CRITICAL: Human Review Required' in content:
-    print('✅ Review gates present!')
-else:
-    print('❌ Review gates missing - reinstall package')
-"
-```
-
----
-
-## Environment Variables (Optional)
-
-Some configurations may benefit from environment variables:
-
-### Setting Python Path
-
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "python",
-      "args": ["-m", "selenium_mcp.server"],
+      "command": "npx",
+      "args": ["selenium-ai-agent"],
       "env": {
-        "PYTHONPATH": "/path/to/your/project"
+        "SELENIUM_GRID_URL": "http://localhost:4444"
       }
     }
   }
 }
 ```
 
-### Setting Working Directory
+For GitHub Copilot, use `"servers"` instead of `"mcpServers"` and add `"type": "stdio"`.
 
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "selenium-mcp",
-      "cwd": "/path/to/your/project"
-    }
-  }
-}
+### Start the Grid
+
+```bash
+git clone https://github.com/learn-automated-testing/selenium_agent.git
+cd selenium_agent
+docker-compose up -d
 ```
+
+Verify at http://localhost:4444.
 
 ---
 
-## Quick Reference
+## Environment Variables
 
-### Configuration Templates
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SELENIUM_GRID_URL` | — | Grid hub URL (enables parallel features) |
+| `SELENIUM_BROWSER` | `chrome` | Browser (`chrome`, `firefox`, `edge`) |
+| `SELENIUM_HEADLESS` | `false` | Run headless |
+| `SELENIUM_TIMEOUT` | `30000` | Default timeout in ms |
+| `SE_AVOID_STATS` | — | Set to `true` to disable Selenium usage statistics |
 
-**Copy and paste these, then customize:**
+Example with environment variables:
 
-#### Python (Global Install)
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "selenium-mcp"
-    }
-  }
-}
-```
-
-#### npm (Global Install)
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["ai-agent-selenium"]
-    }
-  }
-}
-```
-
-#### Python (Direct)
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "python3",
-      "args": ["-m", "selenium_mcp.server"]
-    }
-  }
-}
-```
-
-#### npm (Local Project)
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "node",
-      "args": ["./node_modules/ai-agent-selenium/bin/selenium-mcp.js"]
+      "args": ["selenium-ai-agent"],
+      "env": {
+        "SELENIUM_GRID_URL": "http://localhost:4444",
+        "SELENIUM_HEADLESS": "true",
+        "SE_AVOID_STATS": "true"
+      }
     }
   }
 }
@@ -778,75 +258,75 @@ Some configurations may benefit from environment variables:
 
 ---
 
-## Platform-Specific Notes
+## Verification
 
-### macOS
+After setup, test with this prompt:
 
-- Use Finder → Go → Go to Folder (Cmd+Shift+G) to access hidden folders
-- Python often at: `/usr/local/bin/python3` or `/opt/homebrew/bin/python3`
-- npm at: `/usr/local/bin/npx` or `/opt/homebrew/bin/npx`
+```
+Navigate to https://example.com and take a screenshot
+```
 
-### Windows
-
-- Use `%APPDATA%` in File Explorer address bar
-- Python at: `C:\Python3x\python.exe` or `%LOCALAPPDATA%\Programs\Python\Python3x\python.exe`
-- npm at: `%APPDATA%\npm\npx.cmd`
-- Use backslashes `\` in paths or forward slashes `/`
-
-### Linux
-
-- Config files usually in `~/.config/`
-- Python at: `/usr/bin/python3` or `~/.local/bin/python3`
-- npm at: `/usr/bin/npx` or `~/.local/bin/npx`
+You should see the server navigate to the page and return a screenshot.
 
 ---
 
-## Summary
+## Troubleshooting
 
-### Setup Steps
+### "npx: command not found"
 
-1. **Install package**:
-   - `pip install ai-agent-selenium` (Python)
-   - `npm install -g ai-agent-selenium` (Node.js)
+Install Node.js 18+ from https://nodejs.org/. Verify with:
 
-2. **Find config file**:
-   - Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
-   - Cursor: Settings → MCP Servers
-   - Cline: Extension settings
+```bash
+node --version  # Should be 18+
+npx --version
+```
 
-3. **Add configuration**:
-   ```json
-   {
-     "mcpServers": {
-       "selenium-mcp": {
-         "command": "selenium-mcp"
-       }
-     }
-   }
-   ```
+### MCP server not showing in client
 
-4. **Restart client**
+1. **Check JSON syntax** — validate at https://jsonlint.com/
+2. **Check file location** — make sure the config is in the right path for your OS
+3. **Restart the client** — fully quit and reopen
+4. **Check Node.js is in PATH** — some clients need the full path to `npx`:
 
-5. **Verify**: Test with "List MCP tools"
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "/usr/local/bin/npx",
+      "args": ["selenium-ai-agent"]
+    }
+  }
+}
+```
 
-### What You Get
+Find your npx path: `which npx` (macOS/Linux) or `where npx` (Windows).
 
-✅ **40+ browser automation tools**
-✅ **3 AI agents** (Planner, Generator, Healer)
-✅ **3 review gates** (automatic)
-✅ **Framework standards** (automatic)
-✅ **Professional test generation**
+### Chrome not found
 
-Everything works automatically once configured!
+Install Chrome or set a different browser:
+
+```json
+{
+  "env": {
+    "SELENIUM_BROWSER": "firefox"
+  }
+}
+```
+
+### Permission errors on macOS
+
+If Chrome is blocked by macOS security:
+
+1. Open System Settings → Privacy & Security
+2. Allow Chrome to run
+3. Or run headless: set `SELENIUM_HEADLESS=true`
 
 ---
 
 ## Additional Resources
 
-- [README.md](../README.md) - Main documentation
-- [AGENT_WORKFLOW.md](AGENT_WORKFLOW.md) - Workflow with review gates
-- [FRAMEWORK_STANDARDS.md](FRAMEWORK_STANDARDS.md) - Framework conventions
-- [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) - Detailed installation guide
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - For package maintainers
+- [README](../README.md) — Project overview, Grid setup, full tool list
+- [Agent Workflow](AGENT_WORKFLOW.md) — Planner → Generator → Healer pipeline
+- [Framework Standards](FRAMEWORK_STANDARDS.md) — Code generation conventions
 
-For issues: https://github.com/learn-automated-testing/selenium-mcp-server/issues
+For issues: https://github.com/learn-automated-testing/selenium_agent/issues
