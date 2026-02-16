@@ -1,0 +1,15 @@
+{
+  "name": "selenium-ai-agent-lambda",
+  "version": "2.2.0",
+  "type": "module",
+  "private": true,
+  "description": "Lambda deployment for Selenium MCP server with remote HTTP transport",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@sparticuz/chromium": "138.0.2",
+    "chromedriver": "138.0.0",
+    "selenium-webdriver": "^4.27.0",
+    "yaml": "^2.8.2",
+    "zod": "^3.23.0"
+  }
+}

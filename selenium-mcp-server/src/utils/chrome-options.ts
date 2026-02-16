@@ -19,8 +19,33 @@ const EXCLUDED_SCHEMES: Record<string, unknown> = {
 export function buildChromeOptions(config: BrowserConfig): chrome.Options {
   const options = new chrome.Options();
 
+  // Custom Chrome binary (e.g. @sparticuz/chromium in Lambda)
+  const chromeBinary = process.env.SELENIUM_CHROME_BINARY;
+  if (chromeBinary) {
+    options.setChromeBinaryPath(chromeBinary);
+  }
+
   // Baseline args
   options.addArguments('--no-sandbox', '--disable-dev-shm-usage');
+
+  // Lambda-specific args for constrained environment
+  if (process.env.SELENIUM_LAMBDA === 'true') {
+    options.addArguments(
+      '--single-process',
+      '--no-zygote',
+      '--disable-gpu',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-sync',
+      '--disable-translate',
+      '--hide-scrollbars',
+      '--mute-audio',
+      '--metrics-recording-only',
+      '--no-first-run',
+      '--disk-cache-dir=/tmp/chrome-cache',
+      '--user-data-dir=/tmp/chrome-user',
+    );
+  }
 
   // Protocol handler suppression
   const prefs: Record<string, unknown> = {

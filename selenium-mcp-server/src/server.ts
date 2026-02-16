@@ -1,5 +1,7 @@
+import { createServer as createHttpServer, IncomingMessage, ServerResponse } from 'node:http';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -192,4 +194,31 @@ export async function runServer() {
   const server = await createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
+}
+
+export async function runHttpServer(port: number) {
+  const mcpServer = await createServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined, // stateless
+    enableJsonResponse: true,
+  });
+
+  await mcpServer.connect(transport);
+
+  const httpServer = createHttpServer(async (req: IncomingMessage, res: ServerResponse) => {
+    const url = req.url ?? '';
+    if (url === '/mcp' || url.startsWith('/mcp?')) {
+      await transport.handleRequest(req, res);
+    } else if (url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok' }));
+    } else {
+      res.writeHead(404);
+      res.end('Not Found');
+    }
+  });
+
+  httpServer.listen(port, () => {
+    console.error(`Selenium MCP server (HTTP) listening on http://localhost:${port}/mcp`);
+  });
 }

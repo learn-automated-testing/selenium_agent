@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { runServer } from '../src/server.js';
+import { runServer, runHttpServer } from '../src/server.js';
 
 // Parse CLI flags and set corresponding env vars
 const args = process.argv.slice(2);
@@ -10,6 +10,9 @@ if (args[0] === 'install') {
   handleInstall(args.slice(1));
   process.exit(0);
 }
+
+let transport = 'stdio';
+let port = 3000;
 
 for (const arg of args) {
   switch (arg) {
@@ -36,12 +39,23 @@ for (const arg of args) {
         process.env.SELENIUM_MCP_OUTPUT_DIR = arg.slice('--output-dir='.length);
       } else if (arg.startsWith('--grid-url=')) {
         process.env.SELENIUM_GRID_URL = arg.slice('--grid-url='.length);
+      } else if (arg.startsWith('--transport=')) {
+        transport = arg.slice('--transport='.length);
+      } else if (arg.startsWith('--port=')) {
+        port = parseInt(arg.slice('--port='.length), 10);
       }
       break;
   }
 }
 
-runServer().catch(err => {
-  console.error('Failed to start Selenium MCP server:', err);
-  process.exit(1);
-});
+if (transport === 'http') {
+  runHttpServer(port).catch(err => {
+    console.error('Failed to start Selenium MCP HTTP server:', err);
+    process.exit(1);
+  });
+} else {
+  runServer().catch(err => {
+    console.error('Failed to start Selenium MCP server:', err);
+    process.exit(1);
+  });
+}
