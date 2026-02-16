@@ -2,6 +2,7 @@ import { Builder } from 'selenium-webdriver';
 import { GridSessionInfo, GridSessionCapabilities, BrowserConfig } from '../types.js';
 import { GridSession } from './grid-session.js';
 import { buildChromeOptions, applyStealthScripts } from '../utils/chrome-options.js';
+import { rewriteBidiWebSocketUrl } from '../utils/bidi-helpers.js';
 
 let sessionCounter = 0;
 
@@ -44,6 +45,12 @@ export class SessionPool {
     builder.withCapabilities(caps);
 
     const driver = await builder.build();
+
+    // Always rewrite BiDi WebSocket URL for grid sessions so it routes
+    // through the hub instead of the node's unreachable internal Docker IP.
+    // Without this, BiDi features (full-page screenshots, PDF, event
+    // collection) silently fail for non-stealth grid sessions.
+    await rewriteBidiWebSocketUrl(driver, this.gridUrl);
 
     if (stealth) {
       await applyStealthScripts(driver, this.gridUrl);
