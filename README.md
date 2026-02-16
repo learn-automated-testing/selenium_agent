@@ -43,10 +43,20 @@ npx selenium-ai-agent
 
 ### 2. Configure Your MCP Client
 
+**Auto-install** (Claude Desktop, Cursor, or Windsurf):
+```bash
+npx selenium-ai-agent install claude-desktop
+npx selenium-ai-agent install cursor
+npx selenium-ai-agent install windsurf
+```
+
 **Claude Code:**
 ```bash
 claude mcp add selenium-mcp -- npx selenium-ai-agent
 ```
+
+<details>
+<summary>Manual config (click to expand)</summary>
 
 **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 ```json
@@ -71,6 +81,7 @@ claude mcp add selenium-mcp -- npx selenium-ai-agent
   }
 }
 ```
+</details>
 
 **GitHub Copilot** (`.vscode/mcp.json`):
 ```json

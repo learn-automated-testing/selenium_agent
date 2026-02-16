@@ -5,6 +5,12 @@ import { runServer } from '../src/server.js';
 // Parse CLI flags and set corresponding env vars
 const args = process.argv.slice(2);
 
+if (args[0] === 'install') {
+  const { handleInstall } = await import('./install.js');
+  handleInstall(args.slice(1));
+  process.exit(0);
+}
+
 for (const arg of args) {
   switch (arg) {
     case '--allow-unrestricted-file-access':
