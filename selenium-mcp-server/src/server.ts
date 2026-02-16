@@ -39,7 +39,7 @@ export async function createServer() {
     context.tracer = new SessionTracer();
   }
 
-  const tools = getAllTools();
+  const tools = await getAllTools();
 
   // List available tools — inject expectation property into every tool's schema
   server.setRequestHandler(ListToolsRequestSchema, async () => ({

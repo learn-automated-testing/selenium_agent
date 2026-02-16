@@ -10,7 +10,7 @@ const schema = z.object({
 
 export class ExplorationDiffTool extends BaseTool {
   readonly name = 'exploration_diff';
-  readonly description = 'Compare two exploration results to find added, removed, and changed pages.';
+  readonly description = '[Advanced — Grid] Compare two exploration results to find added, removed, and changed pages. Only relevant after parallel_explore.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
   readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };

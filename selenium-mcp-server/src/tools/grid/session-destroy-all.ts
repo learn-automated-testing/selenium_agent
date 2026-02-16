@@ -9,7 +9,7 @@ const schema = z.object({
 
 export class SessionDestroyAllTool extends BaseTool {
   readonly name = 'session_destroy_all';
-  readonly description = 'Destroy all browser sessions on the Selenium Grid, optionally filtered by tags.';
+  readonly description = '[Advanced — Grid] Destroy all browser sessions on the Selenium Grid, optionally filtered by tags. Only relevant for parallel multi-browser testing.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

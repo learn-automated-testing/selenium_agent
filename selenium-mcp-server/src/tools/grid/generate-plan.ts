@@ -32,7 +32,7 @@ interface TestSection {
 
 export class PlannerGeneratePlanTool extends BaseTool {
   readonly name = 'planner_generate_plan';
-  readonly description = 'Generate a structured test plan from parallel exploration results. Takes exploration IDs and produces a markdown test plan file.';
+  readonly description = '[Advanced — Grid] Generate a structured test plan from parallel exploration results. Takes exploration IDs and produces a markdown test plan file. Only relevant after parallel_explore.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

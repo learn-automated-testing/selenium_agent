@@ -9,7 +9,7 @@ const schema = z.object({
 
 export class NavigateTool extends BaseTool {
   readonly name = 'navigate_to';
-  readonly description = 'Navigate the browser to a URL. Starts browser if not running.';
+  readonly description = 'Navigate the browser to a URL. This is the primary and preferred navigation tool — starts a local browser automatically, no grid session or setup required. Use grid/session tools only when you need parallel browser sessions.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'navigation';
 

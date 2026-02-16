@@ -23,7 +23,7 @@ const schema = z.object({
 
 export class ParallelExecuteTool extends BaseTool {
   readonly name = 'parallel_execute';
-  readonly description = 'Execute multiple tasks in parallel across Selenium Grid sessions. Each task runs its steps sequentially in its own browser session. Cannot call parallel_execute or batch_execute recursively.';
+  readonly description = '[Advanced — Grid] Execute multiple tasks in parallel across Selenium Grid sessions. Each task runs its steps sequentially in its own browser session. Only use when you need parallel multi-browser execution.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

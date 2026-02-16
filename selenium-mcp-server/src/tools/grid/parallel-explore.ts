@@ -29,7 +29,7 @@ const schema = z.object({
 
 export class ParallelExploreTool extends BaseTool {
   readonly name = 'parallel_explore';
-  readonly description = 'Explore multiple sections of a web application in parallel using Selenium Grid. Each target gets its own browser session. Returns discovered pages, forms, links, and workflows.';
+  readonly description = '[Advanced — Grid] Explore multiple sections of a web application in parallel using Selenium Grid. Each target gets its own browser session. Only use when you need parallel multi-browser exploration.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

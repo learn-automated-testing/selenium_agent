@@ -9,7 +9,7 @@ const schema = z.object({
 
 export class SessionListTool extends BaseTool {
   readonly name = 'session_list';
-  readonly description = 'List all active browser sessions on the Selenium Grid, optionally filtered by tags.';
+  readonly description = '[Advanced — Grid] List all active browser sessions on the Selenium Grid, optionally filtered by tags. Only relevant for parallel multi-browser testing.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
   readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };

@@ -79,9 +79,20 @@ import {
   PlannerGeneratePlanTool,
 } from './grid/index.js';
 
-export function getAllTools(): BaseTool[] {
+async function isGridReachable(gridUrl: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const response = await fetch(`${gridUrl.replace(/\/+$/, '')}/status`, { signal: controller.signal });
+    clearTimeout(timeout);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function getAllTools(): Promise<BaseTool[]> {
   const batchTool = new BatchExecuteTool();
-  const parallelExecuteTool = new ParallelExecuteTool();
 
   const tools: BaseTool[] = [
     // Navigation (4)
@@ -172,27 +183,41 @@ export function getAllTools(): BaseTool[] {
 
     // Batch (1)
     batchTool,
-
-    // Grid (14)
-    new GridStatusTool(),
-    new GridStartTool(),
-    new GridStopTool(),
-    new GridScaleTool(),
-    new SessionCreateTool(),
-    new SessionSelectTool(),
-    new SessionListTool(),
-    new SessionDestroyTool(),
-    new SessionDestroyAllTool(),
-    new ParallelExploreTool(),
-    parallelExecuteTool,
-    new ExplorationMergeTool(),
-    new ExplorationDiffTool(),
-    new PlannerGeneratePlanTool(),
   ];
 
-  // Inject tool registry into batch and parallel execute tools
+  // Always expose grid_start and grid_status so users can start/diagnose the grid
+  const gridUrl = process.env.SELENIUM_GRID_URL;
+  if (gridUrl) {
+    tools.push(new GridStatusTool(), new GridStartTool(), new GridStopTool(), new GridScaleTool());
+
+    // Only expose session/parallel tools when the grid is actually reachable
+    if (await isGridReachable(gridUrl)) {
+      const parallelExecuteTool = new ParallelExecuteTool();
+
+      tools.push(
+        new SessionCreateTool(),
+        new SessionSelectTool(),
+        new SessionListTool(),
+        new SessionDestroyTool(),
+        new SessionDestroyAllTool(),
+        new ParallelExploreTool(),
+        parallelExecuteTool,
+        new ExplorationMergeTool(),
+        new ExplorationDiffTool(),
+        new PlannerGeneratePlanTool(),
+      );
+
+      parallelExecuteTool.setToolRegistry(tools);
+      console.error('[selenium-mcp] Grid reachable at %s — all grid tools enabled (%d tools total)', gridUrl, tools.length);
+    } else {
+      console.error('[selenium-mcp] Grid not reachable at %s — only grid_start/grid_status/grid_stop/grid_scale available. Start the grid and restart the MCP server to enable session and parallel tools.', gridUrl);
+    }
+  } else {
+    console.error('[selenium-mcp] SELENIUM_GRID_URL not set — grid tools disabled. Set the env var and start the grid to enable them.');
+  }
+
+  // Inject tool registry into batch tool
   batchTool.setToolRegistry(tools);
-  parallelExecuteTool.setToolRegistry(tools);
 
   return tools;
 }

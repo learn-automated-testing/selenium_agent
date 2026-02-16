@@ -11,7 +11,7 @@ const schema = z.object({
 
 export class GridScaleTool extends BaseTool {
   readonly name = 'grid_scale';
-  readonly description = 'Scale the Selenium Grid to the desired number of browser nodes using docker compose.';
+  readonly description = '[Advanced — Grid] Scale the Selenium Grid to the desired number of browser nodes using docker compose. Only needed for parallel multi-browser testing.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

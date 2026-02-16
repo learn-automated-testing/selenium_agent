@@ -9,7 +9,7 @@ const schema = z.object({
 
 export class ExplorationMergeTool extends BaseTool {
   readonly name = 'exploration_merge';
-  readonly description = 'Merge results from multiple parallel explorations, deduplicating pages and building a unified site map.';
+  readonly description = '[Advanced — Grid] Merge results from multiple parallel explorations, deduplicating pages and building a unified site map. Only relevant after parallel_explore.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
   readonly annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };

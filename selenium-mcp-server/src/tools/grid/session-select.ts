@@ -9,7 +9,7 @@ const schema = z.object({
 
 export class SessionSelectTool extends BaseTool {
   readonly name = 'session_select';
-  readonly description = 'Select a grid session as the active browser. All subsequent tool calls (navigate, click, snapshot, etc.) will operate on this session. Each session is independent — its own snapshot, element refs, and browser. Pass null to switch back to the local browser.';
+  readonly description = '[Advanced — Grid] Select a grid session as the active browser. All subsequent tool calls will operate on this session. Pass null to switch back to the local browser. Only use after session_create for parallel testing.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

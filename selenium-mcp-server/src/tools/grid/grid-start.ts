@@ -11,7 +11,7 @@ const schema = z.object({
 
 export class GridStartTool extends BaseTool {
   readonly name = 'grid_start';
-  readonly description = 'Start the Selenium Grid using docker compose. Optionally specify the number of Chrome and Firefox nodes.';
+  readonly description = '[Advanced — Grid] Start the Selenium Grid using docker compose. Only needed for parallel multi-browser testing.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

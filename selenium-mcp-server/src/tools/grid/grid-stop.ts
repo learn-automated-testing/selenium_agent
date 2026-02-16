@@ -8,7 +8,7 @@ const schema = z.object({});
 
 export class GridStopTool extends BaseTool {
   readonly name = 'grid_stop';
-  readonly description = 'Stop the Selenium Grid by running docker compose down.';
+  readonly description = '[Advanced — Grid] Stop the Selenium Grid by running docker compose down. Only needed for parallel multi-browser testing.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 

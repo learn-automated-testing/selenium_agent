@@ -12,7 +12,7 @@ const schema = z.object({
 
 export class SessionCreateTool extends BaseTool {
   readonly name = 'session_create';
-  readonly description = 'Create a new browser session on the Selenium Grid. Returns the session ID for use with other grid tools.';
+  readonly description = '[Advanced — Grid] Create a new browser session on the Selenium Grid. Only use when you need multiple parallel browser sessions. For normal browsing, use navigate_to instead.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'grid';
 
