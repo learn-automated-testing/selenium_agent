@@ -29,6 +29,9 @@ process.env.SELENIUM_MCP_OUTPUT_DIR = '/tmp';
 const S3_BUCKET = process.env.SCREENSHOT_S3_BUCKET;
 const s3 = S3_BUCKET ? new S3Client({}) : null;
 
+// Bearer token authentication.
+const API_KEY = process.env.MCP_API_KEY;
+
 // Resolve chromium binary once (extracts from .br on first call, cached after).
 const chromiumPath = chromium.executablePath();
 
@@ -130,6 +133,18 @@ export async function handler(event) {
 
   const method = event.requestContext?.http?.method ?? 'POST';
   const path = event.rawPath ?? '/mcp';
+
+  // Authenticate — require Bearer token when MCP_API_KEY is set.
+  if (API_KEY && path !== '/health') {
+    const auth = event.headers?.authorization ?? '';
+    if (auth !== `Bearer ${API_KEY}`) {
+      return {
+        statusCode: 401,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ error: 'Unauthorized' }),
+      };
+    }
+  }
 
   // Health check
   if (path === '/health') {
