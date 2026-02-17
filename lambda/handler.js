@@ -11,16 +11,23 @@
  *   - New Server + Transport per request
  *   - Shared Context (browser session) across warm invocations
  *
- * MCP clients batch initialize + notifications/initialized + tools/call
- * in a single POST for stateless mode.
+ * Screenshots saved to /tmp are auto-uploaded to S3 when
+ * SCREENSHOT_S3_BUCKET is set.
  */
 
 import chromium from '@sparticuz/chromium';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
 
 // Configure environment before the MCP server modules are imported.
 process.env.SELENIUM_HEADLESS = 'true';
 process.env.SELENIUM_LAMBDA = 'true';
 process.env.SELENIUM_MCP_OUTPUT_DIR = '/tmp';
+
+// S3 client for screenshot uploads (SDK v3 is pre-installed in Lambda runtime).
+const S3_BUCKET = process.env.SCREENSHOT_S3_BUCKET;
+const s3 = S3_BUCKET ? new S3Client({}) : null;
 
 // Resolve chromium binary once (extracts from .br on first call, cached after).
 const chromiumPath = chromium.executablePath();
@@ -51,6 +58,65 @@ async function initialize() {
 }
 
 ready = initialize();
+
+/**
+ * Upload a local file from /tmp to S3 and return the S3 URL.
+ */
+async function uploadToS3(localPath) {
+  const key = `screenshots/${basename(localPath)}`;
+  const body = await readFile(localPath);
+  const contentType = localPath.endsWith('.jpg') || localPath.endsWith('.jpeg')
+    ? 'image/jpeg' : 'image/png';
+
+  await s3.send(new PutObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  }));
+
+  return `s3://${S3_BUCKET}/${key}`;
+}
+
+/**
+ * Scan MCP response for screenshots saved to /tmp, upload them to S3,
+ * and append the S3 URL to the response text.
+ */
+async function uploadScreenshots(responseBody) {
+  if (!s3) return responseBody;
+
+  try {
+    const parsed = JSON.parse(responseBody);
+    const results = Array.isArray(parsed) ? parsed : [parsed];
+    let modified = false;
+
+    for (const msg of results) {
+      const content = msg?.result?.content;
+      if (!Array.isArray(content)) continue;
+
+      for (const item of content) {
+        if (item.type !== 'text') continue;
+
+        const match = item.text?.match(/Saved to (\/tmp\/screenshots\/\S+)/);
+        if (!match) continue;
+
+        try {
+          const s3Url = await uploadToS3(match[1]);
+          item.text = item.text.replace(match[0], `${match[0]}\nUploaded to ${s3Url}`);
+          modified = true;
+        } catch (err) {
+          console.error('S3 upload failed:', err);
+        }
+      }
+    }
+
+    return modified
+      ? JSON.stringify(Array.isArray(parsed) ? results : results[0])
+      : responseBody;
+  } catch {
+    return responseBody;
+  }
+}
 
 /**
  * Lambda Function URL handler (payload format 2.0).
@@ -106,11 +172,14 @@ export async function handler(event) {
     });
 
     // Convert Web Standard Response to Lambda response format
-    const responseBody = await response.text();
+    let responseBody = await response.text();
     const responseHeaders = {};
     response.headers.forEach((value, key) => {
       responseHeaders[key] = value;
     });
+
+    // Auto-upload screenshots to S3
+    responseBody = await uploadScreenshots(responseBody);
 
     return {
       statusCode: response.status,
