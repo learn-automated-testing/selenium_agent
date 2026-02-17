@@ -20,6 +20,7 @@ import chromium from '@sparticuz/chromium';
 // Configure environment before the MCP server modules are imported.
 process.env.SELENIUM_HEADLESS = 'true';
 process.env.SELENIUM_LAMBDA = 'true';
+process.env.SELENIUM_MCP_OUTPUT_DIR = '/tmp';
 
 // Resolve chromium binary once (extracts from .br on first call, cached after).
 const chromiumPath = chromium.executablePath();
