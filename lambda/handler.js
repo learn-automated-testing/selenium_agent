@@ -7,48 +7,56 @@
  * Exposed via Lambda Function URL — each POST to /mcp is an MCP request.
  * Uses enableJsonResponse so Lambda returns plain JSON (no SSE streaming).
  *
- * Cold start: extracts Chromium binary, creates MCP server + transport.
- * Warm invocations: reuses server, transport, and Chrome session.
+ * Pattern (from the official MCP SDK stateless example):
+ *   - New Server + Transport per request
+ *   - Shared Context (browser session) across warm invocations
+ *
+ * MCP clients batch initialize + notifications/initialized + tools/call
+ * in a single POST for stateless mode.
  */
 
 import chromium from '@sparticuz/chromium';
 
 // Configure environment before the MCP server modules are imported.
-// The server reads these env vars during createServer() / buildChromeOptions().
 process.env.SELENIUM_HEADLESS = 'true';
 process.env.SELENIUM_LAMBDA = 'true';
 
 // Resolve chromium binary once (extracts from .br on first call, cached after).
 const chromiumPath = chromium.executablePath();
 
-let transport;
+let createServerFn;
+let contextInstance;
+let TransportClass;
 let ready;
 
 async function initialize() {
   process.env.SELENIUM_CHROME_BINARY = await chromiumPath;
 
   // Dynamic imports so env vars are set before module-level code runs.
-  const { createServer } = await import('./dist/src/server.js');
-  const { StreamableHTTPServerTransport } = await import(
-    '@modelcontextprotocol/sdk/server/streamableHttp.js'
+  const serverMod = await import('./dist/src/server.js');
+  const contextMod = await import('./dist/src/context.js');
+  const transportMod = await import(
+    '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
   );
 
-  transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // stateless — no session tracking
-    enableJsonResponse: true,      // return JSON, not SSE (required for Lambda)
-  });
+  createServerFn = serverMod.createServer;
+  TransportClass = transportMod.WebStandardStreamableHTTPServerTransport;
 
-  const server = await createServer();
-  await server.connect(transport);
+  // Singleton Context — browser session survives across warm invocations.
+  contextInstance = new contextMod.Context({
+    stealth: false,
+    outputMode: 'stdout',
+  });
 }
 
 ready = initialize();
 
 /**
- * Lambda Function URL handler.
+ * Lambda Function URL handler (payload format 2.0).
  *
- * Converts the Lambda event (payload format 2.0) to a Node.js-style
- * IncomingMessage/ServerResponse pair and delegates to the MCP transport.
+ * Following the official MCP SDK stateless pattern: creates a fresh
+ * Server + Transport per request. The shared Context preserves the
+ * browser session across warm Lambda invocations.
  */
 export async function handler(event) {
   await ready;
@@ -66,105 +74,62 @@ export async function handler(event) {
     return { statusCode: 404, body: 'Not Found' };
   }
 
-  // Build a Web Standard Request from the Lambda event
-  const url = `https://${event.requestContext?.domainName ?? 'localhost'}${path}${
-    event.rawQueryString ? '?' + event.rawQueryString : ''
-  }`;
-
-  const headers = new Headers(event.headers ?? {});
-  const bodyText = event.isBase64Encoded
-    ? Buffer.from(event.body ?? '', 'base64').toString('utf-8')
-    : event.body ?? '';
-
-  const request = new Request(url, {
-    method,
-    headers,
-    body: method !== 'GET' && method !== 'HEAD' ? bodyText : undefined,
+  // Create fresh server + transport per request (official stateless pattern).
+  const server = await createServerFn(contextInstance);
+  const transport = new TransportClass({
+    sessionIdGenerator: undefined,
+    enableJsonResponse: true,
   });
 
-  // The transport's _webStandardTransport handles the MCP protocol.
-  // We access it via the Node.js wrapper's handleRequest, which internally
-  // converts to Web Standard Request/Response.  However, to avoid constructing
-  // fake IncomingMessage/ServerResponse, we call the underlying web-standard
-  // transport directly.
-  //
-  // StreamableHTTPServerTransport stores it as _webStandardTransport (private).
-  // We use a simple bridge: pipe through a minimal Node.js http pair.
-  const response = await handleViaNodeBridge(request);
+  try {
+    await server.connect(transport);
 
-  return {
-    statusCode: response.statusCode,
-    headers: response.headers,
-    body: response.body,
-    isBase64Encoded: false,
-  };
-}
+    // Build a Web Standard Request from the Lambda event
+    const url = `https://${event.requestContext?.domainName ?? 'localhost'}${path}${
+      event.rawQueryString ? '?' + event.rawQueryString : ''
+    }`;
 
-/**
- * Bridge: convert a Web Standard Request into a Node.js IncomingMessage +
- * ServerResponse, call transport.handleRequest(), then collect the response.
- */
-function handleViaNodeBridge(request) {
-  return new Promise(async (resolve, reject) => {
-    const { Readable } = await import('node:stream');
-    const { IncomingMessage, ServerResponse } = await import('node:http');
-    const { Socket } = await import('node:net');
+    const headers = new Headers(event.headers ?? {});
+    const bodyText = event.isBase64Encoded
+      ? Buffer.from(event.body ?? '', 'base64').toString('utf-8')
+      : event.body ?? '';
 
-    // Build a minimal IncomingMessage
-    const socket = new Socket();
-    const req = new IncomingMessage(socket);
-    req.method = request.method;
-    req.url = new URL(request.url).pathname + new URL(request.url).search;
-    req.headers = Object.fromEntries(request.headers.entries());
+    const request = new Request(url, {
+      method,
+      headers,
+      body: method !== 'GET' && method !== 'HEAD' ? bodyText : undefined,
+    });
 
-    // Push the body into the readable stream
-    const bodyText = request.method !== 'GET' && request.method !== 'HEAD'
-      ? await request.text()
-      : '';
-    if (bodyText) {
-      req.push(bodyText);
-    }
-    req.push(null);
+    const response = await transport.handleRequest(request, {
+      parsedBody: bodyText ? JSON.parse(bodyText) : undefined,
+    });
 
-    // Build a minimal ServerResponse that captures the output
-    const res = new ServerResponse(req);
-    const chunks = [];
+    // Convert Web Standard Response to Lambda response format
+    const responseBody = await response.text();
+    const responseHeaders = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
 
-    // Intercept writes
-    const originalWrite = res.write.bind(res);
-    const originalEnd = res.end.bind(res);
-
-    res.write = (chunk, ...args) => {
-      chunks.push(typeof chunk === 'string' ? chunk : chunk.toString());
-      return originalWrite(chunk, ...args);
+    return {
+      statusCode: response.status,
+      headers: responseHeaders,
+      body: responseBody,
+      isBase64Encoded: false,
     };
-
-    res.end = (chunk, ...args) => {
-      if (chunk) {
-        chunks.push(typeof chunk === 'string' ? chunk : chunk.toString());
-      }
-      const result = {
-        statusCode: res.statusCode,
-        headers: {},
-        body: chunks.join(''),
-      };
-      // Collect headers
-      const rawHeaders = res.getHeaders();
-      for (const [key, val] of Object.entries(rawHeaders)) {
-        result.headers[key] = Array.isArray(val) ? val.join(', ') : String(val);
-      }
-      resolve(result);
-      return originalEnd(chunk, ...args);
+  } catch (err) {
+    console.error('MCP handler error:', err);
+    return {
+      statusCode: 500,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        error: { code: -32603, message: 'Internal server error' },
+        id: null,
+      }),
     };
-
-    try {
-      await transport.handleRequest(req, res, bodyText ? JSON.parse(bodyText) : undefined);
-    } catch (err) {
-      resolve({
-        statusCode: 500,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ error: err.message }),
-      });
-    }
-  });
+  } finally {
+    await transport.close();
+    await server.close();
+  }
 }

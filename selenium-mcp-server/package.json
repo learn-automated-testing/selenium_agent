@@ -1,6 +1,6 @@
 {
   "name": "selenium-ai-agent",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Selenium MCP server with Grid support for parallel browser automation - 70+ tools for AI agents",
   "type": "module",
   "main": "dist/index.js",

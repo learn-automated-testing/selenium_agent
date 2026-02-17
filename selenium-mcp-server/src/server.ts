@@ -16,7 +16,7 @@ import { SessionTracer } from './trace/session-tracer.js';
 // Pre-compute the expectation JSON schema once
 const expectationJsonSchema = zodToJsonSchema(ExpectationSchema.unwrap());
 
-export async function createServer() {
+export async function createServer(externalContext?: Context) {
   const server = new Server(
     {
       name: 'selenium-mcp',
@@ -31,13 +31,13 @@ export async function createServer() {
 
   const outputMode = (process.env.SELENIUM_MCP_OUTPUT_MODE === 'file' ? 'file' : 'stdout') as 'stdout' | 'file';
   const saveTrace = process.env.SELENIUM_MCP_SAVE_TRACE === 'true';
-  const context = new Context({
+  const context = externalContext ?? new Context({
     stealth: process.env.SELENIUM_STEALTH === 'true',
     outputMode,
   });
 
   // Enable session tracing if configured
-  if (saveTrace) {
+  if (saveTrace && !context.tracer) {
     context.tracer = new SessionTracer();
   }
 
