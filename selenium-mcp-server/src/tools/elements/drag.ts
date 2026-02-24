@@ -4,8 +4,8 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
-  sourceRef: z.string().describe('Source element reference from page snapshot'),
-  targetRef: z.string().describe('Target element reference from page snapshot')
+  sourceRef: z.string().describe('Source element reference from page snapshot (e.g. "e5")'),
+  targetRef: z.string().describe('Target element reference from page snapshot (e.g. "e10")'),
 });
 
 export class DragDropTool extends BaseTool {
@@ -17,10 +17,10 @@ export class DragDropTool extends BaseTool {
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { sourceRef, targetRef } = this.parseParams(schema, params);
 
-    const driver = await context.getDriver();
     const sourceElement = await context.getElementByRef(sourceRef);
     const targetElement = await context.getElementByRef(targetRef);
 
+    const driver = await context.getDriver();
     const actions = driver.actions({ async: true });
     await actions.dragAndDrop(sourceElement, targetElement).perform();
 

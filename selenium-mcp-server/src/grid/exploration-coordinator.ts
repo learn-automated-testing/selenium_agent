@@ -242,7 +242,7 @@ export class ExplorationCoordinator {
         const title = await driver.getTitle();
 
         // Discover elements (single executeScript call)
-        const elements = await discoverElements(driver);
+        const { elements } = await discoverElements(driver);
 
         // Extract forms (single executeScript call)
         const forms = await this.extractForms(driver);
@@ -253,7 +253,7 @@ export class ExplorationCoordinator {
         // Build interactive element summary
         const interactiveElements: string[] = [];
         for (const [ref, info] of elements) {
-          interactiveElements.push(`[${ref}] ${info.tagName}: ${(info.ariaLabel || info.text || '').slice(0, 40)}`);
+          interactiveElements.push(`[${ref}] ${info.role}: ${(info.ariaLabel || info.text || '').slice(0, 40)}`);
         }
 
         pages.push({

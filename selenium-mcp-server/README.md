@@ -1,6 +1,6 @@
 # selenium-ai-agent
 
-Selenium MCP server for AI-driven browser automation — **73 tools** including BiDi cross-browser support, Selenium Grid parallel execution, test generation/healing pipeline, and session tracing.
+AI-powered Selenium MCP server for browser automation — **74 tools** with accessibility tree discovery, BiDi cross-browser support, Selenium Grid parallel execution, test generation & self-healing pipeline, and session tracing.
 
 ### One-Click Install
 
@@ -229,9 +229,9 @@ npx selenium-ai-agent [flags]
 
 ---
 
-## Tools (73)
+## Tools (74)
 
-### Navigation (4)
+### Navigation (5)
 
 | Tool | Description |
 |------|-------------|
@@ -239,12 +239,13 @@ npx selenium-ai-agent [flags]
 | `go_back` | Navigate back in browser history. |
 | `go_forward` | Navigate forward in browser history. |
 | `refresh_page` | Refresh the current page. |
+| `scroll_page` | Scroll the page in a direction (up/down/left/right) by pixel amount, or scroll a specific element into view by CSS selector. |
 
 ### Page Analysis (2)
 
 | Tool | Description |
 |------|-------------|
-| `capture_page` | Capture the current page state — returns interactive elements with refs (e1, e2, ...). Read-only. |
+| `capture_page` | Capture the current page state as an accessibility tree — returns elements with ARIA roles, semantic hierarchy, and refs (e1, e2, ...). Read-only. |
 | `take_screenshot` | Take a screenshot (viewport, full-page, or element). Uses BiDi when available for full-page/element screenshots, falls back to classic API. Params: `origin` (viewport/document), `ref` (element), `format` (png/jpeg), `quality`. |
 
 ### Elements (4)
@@ -610,7 +611,7 @@ selenium-mcp-server/src/
 ├── utils/
 │   ├── bidi-helpers.ts    # BiDi WebSocket URL rewriting + context factory
 │   ├── chrome-options.ts  # Chrome options builder + stealth scripts
-│   ├── element-discovery.ts # Element ref system (e1-e100)
+│   ├── element-discovery.ts # Accessibility tree discovery (e1-e200)
 │   ├── paths.ts           # Output directory resolution
 │   ├── sandbox.ts         # Workspace path validation
 │   ├── selector-validation.ts # Extract + validate selectors from test code
@@ -622,10 +623,10 @@ selenium-mcp-server/src/
 │   ├── session-pool.ts    # Session lifecycle management
 │   ├── session-context.ts # Context adapter for grid sessions
 │   └── exploration-coordinator.ts
-└── tools/                 # 73 tools grouped by domain
+└── tools/                 # 74 tools grouped by domain
     ├── base.ts            # BaseTool abstract class + MCP annotations
     ├── index.ts           # Tool registry
-    ├── navigation/        # navigate_to, go_back, go_forward, refresh_page
+    ├── navigation/        # navigate_to, go_back, go_forward, refresh_page, scroll_page
     ├── page/              # capture_page, take_screenshot
     ├── elements/          # click, hover, select, drag_drop
     ├── input/             # input_text, key_press, file_upload

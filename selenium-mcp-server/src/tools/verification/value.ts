@@ -5,12 +5,12 @@ import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference from page snapshot'),
-  expectedValue: z.string().describe('Expected value of the element')
+  expectedValue: z.string().describe('Expected value of the element'),
 });
 
 export class VerifyValueTool extends BaseTool {
   readonly name = 'verify_value';
-  readonly description = 'Verify that an input element has the expected value';
+  readonly description = 'Verify that an element has the expected value or text content';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'verification';
 

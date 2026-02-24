@@ -4,7 +4,7 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
-  ref: z.string().describe('Element reference (e.g., e1, e2) from page snapshot')
+  ref: z.string().describe('Element reference (e.g., e1, e2) from page snapshot'),
 });
 
 export class HoverTool extends BaseTool {
@@ -16,9 +16,9 @@ export class HoverTool extends BaseTool {
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { ref } = this.parseParams(schema, params);
 
-    const driver = await context.getDriver();
     const element = await context.getElementByRef(ref);
 
+    const driver = await context.getDriver();
     const actions = driver.actions({ async: true });
     await actions.move({ origin: element }).perform();
 

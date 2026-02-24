@@ -9,6 +9,7 @@ export { GridClient, GridSession, SessionPool, SessionContext, ExplorationCoordi
 
 // Type exports
 export type {
+  AccessibilityNode,
   ElementInfo,
   PageSnapshot,
   ToolResult,
@@ -41,4 +42,4 @@ export type {
 export { DEFAULT_EXPECTATIONS } from './types.js';
 
 // Utility exports
-export { discoverElements, extractElementInfo, findElementByInfo } from './utils/element-discovery.js';
+export { discoverElements, extractElementInfo, findElementByInfo, formatAccessibilityTree } from './utils/element-discovery.js';

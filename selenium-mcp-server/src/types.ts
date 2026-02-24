@@ -5,7 +5,9 @@ import { z } from 'zod';
 export interface ElementInfo {
   ref: string;           // e1, e2, e3...
   tagName: string;
+  role: string;
   text: string;
+  level?: number;
   ariaLabel?: string;
   isClickable: boolean;
   isVisible: boolean;
@@ -18,11 +20,21 @@ export interface ElementInfo {
   };
 }
 
+// Accessibility tree node for hierarchical page snapshot
+export interface AccessibilityNode {
+  ref?: string;
+  role: string;
+  name: string;
+  level?: number;
+  children: AccessibilityNode[];
+}
+
 // Page state snapshot
 export interface PageSnapshot {
   url: string;
   title: string;
   elements: Map<string, ElementInfo>;
+  tree: AccessibilityNode;
   timestamp: number;
 }
 

@@ -1,6 +1,6 @@
 import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
 import { PageSnapshot, BrowserConfig, TabInfo, ConsoleLogEntry, SnapshotOptions, ConsoleOptions, DiffOptions } from './types.js';
-import { discoverElements, findElementByInfo } from './utils/element-discovery.js';
+import { discoverElements, findElementByInfo, formatAccessibilityTree } from './utils/element-discovery.js';
 import { buildChromeOptions, applyStealthScripts } from './utils/chrome-options.js';
 import { EventCollector } from './bidi/event-collector.js';
 import { SessionTracer } from './trace/session-tracer.js';
@@ -318,12 +318,13 @@ export class Context {
 
     const url = await driver.getCurrentUrl();
     const title = await driver.getTitle();
-    const elements = await discoverElements(driver, options?.selector);
+    const { elements, tree } = await discoverElements(driver, options?.selector);
 
     this.snapshot = {
       url,
       title,
       elements,
+      tree,
       timestamp: Date.now()
     };
     return this.snapshot;
@@ -351,19 +352,9 @@ export class Context {
       return 'No snapshot available';
     }
 
-    const lines: string[] = [
-      `Page: ${this.snapshot.title}`,
-      `URL: ${this.snapshot.url}`,
-      '',
-      'Interactive Elements:'
-    ];
-
-    for (const [ref, info] of this.snapshot.elements) {
-      const label = info.ariaLabel || info.text || info.tagName;
-      lines.push(`  [${ref}] ${info.tagName}: ${label.slice(0, 50)}`);
-    }
-
-    let text = lines.join('\n');
+    const header = `Page: ${this.snapshot.title}\nURL: ${this.snapshot.url}\n`;
+    const treeText = formatAccessibilityTree(this.snapshot.tree);
+    let text = header + '\n' + treeText;
 
     if (options?.maxLength && text.length > options.maxLength) {
       text = text.slice(0, options.maxLength) + '\n... (truncated)';

@@ -1,7 +1,7 @@
 import { BaseTool } from './base.js';
 
 // Navigation
-import { NavigateTool, GoBackTool, GoForwardTool, RefreshTool } from './navigation/index.js';
+import { NavigateTool, GoBackTool, GoForwardTool, RefreshTool, ScrollPageTool } from './navigation/index.js';
 
 // Page
 import { SnapshotTool, ScreenshotTool } from './page/index.js';
@@ -95,11 +95,12 @@ export async function getAllTools(): Promise<BaseTool[]> {
   const batchTool = new BatchExecuteTool();
 
   const tools: BaseTool[] = [
-    // Navigation (4)
+    // Navigation (5)
     new NavigateTool(),
     new GoBackTool(),
     new GoForwardTool(),
     new RefreshTool(),
+    new ScrollPageTool(),
 
     // Page (2)
     new SnapshotTool(),
@@ -229,6 +230,7 @@ export {
   GoBackTool,
   GoForwardTool,
   RefreshTool,
+  ScrollPageTool,
   // Page
   SnapshotTool,
   ScreenshotTool,

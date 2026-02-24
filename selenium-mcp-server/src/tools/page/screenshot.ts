@@ -39,7 +39,7 @@ export class ScreenshotTool extends BaseTool {
       if (bidi) {
         try {
           if (ref) {
-            // Element screenshot via BiDi
+            // Element screenshot via BiDi — resolve by element ref
             const element = await context.getElementByRef(ref);
             const rect = await driver.executeScript(
               'const r = arguments[0].getBoundingClientRect(); return {x: r.x, y: r.y, width: r.width, height: r.height};',

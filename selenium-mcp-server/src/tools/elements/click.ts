@@ -4,7 +4,7 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
-  ref: z.string().describe('Element reference (e.g., e1, e2) from page snapshot')
+  ref: z.string().describe('Element reference (e.g., e1, e2) from page snapshot'),
 });
 
 export class ClickTool extends BaseTool {
