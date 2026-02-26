@@ -9,6 +9,27 @@ const schema = z.object({
   clear: z.boolean().optional().default(true).describe('Clear existing text before typing')
 });
 
+/**
+ * Browser-side script that waits for a listbox (identified by aria-controls)
+ * to receive children.  Polls every 100 ms up to 1 s, then resolves regardless.
+ */
+const WAIT_FOR_SUGGESTIONS_SCRIPT = `
+  var listboxId = arguments[0];
+  var callback  = arguments[arguments.length - 1];
+  var attempts  = 0;
+  function check() {
+    var lb = document.getElementById(listboxId);
+    if (lb && lb.children.length > 0) {
+      callback(true);
+    } else if (attempts++ >= 10) {
+      callback(false);
+    } else {
+      setTimeout(check, 100);
+    }
+  }
+  check();
+`;
+
 export class TypeTool extends BaseTool {
   readonly name = 'input_text';
   readonly description = 'Type text into an input field or textarea';
@@ -25,6 +46,15 @@ export class TypeTool extends BaseTool {
     }
 
     await element.sendKeys(text);
+
+    // For combobox inputs, wait briefly for async suggestions to load
+    const role = await element.getAttribute('role');
+    const ariaControls = await element.getAttribute('aria-controls');
+
+    if (role === 'combobox' && ariaControls) {
+      const driver = await context.getDriver();
+      await driver.executeAsyncScript(WAIT_FOR_SUGGESTIONS_SCRIPT, ariaControls);
+    }
 
     return this.success(`Typed "${text.slice(0, 20)}${text.length > 20 ? '...' : ''}" into ${ref}`, true);
   }
