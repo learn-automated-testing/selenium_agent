@@ -92,7 +92,8 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          extra_args: --only-verified --since-commit HEAD~10
+          base: ""
+          extra_args: --only-verified
 
   # ============================================
   # Semgrep SAST
