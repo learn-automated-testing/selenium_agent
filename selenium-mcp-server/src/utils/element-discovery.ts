@@ -177,7 +177,23 @@ const ACCESSIBILITY_TREE_SCRIPT = `
 
   function walk(node) {
     if (node.nodeType !== 1) return null;
-    if (!isVisible(node)) return null;
+    if (!isVisible(node)) {
+      // Zero-size containers (e.g. React portal wrappers) may have visible
+      // overflow children.  Still walk their subtree and promote any results.
+      var _r = node.getBoundingClientRect();
+      if (_r.width === 0 && _r.height === 0) {
+        var _s = window.getComputedStyle(node);
+        if (_s.display !== 'none') {
+          var _children = [];
+          for (var _i = 0; _i < node.children.length; _i++) {
+            var _c = walk(node.children[_i]);
+            if (_c) _children.push(_c);
+          }
+          if (_children.length > 0) return { __promote: _children };
+        }
+      }
+      return null;
+    }
 
     var role = getRole(node);
     var name = role ? getAccessibleName(node) : '';
