@@ -51,6 +51,9 @@ jobs:
   npm-audit:
     name: npm Audit
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: selenium-mcp-server
 
     steps:
       - name: Checkout repository
@@ -61,17 +64,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: selenium-mcp-server/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run npm audit
-        run: |
-          echo "## 📦 npm Security Audit" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          npm audit 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        run: npm audit 2>&1 || true
 
       - name: Check for high/critical vulnerabilities
         run: npm audit --audit-level=high
@@ -133,6 +132,9 @@ jobs:
   license-check:
     name: License Compliance
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: selenium-mcp-server
 
     steps:
       - name: Checkout repository
@@ -143,17 +145,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: selenium-mcp-server/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Check licenses
-        run: |
-          npx license-checker --production --summary
-          echo "## 📜 License Summary" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          npx license-checker --production --summary >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        run: npx license-checker --production --summary
 
   # ============================================
   # Dependency Review (PRs only)
@@ -184,12 +182,12 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
-          echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Scan | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| CodeQL | ${{ needs.codeql.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| npm Audit | ${{ needs.npm-audit.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Semgrep SAST | ${{ needs.semgrep.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| License Check | ${{ needs.license-check.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL | ${{ needs.codeql.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm Audit | ${{ needs.npm-audit.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semgrep SAST | ${{ needs.semgrep.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| License Check | ${{ needs.license-check.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
