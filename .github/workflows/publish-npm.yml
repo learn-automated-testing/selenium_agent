@@ -13,6 +13,9 @@ jobs:
   build-and-publish:
     name: Build and Publish to npm
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         working-directory: selenium-mcp-server
@@ -34,6 +37,8 @@ jobs:
         run: npm run build
 
       - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public
 
       - name: Create deployment summary
