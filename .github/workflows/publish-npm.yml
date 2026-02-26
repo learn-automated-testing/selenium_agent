@@ -23,92 +23,38 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Set up Python (for testing)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Verify npm wrapper structure
-        run: |
-          echo "📦 Checking npm wrapper structure..."
-          cd npm-wrapper
-          ls -la
-          echo ""
-          echo "📄 package.json:"
-          cat package.json
-          echo ""
-          echo "📁 Files to be published:"
-          ls -la bin/ scripts/ 2>/dev/null || echo "Checking directories..."
+      - name: Build
+        run: npm run build
 
-      - name: Install dependencies (if any)
+      - name: Verify build output
         run: |
-          cd npm-wrapper
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            echo "No package-lock.json, skipping npm ci"
-          fi
-
-      - name: Test npm wrapper
-        run: |
-          cd npm-wrapper
-          echo "🧪 Testing npm wrapper installation..."
-          npm pack
-          echo ""
-          echo "📦 Package created:"
-          ls -la *.tgz
-          echo ""
-          echo "📋 Package contents:"
-          tar -tzf *.tgz | head -20
-
-      - name: Verify Python package is available (for post-install)
-        run: |
-          echo "🔍 Checking if Python package will be available..."
-          echo "The npm post-install script will run: pip install ai-agent-selenium"
-          echo "Make sure PyPI package is published first!"
+          echo "📦 Checking build output..."
+          ls -la dist/
+          echo "✅ Build successful"
 
       - name: Publish to npm
         if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          cd npm-wrapper
-          echo "📤 Publishing to npm..."
-          npm publish --access public
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-package
-          path: npm-wrapper/*.tgz
-          retention-days: 30
+        run: npm publish --access public
 
       - name: Create deployment summary
         run: |
-          cd npm-wrapper
           VERSION=$(node -p "require('./package.json').version")
           echo "## 📦 NPM Package Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Package: \`ai-agent-selenium\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Package: \`selenium-ai-agent\`" >> $GITHUB_STEP_SUMMARY
           echo "📦 Version: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "npm install ai-agent-selenium" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### What Happens on Install" >> $GITHUB_STEP_SUMMARY
-          echo "1. npm installs Node.js wrapper" >> $GITHUB_STEP_SUMMARY
-          echo "2. Post-install script checks for Python 3.10+" >> $GITHUB_STEP_SUMMARY
-          echo "3. Automatically runs: \`pip install ai-agent-selenium\`" >> $GITHUB_STEP_SUMMARY
-          echo "4. Python package (with agents) gets installed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Usage" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "npx ai-agent-selenium" >> $GITHUB_STEP_SUMMARY
+          echo "npm install selenium-ai-agent" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure

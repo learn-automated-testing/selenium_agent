@@ -54,7 +54,6 @@ body:
       label: Installation Method
       options:
         - npm (selenium-ai-agent)
-        - pip (ai-agent-selenium)
         - From source
         - Docker
     validations:
