@@ -4,21 +4,21 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to publish (optional, uses package.json if not specified)'
-        required: false
+
+permissions:
+  contents: read
 
 jobs:
   build-and-publish:
     name: Build and Publish to npm
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: selenium-mcp-server
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -33,13 +33,9 @@ jobs:
         run: npm run build
 
       - name: Verify build output
-        run: |
-          echo "📦 Checking build output..."
-          ls -la dist/
-          echo "✅ Build successful"
+        run: ls -la dist/
 
       - name: Publish to npm
-        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
@@ -47,19 +43,10 @@ jobs:
       - name: Create deployment summary
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "## 📦 NPM Package Published" >> $GITHUB_STEP_SUMMARY
+          echo "## NPM Package Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Package: \`selenium-ai-agent\`" >> $GITHUB_STEP_SUMMARY
-          echo "📦 Version: \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** \`selenium-ai-agent@$VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "npm install selenium-ai-agent" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "## ❌ NPM Package Publish Failed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
