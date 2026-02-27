@@ -4,10 +4,13 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
-  direction: z.enum(['up', 'down', 'left', 'right']).describe('Scroll direction'),
+  direction: z.enum(['up', 'down', 'left', 'right']).optional().describe('Scroll direction (required unless selector is provided)'),
   amount: z.number().optional().describe('Pixels to scroll (default 500)'),
   selector: z.string().optional().describe('CSS selector to scroll into view (ignores direction/amount when provided)'),
-});
+}).refine(
+  (data) => data.selector !== undefined || data.direction !== undefined,
+  { message: 'Either "direction" or "selector" must be provided', path: ['direction'] }
+);
 
 export class ScrollPageTool extends BaseTool {
   readonly name = 'scroll_page';

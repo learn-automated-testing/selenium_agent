@@ -4,6 +4,11 @@ import { z } from 'zod';
  * Convert Zod schema to JSON Schema for MCP tool definitions
  */
 export function zodToJsonSchema(schema: z.ZodType): Record<string, unknown> {
+  // Unwrap ZodEffects (from .refine()/.transform()/.superRefine()) to get the inner schema
+  if (schema instanceof z.ZodEffects) {
+    return zodToJsonSchema(schema._def.schema);
+  }
+
   if (schema instanceof z.ZodObject) {
     const shape = schema.shape;
     const properties: Record<string, unknown> = {};
