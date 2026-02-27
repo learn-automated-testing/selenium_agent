@@ -12,6 +12,8 @@ export interface ElementInfo {
   isClickable: boolean;
   isVisible: boolean;
   attributes: Record<string, string>;
+  css?: string;          // Precomputed CSS selector (e.g. "#login", "input[name='email']")
+  xpath?: string;        // XPath fallback when no unique CSS exists
   boundingBox?: {
     x: number;
     y: number;
@@ -26,6 +28,7 @@ export interface AccessibilityNode {
   role: string;
   name: string;
   level?: number;
+  css?: string;          // Precomputed CSS selector hint for this element
   children: AccessibilityNode[];
 }
 

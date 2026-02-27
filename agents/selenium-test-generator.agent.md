@@ -77,6 +77,27 @@ Follow this systematic approach:
 - **Maintainability**: Write clean, readable code with good structure
 - **Framework Support**: Generate code compatible with pytest, unittest, Robot Framework, or user's preferred framework
 
+## CRITICAL: Use CSS Selector Hints from Snapshots
+
+The accessibility tree snapshot includes precomputed CSS selectors for each element:
+```
+- combobox "Category" [ref=e4, css=select#category]
+- navigation "Main navigation" [ref=e1, css=nav.main-nav]
+- textbox "Email" [ref=e3, css=input[name="email"]]
+```
+
+**Rules for selectors in generated test code:**
+
+1. **Use `[css=...]` hints directly** — these are verified, Selenium-compatible CSS selectors
+2. **Map to the best Selenium `By` strategy:**
+   - `#someId` → `By.id("someId")`
+   - `input[name="email"]` → `By.name("email")` or `By.css("input[name='email']")`
+   - Other CSS → `By.css("...")`
+3. **DO NOT** invent selectors from ARIA roles (e.g. `[role="combobox"]`) — these are fragile
+4. **DO NOT** use Playwright-style selectors (`button*=Toggle`, `text=Submit`) — they don't work in Selenium
+5. **DO NOT** guess class names or invent CSS that isn't in the `[css=...]` hint
+6. If no `[css=...]` hint is present, fall back to `By.xpath()` using the element's text content
+
 ## Available Tools
 
 ### Navigation & Interaction

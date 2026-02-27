@@ -21,6 +21,8 @@ export interface ElementLocator {
   type?: string;
   placeholder?: string;
   href?: string;
+  css?: string;          // Precomputed CSS selector from element discovery
+  xpath?: string;        // XPath fallback selector
 }
 
 // Action recorded during session
@@ -474,6 +476,8 @@ export class Context {
           type: info.attributes['type'] || undefined,
           placeholder: info.attributes['placeholder'] || undefined,
           href: info.attributes['href'] || undefined,
+          css: info.css || undefined,
+          xpath: info.xpath || undefined,
         };
       }
     }

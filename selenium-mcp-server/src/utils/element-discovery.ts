@@ -57,6 +57,113 @@ const ACCESSIBILITY_TREE_SCRIPT = `
   // Structural landmark roles that get refs even without a name
   var LANDMARK_ROLES = { 'navigation':1, 'main':1, 'banner':1, 'contentinfo':1, 'complementary':1, 'form':1 };
 
+  function cssEscape(str) {
+    try {
+      return CSS.escape(str);
+    } catch (_) {
+      // Manual fallback for environments without CSS.escape
+      return str.replace(/([^\w-])/g, '\\\\$1');
+    }
+  }
+
+  function computeSelector(el) {
+    var tag = el.tagName.toLowerCase();
+    var result = { css: null, xpath: null };
+
+    // 1. ID (verified unique)
+    var id = el.getAttribute('id');
+    if (id && id.length > 0) {
+      try {
+        var byId = document.querySelectorAll('#' + cssEscape(id));
+        if (byId.length === 1) {
+          result.css = '#' + cssEscape(id);
+          return result;
+        }
+      } catch (_) { /* invalid selector, skip */ }
+    }
+
+    // 2. data-testid
+    var testId = el.getAttribute('data-testid');
+    if (testId) {
+      result.css = '[data-testid="' + testId.replace(/"/g, '\\\\"') + '"]';
+      return result;
+    }
+
+    // 3. tag[name="..."]
+    var name = el.getAttribute('name');
+    if (name) {
+      var selector = tag + '[name="' + name.replace(/"/g, '\\\\"') + '"]';
+      try {
+        if (document.querySelectorAll(selector).length === 1) {
+          result.css = selector;
+          return result;
+        }
+      } catch (_) { /* skip */ }
+    }
+
+    // 4. tag[placeholder="..."]
+    var ph = el.getAttribute('placeholder');
+    if (ph) {
+      var selector = tag + '[placeholder="' + ph.replace(/"/g, '\\\\"') + '"]';
+      try {
+        if (document.querySelectorAll(selector).length === 1) {
+          result.css = selector;
+          return result;
+        }
+      } catch (_) { /* skip */ }
+    }
+
+    // 5. Unique class: tag.className (skip short/auto-generated)
+    if (el.classList && el.classList.length > 0) {
+      for (var ci = 0; ci < el.classList.length; ci++) {
+        var cls = el.classList[ci];
+        if (cls.length < 3 || /^[a-z]{1,2}\d|^css-|^_|^\d/.test(cls)) continue;
+        var selector = tag + '.' + cssEscape(cls);
+        try {
+          if (document.querySelectorAll(selector).length === 1) {
+            result.css = selector;
+            return result;
+          }
+        } catch (_) { /* skip */ }
+      }
+    }
+
+    // 6. tag[type="..."] (if unique)
+    var type = el.getAttribute('type');
+    if (type) {
+      var selector = tag + '[type="' + type + '"]';
+      try {
+        if (document.querySelectorAll(selector).length === 1) {
+          result.css = selector;
+          return result;
+        }
+      } catch (_) { /* skip */ }
+    }
+
+    // 7. a[href="..."] (truncated at 80 chars)
+    if (tag === 'a') {
+      var href = el.getAttribute('href');
+      if (href && href.length <= 80) {
+        var selector = 'a[href="' + href.replace(/"/g, '\\\\"') + '"]';
+        try {
+          if (document.querySelectorAll(selector).length === 1) {
+            result.css = selector;
+            return result;
+          }
+        } catch (_) { /* skip */ }
+      }
+    }
+
+    // 8. XPath text fallback
+    var textContent = (el.textContent || '').trim();
+    if (textContent.length > 0 && textContent.length <= 60) {
+      var safeText = textContent.replace(/'/g, "\\'");
+      result.xpath = '//' + tag + "[contains(text(),'" + safeText.slice(0, 40) + "')]";
+    }
+
+    return result;
+  }
+
   function getRole(el) {
     // 1. Explicit role attribute
     var explicit = el.getAttribute('role');
@@ -229,11 +336,15 @@ const ACCESSIBILITY_TREE_SCRIPT = `
       var type = node.getAttribute('type');
       var href = node.getAttribute('href');
       var placeholder = node.getAttribute('placeholder');
+      var testId = node.getAttribute('data-testid');
       if (id) attrs['id'] = id;
       if (elName) attrs['name'] = elName;
       if (type) attrs['type'] = type;
       if (href) attrs['href'] = href;
       if (placeholder) attrs['placeholder'] = placeholder;
+      if (testId) attrs['data-testid'] = testId;
+
+      var selectorResult = computeSelector(node);
 
       var isClickable = ['link','button'].indexOf(role) !== -1 ||
                         ['a','button','input'].indexOf(tag) !== -1 ||
@@ -250,6 +361,8 @@ const ACCESSIBILITY_TREE_SCRIPT = `
         isClickable: isClickable,
         isVisible: true,
         attributes: attrs,
+        css: selectorResult.css,
+        xpath: selectorResult.xpath,
         boundingBox: {
           x: rect.x + window.scrollX,
           y: rect.y + window.scrollY,
@@ -268,6 +381,10 @@ const ACCESSIBILITY_TREE_SCRIPT = `
     };
     if (ref) treeNode.ref = ref;
     if (level !== undefined) treeNode.level = level;
+    if (ref && elements.length > 0) {
+      var lastEl = elements[elements.length - 1];
+      if (lastEl.ref === ref && lastEl.css) treeNode.css = lastEl.css;
+    }
 
     return treeNode;
   }
@@ -317,6 +434,8 @@ export async function discoverElements(
       isClickable: boolean;
       isVisible: boolean;
       attributes: Record<string, string>;
+      css: string | null;
+      xpath: string | null;
       boundingBox: { x: number; y: number; width: number; height: number };
     }>;
     tree: AccessibilityNode;
@@ -334,6 +453,8 @@ export async function discoverElements(
       isClickable: el.isClickable,
       isVisible: el.isVisible,
       attributes: el.attributes,
+      css: el.css || undefined,
+      xpath: el.xpath || undefined,
       boundingBox: el.boundingBox,
     });
   }
@@ -354,7 +475,8 @@ export function formatAccessibilityTree(tree: AccessibilityNode, maxLength?: num
     let line = `${indent}${prefix}${node.role}`;
     if (node.name) line += ` "${node.name}"`;
     if (node.level !== undefined) line += ` [level=${node.level}]`;
-    if (node.ref) line += ` [ref=${node.ref}]`;
+    if (node.ref && node.css) line += ` [ref=${node.ref}, css=${node.css}]`;
+    else if (node.ref) line += ` [ref=${node.ref}]`;
 
     lines.push(line);
 
@@ -382,6 +504,84 @@ export function formatAccessibilityTree(tree: AccessibilityNode, maxLength?: num
   return text;
 }
 
+/**
+ * Browser-side script that computes a CSS/XPath selector for a single element.
+ * Mirrors the computeSelector() logic from ACCESSIBILITY_TREE_SCRIPT.
+ */
+const COMPUTE_SELECTOR_SCRIPT = `
+  var el = arguments[0];
+  var tag = el.tagName.toLowerCase();
+
+  function cssEscape(str) {
+    try { return CSS.escape(str); } catch (_) { return str.replace(/([^\\w-])/g, '\\\\$1'); }
+  }
+
+  // 1. ID (verified unique)
+  var id = el.getAttribute('id');
+  if (id && id.length > 0) {
+    try {
+      if (document.querySelectorAll('#' + cssEscape(id)).length === 1) {
+        return { css: '#' + cssEscape(id), xpath: null };
+      }
+    } catch (_) {}
+  }
+
+  // 2. data-testid
+  var testId = el.getAttribute('data-testid');
+  if (testId) {
+    return { css: '[data-testid="' + testId.replace(/"/g, '\\\\"') + '"]', xpath: null };
+  }
+
+  // 3. tag[name="..."]
+  var name = el.getAttribute('name');
+  if (name) {
+    var s = tag + '[name="' + name.replace(/"/g, '\\\\"') + '"]';
+    try { if (document.querySelectorAll(s).length === 1) return { css: s, xpath: null }; } catch (_) {}
+  }
+
+  // 4. tag[placeholder="..."]
+  var ph = el.getAttribute('placeholder');
+  if (ph) {
+    var s = tag + '[placeholder="' + ph.replace(/"/g, '\\\\"') + '"]';
+    try { if (document.querySelectorAll(s).length === 1) return { css: s, xpath: null }; } catch (_) {}
+  }
+
+  // 5. Unique class
+  if (el.classList && el.classList.length > 0) {
+    for (var ci = 0; ci < el.classList.length; ci++) {
+      var cls = el.classList[ci];
+      if (cls.length < 3 || /^[a-z]{1,2}\\d|^css-|^_|^\\d/.test(cls)) continue;
+      var s = tag + '.' + cssEscape(cls);
+      try { if (document.querySelectorAll(s).length === 1) return { css: s, xpath: null }; } catch (_) {}
+    }
+  }
+
+  // 6. tag[type="..."]
+  var type = el.getAttribute('type');
+  if (type) {
+    var s = tag + '[type="' + type + '"]';
+    try { if (document.querySelectorAll(s).length === 1) return { css: s, xpath: null }; } catch (_) {}
+  }
+
+  // 7. a[href="..."]
+  if (tag === 'a') {
+    var href = el.getAttribute('href');
+    if (href && href.length <= 80) {
+      var s = 'a[href="' + href.replace(/"/g, '\\\\"') + '"]';
+      try { if (document.querySelectorAll(s).length === 1) return { css: s, xpath: null }; } catch (_) {}
+    }
+  }
+
+  // 8. XPath text fallback
+  var text = (el.textContent || '').trim();
+  if (text.length > 0 && text.length <= 60) {
+    var safe = text.replace(/'/g, "\\\\'").slice(0, 40);
+    return { css: null, xpath: '//' + tag + "[contains(text(),'" + safe + "')]" };
+  }
+
+  return { css: null, xpath: null };
+`;
+
 export async function extractElementInfo(el: WebElement, ref: string): Promise<ElementInfo> {
   const tagName = await el.getTagName();
   const text = await el.getText();
@@ -392,6 +592,7 @@ export async function extractElementInfo(el: WebElement, ref: string): Promise<E
   const href = await el.getAttribute('href');
   const placeholder = await el.getAttribute('placeholder');
   const role = await el.getAttribute('role');
+  const testId = await el.getAttribute('data-testid');
 
   const rect = await el.getRect();
   const isClickable = ['a', 'button', 'input'].includes(tagName.toLowerCase()) ||
@@ -404,6 +605,21 @@ export async function extractElementInfo(el: WebElement, ref: string): Promise<E
   if (type) attributes['type'] = type;
   if (href) attributes['href'] = href;
   if (placeholder) attributes['placeholder'] = placeholder;
+  if (testId) attributes['data-testid'] = testId;
+
+  // Compute CSS/XPath selector in-browser
+  let css: string | undefined;
+  let xpath: string | undefined;
+  try {
+    const selectorResult = await el.getDriver().executeScript(COMPUTE_SELECTOR_SCRIPT, el) as {
+      css: string | null;
+      xpath: string | null;
+    };
+    css = selectorResult.css || undefined;
+    xpath = selectorResult.xpath || undefined;
+  } catch {
+    // Selector computation is non-critical
+  }
 
   return {
     ref,
@@ -414,6 +630,8 @@ export async function extractElementInfo(el: WebElement, ref: string): Promise<E
     isClickable,
     isVisible: true,
     attributes,
+    css,
+    xpath,
     boundingBox: {
       x: rect.x,
       y: rect.y,
