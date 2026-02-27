@@ -4,7 +4,7 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
-  tabId: z.number().describe('Tab ID to close (0-based index)')
+  tabId: z.coerce.number().describe('Tab ID to close (0-based index)')
 });
 
 export class TabCloseTool extends BaseTool {

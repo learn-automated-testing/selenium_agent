@@ -7,7 +7,7 @@ import { By } from 'selenium-webdriver';
 const schema = z.object({
   scanDepth: z.enum(['quick', 'standard', 'deep']).optional().default('standard')
     .describe("Scan depth: 'quick' (homepage only), 'standard' (main navigation), 'deep' (follow all links)"),
-  maxPages: z.number().optional().default(20).describe('Maximum number of pages to scan'),
+  maxPages: z.coerce.number().optional().default(20).describe('Maximum number of pages to scan'),
   focusAreas: z.array(z.string()).optional().describe("Specific areas to focus on (e.g., ['checkout', 'account'])")
 });
 

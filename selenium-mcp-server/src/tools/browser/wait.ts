@@ -7,7 +7,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 const schema = z.object({
   condition: z.enum(['element_visible', 'element_clickable', 'element_present', 'url_contains', 'title_contains']).describe('Condition to wait for'),
   value: z.string().describe('Value for condition (element selector or text to match)'),
-  timeout: z.number().optional().default(10000).describe('Timeout in milliseconds')
+  timeout: z.coerce.number().optional().default(10000).describe('Timeout in milliseconds')
 });
 
 export class WaitTool extends BaseTool {

@@ -6,7 +6,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   text: z.string().describe('Text content to verify is visible on the page'),
-  timeout: z.number().optional().default(10000).describe('Timeout in milliseconds')
+  timeout: z.coerce.number().optional().default(10000).describe('Timeout in milliseconds')
 });
 
 export class VerifyTextVisibleTool extends BaseTool {

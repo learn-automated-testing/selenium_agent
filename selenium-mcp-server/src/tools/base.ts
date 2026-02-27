@@ -8,11 +8,11 @@ export const ExpectationSchema = z.object({
   includeNetwork: z.boolean().optional().describe('Whether to include network request summary in response'),
   snapshotOptions: z.object({
     selector: z.string().optional().describe('CSS selector to scope element discovery'),
-    maxLength: z.number().optional().describe('Max characters for snapshot text'),
+    maxLength: z.coerce.number().optional().describe('Max characters for snapshot text'),
   }).optional().describe('Options for snapshot capture'),
   consoleOptions: z.object({
     levels: z.array(z.enum(['error', 'warn', 'info', 'log'])).optional().describe('Console log levels to include'),
-    maxMessages: z.number().optional().describe('Maximum number of console messages'),
+    maxMessages: z.coerce.number().optional().describe('Maximum number of console messages'),
   }).optional().describe('Options for console log retrieval'),
   diffOptions: z.object({
     enabled: z.boolean().optional().describe('Enable diff mode to return only changes'),

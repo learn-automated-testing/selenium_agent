@@ -8,7 +8,7 @@ const schema = z.object({
   ref: z.string().describe('Element reference for select element'),
   value: z.string().optional().describe('Option value to select'),
   text: z.string().optional().describe('Option text to select'),
-  index: z.number().optional().describe('Option index to select (0-based)')
+  index: z.coerce.number().optional().describe('Option index to select (0-based)')
 });
 
 export class SelectTool extends BaseTool {

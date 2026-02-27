@@ -6,7 +6,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference from page snapshot'),
-  timeout: z.number().optional().default(10000).describe('Timeout in milliseconds'),
+  timeout: z.coerce.number().optional().default(10000).describe('Timeout in milliseconds'),
 });
 
 export class VerifyElementVisibleTool extends BaseTool {

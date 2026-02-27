@@ -5,8 +5,8 @@ import { ToolResult, ToolCategory } from '../../types.js';
 import { runDockerCompose, getComposeFilePath } from '../../utils/docker.js';
 
 const schema = z.object({
-  chromeNodes: z.number().int().min(0).max(20).optional().describe('Number of Chrome nodes to start (uses compose default if omitted)'),
-  firefoxNodes: z.number().int().min(0).max(20).optional().describe('Number of Firefox nodes to start (uses compose default if omitted)'),
+  chromeNodes: z.coerce.number().int().min(0).max(20).optional().describe('Number of Chrome nodes to start (uses compose default if omitted)'),
+  firefoxNodes: z.coerce.number().int().min(0).max(20).optional().describe('Number of Firefox nodes to start (uses compose default if omitted)'),
 });
 
 export class GridStartTool extends BaseTool {

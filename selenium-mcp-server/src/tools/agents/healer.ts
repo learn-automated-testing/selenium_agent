@@ -59,7 +59,7 @@ const runTestsSchema = z.object({
   args: z.array(z.string()).optional().describe('Command arguments. If omitted, reads from .test-manifest.json.'),
   cwd: z.string().optional().describe('Working directory (project root). If omitted, reads from .test-manifest.json.'),
   testPath: z.string().optional().describe('Path to test file. Used to locate .test-manifest.json if command/args are not provided. Also appended as --spec arg for wdio.'),
-  timeout: z.number().optional().default(120000).describe('Timeout in milliseconds (default: 120000)')
+  timeout: z.coerce.number().optional().default(120000).describe('Timeout in milliseconds (default: 120000)')
 });
 
 export class HealerRunTestsTool extends BaseTool {
@@ -170,7 +170,7 @@ const debugTestSchema = z.object({
   args: z.array(z.string()).optional().describe('Command arguments. If omitted, reads from .test-manifest.json.'),
   cwd: z.string().optional().describe('Working directory (project root). If omitted, reads from .test-manifest.json.'),
   testPath: z.string().optional().describe('Path to test file. Used to locate .test-manifest.json if command/args are not provided.'),
-  timeout: z.number().optional().default(120000).describe('Timeout in milliseconds (default: 120000)')
+  timeout: z.coerce.number().optional().default(120000).describe('Timeout in milliseconds (default: 120000)')
 });
 
 export class HealerDebugTestTool extends BaseTool {

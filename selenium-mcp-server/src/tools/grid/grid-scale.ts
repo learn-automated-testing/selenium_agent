@@ -5,8 +5,8 @@ import { ToolResult, ToolCategory } from '../../types.js';
 import { runDockerCompose, getComposeFilePath } from '../../utils/docker.js';
 
 const schema = z.object({
-  chromeNodes: z.number().int().min(0).max(20).optional().default(4).describe('Number of Chrome nodes'),
-  firefoxNodes: z.number().int().min(0).max(20).optional().default(1).describe('Number of Firefox nodes'),
+  chromeNodes: z.coerce.number().int().min(0).max(20).optional().default(4).describe('Number of Chrome nodes'),
+  firefoxNodes: z.coerce.number().int().min(0).max(20).optional().default(1).describe('Number of Firefox nodes'),
 });
 
 export class GridScaleTool extends BaseTool {

@@ -14,7 +14,7 @@ const schema = z.object({
   format: z.enum(['A4', 'Letter', 'Legal']).optional().default('A4').describe('Paper format'),
   landscape: z.boolean().optional().default(false).describe('Use landscape orientation'),
   printBackground: z.boolean().optional().default(true).describe('Include background graphics'),
-  scale: z.number().min(0.1).max(2).optional().describe('Scale factor (0.1-2, default: 1)'),
+  scale: z.coerce.number().min(0.1).max(2).optional().describe('Scale factor (0.1-2, default: 1)'),
   pageRanges: z.string().optional().describe('Page ranges to print (e.g. "1-3,5")'),
 });
 

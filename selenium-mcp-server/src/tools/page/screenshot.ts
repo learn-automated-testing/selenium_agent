@@ -14,7 +14,7 @@ const schema = z.object({
   origin: z.enum(['viewport', 'document']).optional().describe('Screenshot origin: viewport (visible area, default) or document (full page)'),
   ref: z.string().optional().describe('Element ref for element screenshot (e.g. "e5")'),
   format: z.enum(['png', 'jpeg']).optional().describe('Image format (default: png)'),
-  quality: z.number().min(0).max(100).optional().describe('JPEG quality 0-100 (only for jpeg format)'),
+  quality: z.coerce.number().min(0).max(100).optional().describe('JPEG quality 0-100 (only for jpeg format)'),
 });
 
 export class ScreenshotTool extends BaseTool {

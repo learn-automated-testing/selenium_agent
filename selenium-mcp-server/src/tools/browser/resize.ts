@@ -13,8 +13,8 @@ const presets: Record<string, { width: number; height: number }> = {
 const presetNames = Object.keys(presets) as [string, ...string[]];
 
 const schema = z.object({
-  width: z.number().optional().describe('Window width in pixels'),
-  height: z.number().optional().describe('Window height in pixels'),
+  width: z.coerce.number().optional().describe('Window width in pixels'),
+  height: z.coerce.number().optional().describe('Window height in pixels'),
   preset: z.enum(presetNames).optional().describe('Device preset: mobile (375x812), tablet (768x1024), desktop (1280x800), desktop-hd (1920x1080)'),
 }).refine(
   (data) => data.preset !== undefined || (data.width !== undefined && data.height !== undefined),

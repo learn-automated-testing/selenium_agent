@@ -4,8 +4,8 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 
 const schema = z.object({
-  x: z.number().describe('X coordinate'),
-  y: z.number().describe('Y coordinate')
+  x: z.coerce.number().describe('X coordinate'),
+  y: z.coerce.number().describe('Y coordinate')
 });
 
 export class MouseMoveTool extends BaseTool {

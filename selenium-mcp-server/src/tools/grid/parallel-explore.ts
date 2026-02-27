@@ -15,8 +15,8 @@ const AuthSchema = z.object({
 const TargetSchema = z.object({
   url: z.string().describe('Starting URL for this exploration target'),
   label: z.string().optional().describe('Human-readable label for this target'),
-  maxDepth: z.number().int().min(0).max(5).optional().default(2).describe('Maximum link-following depth'),
-  maxPages: z.number().int().min(1).max(50).optional().default(20).describe('Maximum pages to discover'),
+  maxDepth: z.coerce.number().int().min(0).max(5).optional().default(2).describe('Maximum link-following depth'),
+  maxPages: z.coerce.number().int().min(1).max(50).optional().default(20).describe('Maximum pages to discover'),
   auth: AuthSchema.describe('Authentication credentials for protected sections'),
 });
 
