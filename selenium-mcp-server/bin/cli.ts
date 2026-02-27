@@ -28,6 +28,9 @@ for (const arg of args) {
     case '--headless':
       process.env.SELENIUM_HEADLESS = 'true';
       break;
+    case '--verbose-attributes':
+      process.env.SELENIUM_MCP_VERBOSE_ATTRIBUTES = 'true';
+      break;
     case '--output-mode=file':
       process.env.SELENIUM_MCP_OUTPUT_MODE = 'file';
       break;

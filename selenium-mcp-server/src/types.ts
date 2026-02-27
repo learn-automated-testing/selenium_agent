@@ -116,6 +116,7 @@ export interface BrowserConfig {
   proxy?: string;
   stealth?: boolean;
   outputMode?: 'stdout' | 'file';
+  verboseAttributes?: boolean;
 }
 
 // Console log entry

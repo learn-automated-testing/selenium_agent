@@ -25,13 +25,13 @@ export class SessionContext extends Context {
   }
 
   override async captureSnapshot(options?: SnapshotOptions): Promise<PageSnapshot> {
-    return this.gridSession.captureSnapshot(options);
+    return this.gridSession.captureSnapshot(options, this.getVerboseAttributes());
   }
 
   override async getSnapshot(): Promise<PageSnapshot> {
     const existing = this.gridSession.getSnapshot();
     if (existing) return existing;
-    return this.gridSession.captureSnapshot();
+    return this.gridSession.captureSnapshot(undefined, this.getVerboseAttributes());
   }
 
   override formatSnapshotAsText(options?: SnapshotOptions): string {
@@ -47,7 +47,7 @@ export class SessionContext extends Context {
     diffOptions?: DiffOptions
   ): Promise<{ snapshot: string; diff: string | null }> {
     // Capture snapshot via grid session, then compute diff using parent's logic
-    await this.gridSession.captureSnapshot(options);
+    await this.gridSession.captureSnapshot(options, this.getVerboseAttributes());
     const currentText = this.gridSession.formatSnapshotAsText(options);
     return { snapshot: currentText, diff: null };
   }

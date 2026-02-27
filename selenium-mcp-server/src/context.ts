@@ -214,6 +214,10 @@ export class Context {
     return this.config.outputMode ?? 'stdout';
   }
 
+  getVerboseAttributes(): boolean {
+    return this.config.verboseAttributes ?? false;
+  }
+
   setStealthEnabled(enabled: boolean): void {
     this.config.stealth = enabled;
   }
@@ -313,14 +317,14 @@ export class Context {
 
   async captureSnapshot(options?: SnapshotOptions): Promise<PageSnapshot> {
     if (this.activeGridSession) {
-      return this.activeGridSession.captureSnapshot(options);
+      return this.activeGridSession.captureSnapshot(options, this.getVerboseAttributes());
     }
 
     const driver = await this.getDriver();
 
     const url = await driver.getCurrentUrl();
     const title = await driver.getTitle();
-    const { elements, tree } = await discoverElements(driver, options?.selector);
+    const { elements, tree } = await discoverElements(driver, options?.selector, this.getVerboseAttributes());
 
     this.snapshot = {
       url,
@@ -336,7 +340,7 @@ export class Context {
     if (this.activeGridSession) {
       const existing = this.activeGridSession.getSnapshot();
       if (existing) return existing;
-      return this.activeGridSession.captureSnapshot();
+      return this.activeGridSession.captureSnapshot(undefined, this.getVerboseAttributes());
     }
 
     if (!this.snapshot) {
@@ -528,7 +532,7 @@ export class Context {
 
   async captureSnapshotWithDiff(options?: SnapshotOptions, diffOptions?: DiffOptions): Promise<{ snapshot: string; diff: string | null }> {
     if (this.activeGridSession) {
-      await this.activeGridSession.captureSnapshot(options);
+      await this.activeGridSession.captureSnapshot(options, this.getVerboseAttributes());
       const currentText = this.activeGridSession.formatSnapshotAsText(options);
       // Grid sessions don't track previous snapshot text for diffs yet
       return { snapshot: currentText, diff: null };

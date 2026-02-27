@@ -29,10 +29,10 @@ export class GridSession {
     return this.driver;
   }
 
-  async captureSnapshot(options?: SnapshotOptions): Promise<PageSnapshot> {
+  async captureSnapshot(options?: SnapshotOptions, verboseAttributes: boolean = false): Promise<PageSnapshot> {
     const url = await this.driver.getCurrentUrl();
     const title = await this.driver.getTitle();
-    const { elements, tree } = await discoverElements(this.driver, options?.selector);
+    const { elements, tree } = await discoverElements(this.driver, options?.selector, verboseAttributes);
 
     this.snapshot = { url, title, elements, tree, timestamp: Date.now() };
     return this.snapshot;
