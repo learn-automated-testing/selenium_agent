@@ -31,3 +31,6 @@ tesat/
 # Test outputs
 coverage/
 test-results/
+
+# Test plans (generated, not source-controlled)
+test-plans/
