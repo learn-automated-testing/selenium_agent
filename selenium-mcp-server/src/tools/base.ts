@@ -9,6 +9,7 @@ export const ExpectationSchema = z.object({
   snapshotOptions: z.object({
     selector: z.string().optional().describe('CSS selector to scope element discovery'),
     maxLength: z.coerce.number().optional().describe('Max characters for snapshot text'),
+    mode: z.enum(['full', 'smart', 'minimal']).optional().describe('Snapshot detail level: full (everything), smart (collapsed deep trees, ~150 refs), minimal (only ref elements)'),
   }).optional().describe('Options for snapshot capture'),
   consoleOptions: z.object({
     levels: z.array(z.enum(['error', 'warn', 'info', 'log'])).optional().describe('Console log levels to include'),

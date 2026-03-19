@@ -31,10 +31,13 @@ export async function createServer(externalContext?: Context) {
 
   const outputMode = (process.env.SELENIUM_MCP_OUTPUT_MODE === 'file' ? 'file' : 'stdout') as 'stdout' | 'file';
   const saveTrace = process.env.SELENIUM_MCP_SAVE_TRACE === 'true';
+  const snapshotModeEnv = process.env.SELENIUM_MCP_SNAPSHOT_MODE;
+  const snapshotMode = (snapshotModeEnv === 'smart' || snapshotModeEnv === 'minimal') ? snapshotModeEnv : 'full';
   const context = externalContext ?? new Context({
     stealth: process.env.SELENIUM_STEALTH === 'true',
     outputMode,
     verboseAttributes: process.env.SELENIUM_MCP_VERBOSE_ATTRIBUTES === 'true',
+    snapshotMode,
   });
 
   // Enable session tracing if configured

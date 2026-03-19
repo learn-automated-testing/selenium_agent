@@ -29,6 +29,7 @@ export interface AccessibilityNode {
   name: string;
   level?: number;
   css?: string;          // Precomputed CSS selector hint for this element
+  xpath?: string;        // XPath selector when no unique CSS exists
   children: AccessibilityNode[];
 }
 
@@ -50,10 +51,17 @@ export interface ToolResult {
   base64Resource?: { data: string; mimeType: string };
 }
 
+// Snapshot detail level — controls how much of the accessibility tree is returned
+// full:    Everything (default) — best for test generation and deep analysis
+// smart:   Flatten wrappers, collapse deep nav trees, cap refs — good balance
+// minimal: Only interactable ref'd elements, no structure — lowest tokens
+export type SnapshotMode = 'full' | 'smart' | 'minimal';
+
 // Expectation types for controlling tool response content
 export interface SnapshotOptions {
   selector?: string;     // CSS selector to scope element discovery
   maxLength?: number;    // Max characters for snapshot text
+  mode?: SnapshotMode;   // Snapshot detail level (overrides server default)
 }
 
 export interface ConsoleOptions {
@@ -117,6 +125,7 @@ export interface BrowserConfig {
   stealth?: boolean;
   outputMode?: 'stdout' | 'file';
   verboseAttributes?: boolean;
+  snapshotMode?: SnapshotMode;
 }
 
 // Console log entry

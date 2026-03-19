@@ -1,7 +1,561 @@
 import { WebDriver, WebElement } from 'selenium-webdriver';
-import { ElementInfo, AccessibilityNode } from '../types.js';
+import { ElementInfo, AccessibilityNode, SnapshotMode } from '../types.js';
 
 const MAX_ELEMENTS = 200;
+
+/**
+ * Shared browser-side JS containing helper functions and computeSelector().
+ * Embedded in both ACCESSIBILITY_TREE_SCRIPT and COMPUTE_SELECTOR_SCRIPT
+ * to eliminate duplication. Must be ES5-compatible (runs in browser).
+ */
+const SELECTOR_COMPUTATION_CODE = `
+  function cssEscape(str) {
+    try {
+      return CSS.escape(str);
+    } catch (_) {
+      return str.replace(/([^\\w-])/g, '\\\\$1');
+    }
+  }
+
+  function xpathStringLiteral(str) {
+    if (str.indexOf("'") === -1) return "'" + str + "'";
+    if (str.indexOf('"') === -1) return '"' + str + '"';
+    return "concat('" + str.replace(/'/g, "',\\"'\\",'") + "')";
+  }
+
+  function xpathUnique(xpath) {
+    try {
+      var r = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+      return r.snapshotLength === 1;
+    } catch (_) { return false; }
+  }
+
+  function tryAttr(prefix, attr, value) {
+    if (!value) return null;
+    var escaped = value.replace(/"/g, '\\\\"');
+    var exact = prefix + '[' + attr + '="' + escaped + '"]';
+    try { if (document.querySelectorAll(exact).length === 1) return exact; } catch (_) {}
+    if (value.length > 40) {
+      var truncated = value.slice(0, 40).replace(/"/g, '\\\\"');
+      var startsWith = prefix + '[' + attr + '^="' + truncated + '"]';
+      try { if (document.querySelectorAll(startsWith).length === 1) return startsWith; } catch (_) {}
+    }
+    return null;
+  }
+
+  function isNonSemanticClass(cls) {
+    if (cls.length < 3 || /^\\d/.test(cls)) return true;
+    // CSS-in-JS: css-xxx, sc-xxx, _hash, jssN, makeStyles-
+    if (/^(css|sc|jss|makeStyles|withStyles)-/.test(cls)) return true;
+    if (/^_[a-zA-Z0-9]/.test(cls)) return true;
+    if (/^[a-z]{1,2}\\d/.test(cls)) return true;
+    if (/^[a-f0-9]{6,}$/i.test(cls)) return true;
+    // Utility patterns: mt-4, p-2, w-12, -mx-2
+    if (/^-?[a-z]{1,4}-\\d/.test(cls)) return true;
+    // Display/position keywords used as classes
+    if (/^(flex|grid|block|inline|hidden|relative|absolute|fixed|sticky|static|contents|table|flow-root)$/.test(cls)) return true;
+    // Category utilities
+    if (/^(overflow|float|clear|object|box|isolation|z|order|col|row|justify|items|self|place|gap|space|divide|sr)-/.test(cls)) return true;
+    // Responsive/state prefixes: sm:, md:, lg:, hover:, focus:, dark:
+    if (/^[a-z0-9]+:/.test(cls)) return true;
+    return false;
+  }
+
+  function computeSelector(el) {
+    var tag = el.tagName.toLowerCase();
+    var result = { css: null, xpath: null };
+    var s, xp;
+
+    // Attributes to skip during dynamic discovery
+    var SKIP_ATTRS = {
+      'id': 1, 'class': 1, 'style': 1, 'slot': 1,
+      'onclick': 1, 'onchange': 1, 'onsubmit': 1, 'onload': 1, 'onerror': 1,
+      'onfocus': 1, 'onblur': 1, 'onmouseover': 1, 'onmouseout': 1, 'onkeydown': 1,
+      'onkeyup': 1, 'onkeypress': 1, 'oninput': 1, 'onscroll': 1, 'onresize': 1,
+      'data-reactid': 1, 'data-reactroot': 1, 'data-react-checksum': 1,
+      'tabindex': 1, 'draggable': 1, 'hidden': 1, 'dir': 1, 'lang': 1,
+      'width': 1, 'height': 1, 'colspan': 1, 'rowspan': 1
+    };
+
+    // Tags where text-based selectors make sense
+    var TEXT_TAGS = {
+      'a':1, 'button':1, 'h1':1, 'h2':1, 'h3':1, 'h4':1, 'h5':1, 'h6':1,
+      'label':1, 'summary':1, 'option':1, 'li':1, 'th':1, 'td':1, 'span':1,
+      'p':1, 'legend':1, 'caption':1, 'figcaption':1, 'dt':1, 'dd':1
+    };
+
+    // Landmark tags for scoping
+    var LANDMARK_TAGS = { 'nav':1, 'main':1, 'header':1, 'footer':1, 'aside':1, 'form':1 };
+
+    // Implicit role map for Phase 3 (byRole+name)
+    var TAG_ROLES = {
+      'a':'link', 'button':'button', 'select':'combobox', 'textarea':'textbox',
+      'h1':'heading', 'h2':'heading', 'h3':'heading', 'h4':'heading', 'h5':'heading', 'h6':'heading',
+      'img':'img', 'nav':'navigation', 'main':'main', 'aside':'complementary',
+      'dialog':'dialog', 'form':'form', 'table':'table', 'ul':'list', 'ol':'list',
+      'li':'listitem', 'summary':'button', 'progress':'progressbar', 'meter':'meter'
+    };
+
+    // Get visible text content for selector use (trimmed, ≤ maxLen chars)
+    function getVisibleText(e, maxLen) {
+      var t = (e.textContent || '').trim();
+      if (t.length === 0 || t.length > (maxLen || 60)) return null;
+      return t;
+    }
+
+    // --- Phase 1: byId — unique #id ---
+    var id = el.getAttribute('id');
+    if (id && id.length > 0) {
+      try {
+        if (document.querySelectorAll('#' + cssEscape(id)).length === 1) {
+          result.css = '#' + cssEscape(id);
+          result.xpath = '//*[@id=' + xpathStringLiteral(id) + ']';
+          return result;
+        }
+      } catch (_) {}
+    }
+
+    // --- Phase 2: byTestId — data-testid, data-test, data-cy, data-qa ---
+    var TEST_ID_ATTRS = ['data-testid', 'data-test', 'data-cy', 'data-qa'];
+    for (var ti = 0; ti < TEST_ID_ATTRS.length; ti++) {
+      var tAttr = TEST_ID_ATTRS[ti];
+      var tVal = el.getAttribute(tAttr);
+      if (tVal) {
+        s = tryAttr(tag, tAttr, tVal);
+        if (s) {
+          result.css = s;
+          xp = '//' + tag + '[@' + tAttr + '=' + xpathStringLiteral(tVal) + ']';
+          if (xpathUnique(xp)) result.xpath = xp;
+          return result;
+        }
+        // Also try without tag prefix
+        s = tryAttr('', tAttr, tVal);
+        if (s) {
+          result.css = s;
+          xp = '//*[@' + tAttr + '=' + xpathStringLiteral(tVal) + ']';
+          if (xpathUnique(xp)) result.xpath = xp;
+          return result;
+        }
+      }
+    }
+
+    // --- Phase 3: byRole+name — tag implies role + accessible name ---
+    var implicitRole = TAG_ROLES[tag];
+    if (tag === 'a' && !el.hasAttribute('href')) implicitRole = null;
+    if (tag === 'input') {
+      var inputType = (el.getAttribute('type') || 'text').toLowerCase();
+      var inputRoles = {
+        'text':'textbox','search':'searchbox','email':'textbox','url':'textbox',
+        'tel':'textbox','password':'textbox','number':'spinbutton',
+        'checkbox':'checkbox','radio':'radio','range':'slider',
+        'submit':'button','reset':'button','image':'button'
+      };
+      implicitRole = inputRoles[inputType] || 'textbox';
+    }
+    if (implicitRole) {
+      var ariaLabel = el.getAttribute('aria-label');
+      var textContent = getVisibleText(el, 60);
+
+      // Try aria-label first (works in both CSS and XPath)
+      if (ariaLabel) {
+        s = tryAttr(tag, 'aria-label', ariaLabel);
+        if (s) {
+          result.css = s;
+          xp = '//' + tag + '[@aria-label=' + xpathStringLiteral(ariaLabel) + ']';
+          if (xpathUnique(xp)) result.xpath = xp;
+          return result;
+        }
+      }
+
+      // Try text content (XPath only — CSS can't match text)
+      if (textContent) {
+        xp = '//' + tag + '[normalize-space()=' + xpathStringLiteral(textContent) + ']';
+        if (xpathUnique(xp)) {
+          result.xpath = xp;
+          return result;
+        }
+      }
+    }
+
+    // --- Phase 4: byLabel — form elements with label association ---
+    if (['input','select','textarea'].indexOf(tag) !== -1) {
+      var lAriaLabel = el.getAttribute('aria-label');
+      if (lAriaLabel) {
+        s = tryAttr(tag, 'aria-label', lAriaLabel);
+        if (s) {
+          result.css = s;
+          xp = '//' + tag + '[@aria-label=' + xpathStringLiteral(lAriaLabel) + ']';
+          if (xpathUnique(xp)) result.xpath = xp;
+          return result;
+        }
+      }
+      // label[for] association
+      var elId = el.getAttribute('id');
+      if (elId) {
+        var labelEl = document.querySelector('label[for="' + elId.replace(/"/g, '\\\\"') + '"]');
+        if (labelEl) {
+          var labelText = (labelEl.textContent || '').trim();
+          if (labelText && labelText.length <= 60) {
+            xp = '//label[normalize-space()=' + xpathStringLiteral(labelText) + ']//' + tag;
+            if (!xpathUnique(xp)) {
+              xp = '//label[normalize-space()=' + xpathStringLiteral(labelText) + ']/following::' + tag + '[1]';
+            }
+            if (xpathUnique(xp)) {
+              result.xpath = xp;
+              return result;
+            }
+          }
+        }
+      }
+      // Wrapping label
+      var wrappingLabel = el.closest('label');
+      if (wrappingLabel) {
+        var clone = wrappingLabel.cloneNode(true);
+        var inputs = clone.querySelectorAll('input,select,textarea');
+        for (var ii = 0; ii < inputs.length; ii++) inputs[ii].remove();
+        var wLabelText = (clone.textContent || '').trim();
+        if (wLabelText && wLabelText.length <= 60) {
+          xp = '//label[contains(normalize-space(),' + xpathStringLiteral(wLabelText) + ')]//' + tag;
+          if (xpathUnique(xp)) {
+            result.xpath = xp;
+            return result;
+          }
+        }
+      }
+    }
+
+    // --- Phase 5: byPlaceholder ---
+    var placeholder = el.getAttribute('placeholder');
+    if (placeholder) {
+      s = tryAttr(tag, 'placeholder', placeholder);
+      if (s) {
+        result.css = s;
+        xp = '//' + tag + '[@placeholder=' + xpathStringLiteral(placeholder) + ']';
+        if (xpathUnique(xp)) result.xpath = xp;
+        return result;
+      }
+    }
+
+    // --- Phase 6: byText — visible text content (exact match) ---
+    if (TEXT_TAGS[tag]) {
+      var exactText = getVisibleText(el, 60);
+      if (exactText) {
+        xp = '//' + tag + '[normalize-space()=' + xpathStringLiteral(exactText) + ']';
+        if (xpathUnique(xp)) {
+          result.xpath = xp;
+          return result;
+        }
+      }
+    }
+
+    // --- Phase 7: byText+landmark — text scoped to nearest landmark ---
+    if (TEXT_TAGS[tag]) {
+      var landmarkText = getVisibleText(el, 60);
+      if (landmarkText) {
+        var ancestor = el.parentElement;
+        for (var ld = 0; ld < 10 && ancestor; ld++) {
+          var aTag = ancestor.tagName.toLowerCase();
+          var aRole = ancestor.getAttribute('role');
+          var isLandmark = LANDMARK_TAGS[aTag] || (aTag === 'section' && (ancestor.hasAttribute('aria-label') || ancestor.hasAttribute('aria-labelledby')));
+          var isRoleLandmark = aRole && ['navigation','main','banner','contentinfo','complementary','search','form','region'].indexOf(aRole) !== -1;
+
+          if (isLandmark || isRoleLandmark) {
+            // Try landmark tag path
+            if (isLandmark) {
+              // If landmark has aria-label, use it for disambiguation
+              var landmarkAriaLabel = ancestor.getAttribute('aria-label');
+              if (landmarkAriaLabel) {
+                xp = '//' + aTag + '[@aria-label=' + xpathStringLiteral(landmarkAriaLabel) + ']//' + tag + '[normalize-space()=' + xpathStringLiteral(landmarkText) + ']';
+              } else {
+                xp = '//' + aTag + '//' + tag + '[normalize-space()=' + xpathStringLiteral(landmarkText) + ']';
+              }
+              if (xpathUnique(xp)) {
+                result.xpath = xp;
+                return result;
+              }
+            }
+            // Try role-based path
+            if (isRoleLandmark) {
+              xp = '//*[@role=' + xpathStringLiteral(aRole) + ']//' + tag + '[normalize-space()=' + xpathStringLiteral(landmarkText) + ']';
+              if (xpathUnique(xp)) {
+                result.xpath = xp;
+                return result;
+              }
+            }
+            break;
+          }
+          ancestor = ancestor.parentElement;
+        }
+      }
+    }
+
+    // --- Phase 8: byAttribute — remaining meaningful attributes ---
+    var ATTR_PRIORITY = [
+      'name', 'title', 'alt', 'href', 'src', 'action',
+      'datetime', 'value', 'for',
+      'formaction', 'formcontrolname', 'ng-model', 'v-model', 'data-bind',
+      'aria-controls', 'aria-describedby', 'aria-labelledby',
+      'type', 'method', 'target', 'rel', 'accept',
+      'scope', 'headers', 'contenteditable', 'autocomplete',
+      'pattern', 'min', 'max', 'step'
+    ];
+    var tried = {};
+    for (var ai = 0; ai < ATTR_PRIORITY.length; ai++) {
+      var aName = ATTR_PRIORITY[ai];
+      tried[aName] = 1;
+      var aVal = el.getAttribute(aName);
+      if (aVal) {
+        s = tryAttr(tag, aName, aVal);
+        if (s) {
+          result.css = s;
+          // Build XPath companion
+          if (aVal.length <= 60) {
+            xp = '//' + tag + '[@' + aName + '=' + xpathStringLiteral(aVal) + ']';
+            if (xpathUnique(xp)) result.xpath = xp;
+          }
+          return result;
+        }
+      }
+    }
+    // Dynamic discovery — try ALL remaining attributes
+    var attrs = el.attributes;
+    if (attrs) {
+      for (var di = 0; di < attrs.length; di++) {
+        var dName = attrs[di].name;
+        if (SKIP_ATTRS[dName] || tried[dName]) continue;
+        if (dName.indexOf('on') === 0 && dName.length > 2) continue;
+        s = tryAttr(tag, dName, attrs[di].value);
+        if (s) {
+          result.css = s;
+          var dVal = attrs[di].value;
+          if (dVal.length <= 60) {
+            xp = '//' + tag + '[@' + dName + '=' + xpathStringLiteral(dVal) + ']';
+            if (xpathUnique(xp)) result.xpath = xp;
+          }
+          return result;
+        }
+      }
+    }
+
+    // --- Phase 9: byRole — unique role selector (dialog, menu, etc.) ---
+    var elRole = el.getAttribute('role');
+    if (elRole && ['dialog', 'alertdialog', 'tabpanel', 'menu', 'listbox', 'grid', 'tree', 'tooltip', 'tab', 'menuitem', 'treeitem'].indexOf(elRole) !== -1) {
+      var roleAriaLabel = el.getAttribute('aria-label');
+      if (roleAriaLabel) {
+        s = tryAttr('[role="' + elRole + '"]', 'aria-label', roleAriaLabel);
+        if (s) {
+          result.css = s;
+          xp = '//*[@role=' + xpathStringLiteral(elRole) + '][@aria-label=' + xpathStringLiteral(roleAriaLabel) + ']';
+          if (xpathUnique(xp)) result.xpath = xp;
+          return result;
+        }
+      }
+      var roleSelector = '[role="' + elRole + '"]';
+      try {
+        if (document.querySelectorAll(roleSelector).length === 1) {
+          result.css = roleSelector;
+          xp = '//*[@role=' + xpathStringLiteral(elRole) + ']';
+          if (xpathUnique(xp)) result.xpath = xp;
+          return result;
+        }
+      } catch (_) {}
+    }
+
+    // --- Phase 10: byState — stateful selectors (dialog[open], aria-expanded) ---
+    if ((tag === 'dialog' || tag === 'details') && el.hasAttribute('open')) {
+      var openSelector = tag + '[open]';
+      try {
+        if (document.querySelectorAll(openSelector).length === 1) {
+          result.css = openSelector;
+          result.xpath = '//' + tag + '[@open]';
+          return result;
+        }
+      } catch (_) {}
+    }
+    if (el.getAttribute('aria-expanded') !== null) {
+      var expLabel = el.getAttribute('aria-label');
+      if (expLabel) {
+        s = tryAttr(tag + '[aria-expanded]', 'aria-label', expLabel);
+        if (s) {
+          result.css = s;
+          xp = '//' + tag + '[@aria-expanded][@aria-label=' + xpathStringLiteral(expLabel) + ']';
+          if (xpathUnique(xp)) result.xpath = xp;
+          return result;
+        }
+      }
+    }
+
+    // --- Phase 11: byTableCell — table structure with ID context ---
+    if (['th', 'td', 'caption'].indexOf(tag) !== -1) {
+      if (tag === 'caption') {
+        var tableParent = el.closest('table');
+        if (tableParent) {
+          var tableId = tableParent.getAttribute('id');
+          if (tableId) {
+            var capSelector = '#' + cssEscape(tableId) + ' > caption';
+            try {
+              if (document.querySelectorAll(capSelector).length === 1) {
+                result.css = capSelector;
+                result.xpath = '//*[@id=' + xpathStringLiteral(tableId) + ']/caption';
+                return result;
+              }
+            } catch (_) {}
+          }
+        }
+      }
+      if (tag === 'td' || tag === 'th') {
+        var row = el.parentElement;
+        if (row && row.tagName.toLowerCase() === 'tr') {
+          var cellIndex = 0;
+          var siblings = row.children;
+          for (var si = 0; si < siblings.length; si++) {
+            if (siblings[si] === el) { cellIndex = si + 1; break; }
+          }
+          var table = el.closest('table');
+          if (table) {
+            var tblId = table.getAttribute('id');
+            if (tblId) {
+              var section = row.parentElement;
+              if (section) {
+                var rows = section.children;
+                var rowIndex = 0;
+                for (var ri = 0; ri < rows.length; ri++) {
+                  if (rows[ri] === row) { rowIndex = ri + 1; break; }
+                }
+                var secTag = section.tagName.toLowerCase();
+                var tblSelector = '#' + cssEscape(tblId) + ' > ' + secTag + ' > tr:nth-child(' + rowIndex + ') > ' + tag + ':nth-child(' + cellIndex + ')';
+                try {
+                  if (document.querySelectorAll(tblSelector).length === 1) {
+                    result.css = tblSelector;
+                    return result;
+                  }
+                } catch (_) {}
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // --- Phase 12: byCompound — combine two non-unique attrs ---
+    if (attrs) {
+      var usable = [];
+      for (var ui = 0; ui < attrs.length; ui++) {
+        var uName = attrs[ui].name;
+        var uVal = attrs[ui].value;
+        if (SKIP_ATTRS[uName] || !uVal || uName === 'id') continue;
+        if (uName.indexOf('on') === 0 && uName.length > 2) continue;
+        if (uVal.length > 60) continue;
+        usable.push({ n: uName, v: uVal });
+      }
+      var maxPairs = Math.min(usable.length, 5);
+      for (var p1 = 0; p1 < maxPairs; p1++) {
+        for (var p2 = p1 + 1; p2 < maxPairs; p2++) {
+          var compound = tag + '[' + usable[p1].n + '="' + usable[p1].v.replace(/"/g, '\\\\"') + '"][' + usable[p2].n + '="' + usable[p2].v.replace(/"/g, '\\\\"') + '"]';
+          try {
+            if (document.querySelectorAll(compound).length === 1) {
+              result.css = compound;
+              xp = '//' + tag + '[@' + usable[p1].n + '=' + xpathStringLiteral(usable[p1].v) + '][@' + usable[p2].n + '=' + xpathStringLiteral(usable[p2].v) + ']';
+              if (xpathUnique(xp)) result.xpath = xp;
+              return result;
+            }
+          } catch (_) {}
+        }
+      }
+      // class + attribute compound
+      if (el.classList && el.classList.length > 0) {
+        for (var cci = 0; cci < el.classList.length && cci < 3; cci++) {
+          var ccls = el.classList[cci];
+          if (isNonSemanticClass(ccls)) continue;
+          for (var cai = 0; cai < maxPairs; cai++) {
+            var clsCompound = tag + '.' + cssEscape(ccls) + '[' + usable[cai].n + '="' + usable[cai].v.replace(/"/g, '\\\\"') + '"]';
+            try {
+              if (document.querySelectorAll(clsCompound).length === 1) {
+                result.css = clsCompound;
+                return result;
+              }
+            } catch (_) {}
+          }
+        }
+      }
+    }
+
+    // --- Phase 13: byClass — unique semantic class (with improved filter) ---
+    if (el.classList && el.classList.length > 0) {
+      for (var ci = 0; ci < el.classList.length; ci++) {
+        var cls = el.classList[ci];
+        if (isNonSemanticClass(cls)) continue;
+        var clsSelector = tag + '.' + cssEscape(cls);
+        try {
+          if (document.querySelectorAll(clsSelector).length === 1) {
+            result.css = clsSelector;
+            xp = '//' + tag + '[contains(@class,' + xpathStringLiteral(cls) + ')]';
+            if (xpathUnique(xp)) result.xpath = xp;
+            return result;
+          }
+        } catch (_) {}
+      }
+    }
+
+    // --- Phase 14: byIndex — positional fallback, marked /*idx*/ ---
+    var parent = el.parentElement;
+    if (parent) {
+      var nthIndex = 0;
+      var sibs = parent.children;
+      for (var ni = 0; ni < sibs.length; ni++) {
+        if (sibs[ni].tagName === el.tagName) nthIndex++;
+        if (sibs[ni] === el) break;
+      }
+      var chain = tag + ':nth-of-type(' + nthIndex + ')';
+      var anc = parent;
+      for (var depth = 0; depth < 2 && anc; depth++) {
+        var ancTag = anc.tagName.toLowerCase();
+        if (ancTag === 'body' || ancTag === 'html') break;
+        var ancId = anc.getAttribute('id');
+        if (ancId) {
+          chain = '#' + cssEscape(ancId) + ' > ' + chain;
+          break;
+        }
+        var ancClass = '';
+        if (anc.classList && anc.classList.length > 0) {
+          for (var aci = 0; aci < anc.classList.length; aci++) {
+            var ac = anc.classList[aci];
+            if (!isNonSemanticClass(ac)) { ancClass = '.' + cssEscape(ac); break; }
+          }
+        }
+        chain = ancTag + ancClass + ' > ' + chain;
+        anc = anc.parentElement;
+      }
+      var idxSelector = '/*idx*/ ' + chain;
+      try {
+        if (document.querySelectorAll(chain).length === 1) {
+          result.css = idxSelector;
+          return result;
+        }
+      } catch (_) {}
+    }
+
+    // --- Phase 15: byTextLoose — contains text fallback (last resort) ---
+    var looseText = (el.textContent || '').trim();
+    if (looseText.length > 0 && looseText.length <= 80) {
+      // Try exact match with normalize-space first
+      xp = '//' + tag + '[normalize-space()=' + xpathStringLiteral(looseText) + ']';
+      if (xpathUnique(xp)) {
+        result.xpath = xp;
+        return result;
+      }
+      // Try contains with truncated text
+      var truncText = looseText.length > 40 ? looseText.slice(0, 40) : looseText;
+      xp = '//' + tag + '[contains(normalize-space(),' + xpathStringLiteral(truncText) + ')]';
+      if (xpathUnique(xp)) {
+        result.xpath = xp;
+        return result;
+      }
+    }
+
+    return result;
+  }
+`;
 
 /**
  * Browser-side JS that walks the DOM recursively, computes ARIA roles and
@@ -58,22 +612,12 @@ const ACCESSIBILITY_TREE_SCRIPT = `
   // Structural landmark roles that get refs even without a name
   var LANDMARK_ROLES = { 'navigation':1, 'main':1, 'banner':1, 'contentinfo':1, 'complementary':1, 'form':1 };
 
-  function cssEscape(str) {
-    try {
-      return CSS.escape(str);
-    } catch (_) {
-      // Manual fallback for environments without CSS.escape
-      return str.replace(/([^\w-])/g, '\\\\$1');
-    }
-  }
-
   // Essential attrs always kept in lean mode
   var ESSENTIAL_ATTRS = { 'id':1, 'name':1, 'type':1, 'role':1, 'data-testid':1, 'data-test':1, 'data-cy':1, 'data-qa':1 };
 
-  // Extract the attribute name that a CSS selector is based on (e.g. "input[name='email']" → "name")
+  // Extract the attribute name that a CSS selector is based on
   function selectorWinningAttr(cssSel) {
     if (!cssSel) return null;
-    // Match the first [attr=...] or [attr^=...] in the selector
     var m = cssSel.match(/\\[([a-zA-Z][a-zA-Z0-9_-]*)(?:[\\^\\$\\*]?=)/);
     return m ? m[1] : null;
   }
@@ -92,275 +636,19 @@ const ACCESSIBILITY_TREE_SCRIPT = `
     return filtered;
   }
 
-  // Try exact match then starts-with fallback for any attribute selector.
-  // Returns the unique CSS selector string or null.
-  function tryAttr(prefix, attr, value) {
-    if (!value) return null;
-    var escaped = value.replace(/"/g, '\\\\"');
-    // 1. Exact match
-    var exact = prefix + '[' + attr + '="' + escaped + '"]';
-    try { if (document.querySelectorAll(exact).length === 1) return exact; } catch (_) {}
-    // 2. Starts-with fallback for long values (> 40 chars)
-    if (value.length > 40) {
-      var truncated = value.slice(0, 40).replace(/"/g, '\\\\"');
-      var startsWith = prefix + '[' + attr + '^="' + truncated + '"]';
-      try { if (document.querySelectorAll(startsWith).length === 1) return startsWith; } catch (_) {}
-    }
-    return null;
-  }
-
-  function computeSelector(el) {
-    var tag = el.tagName.toLowerCase();
-    var result = { css: null, xpath: null };
-    var s;
-
-    // Attributes to skip during dynamic discovery (handled specially or too volatile)
-    var SKIP_ATTRS = {
-      'id': 1, 'class': 1, 'style': 1, 'slot': 1,
-      // Event handlers
-      'onclick': 1, 'onchange': 1, 'onsubmit': 1, 'onload': 1, 'onerror': 1,
-      'onfocus': 1, 'onblur': 1, 'onmouseover': 1, 'onmouseout': 1, 'onkeydown': 1,
-      'onkeyup': 1, 'onkeypress': 1, 'oninput': 1, 'onscroll': 1, 'onresize': 1,
-      // React/framework internals
-      'data-reactid': 1, 'data-reactroot': 1, 'data-react-checksum': 1,
-      // Too volatile / layout-only
-      'tabindex': 1, 'draggable': 1, 'hidden': 1, 'dir': 1, 'lang': 1,
-      'width': 1, 'height': 1, 'colspan': 1, 'rowspan': 1
-    };
-
-    // Priority order for well-known attributes (tried first, in this order)
-    var PRIORITY_ATTRS = [
-      'data-testid', 'data-test', 'data-cy', 'data-qa',
-      'name', 'placeholder', 'alt', 'aria-label', 'title',
-      'datetime', 'value', 'for', 'src', 'action', 'href',
-      'formaction', 'formcontrolname', 'ng-model', 'v-model', 'data-bind',
-      'aria-controls', 'aria-describedby', 'aria-labelledby',
-      'type', 'role', 'method', 'target', 'rel', 'accept',
-      'scope', 'headers', 'contenteditable', 'autocomplete',
-      'pattern', 'min', 'max', 'step'
-    ];
-
-    // --- Phase 1: #id (most stable) ---
-    var id = el.getAttribute('id');
-    if (id && id.length > 0) {
-      try {
-        if (document.querySelectorAll('#' + cssEscape(id)).length === 1) {
-          result.css = '#' + cssEscape(id);
-          return result;
-        }
-      } catch (_) { /* invalid selector, skip */ }
-    }
-
-    // --- Phase 2: Priority attributes (well-known, in preferred order) ---
-    var tried = {};
-    for (var pi = 0; pi < PRIORITY_ATTRS.length; pi++) {
-      var pAttr = PRIORITY_ATTRS[pi];
-      tried[pAttr] = 1;
-      s = tryAttr(tag, pAttr, el.getAttribute(pAttr));
-      if (s) { result.css = s; return result; }
-    }
-
-    // --- Phase 3: Dynamic discovery — try ALL remaining attributes ---
-    var attrs = el.attributes;
-    if (attrs) {
-      for (var di = 0; di < attrs.length; di++) {
-        var attrName = attrs[di].name;
-        if (SKIP_ATTRS[attrName] || tried[attrName]) continue;
-        // Skip attributes starting with 'on' (event handlers we missed)
-        if (attrName.indexOf('on') === 0 && attrName.length > 2) continue;
-        s = tryAttr(tag, attrName, attrs[di].value);
-        if (s) { result.css = s; return result; }
-      }
-    }
-
-    // --- Phase 4: Role-based selectors (dialogs/modals/widgets) ---
-    var elRole = el.getAttribute('role');
-    if (elRole && ['dialog', 'alertdialog', 'tabpanel', 'menu', 'listbox', 'grid', 'tree', 'tooltip'].indexOf(elRole) !== -1) {
-      var roleAriaLabel = el.getAttribute('aria-label');
-      if (roleAriaLabel) {
-        s = tryAttr('[role="' + elRole + '"]', 'aria-label', roleAriaLabel);
-        if (s) { result.css = s; return result; }
-      }
-      var roleSelector = '[role="' + elRole + '"]';
-      try {
-        if (document.querySelectorAll(roleSelector).length === 1) {
-          result.css = roleSelector;
-          return result;
-        }
-      } catch (_) { /* skip */ }
-    }
-
-    // --- Phase 5: Stateful selectors (dialog[open], aria-expanded) ---
-    if ((tag === 'dialog' || tag === 'details') && el.hasAttribute('open')) {
-      var openSelector = tag + '[open]';
-      try {
-        if (document.querySelectorAll(openSelector).length === 1) {
-          result.css = openSelector;
-          return result;
-        }
-      } catch (_) { /* skip */ }
-    }
-    if (el.getAttribute('aria-expanded') !== null) {
-      var expLabel = el.getAttribute('aria-label');
-      if (expLabel) {
-        s = tryAttr(tag + '[aria-expanded]', 'aria-label', expLabel);
-        if (s) { result.css = s; return result; }
-      }
-    }
-
-    // --- Phase 6: Unique class ---
-    if (el.classList && el.classList.length > 0) {
-      for (var ci = 0; ci < el.classList.length; ci++) {
-        var cls = el.classList[ci];
-        if (cls.length < 3 || /^[a-z]{1,2}\d|^css-|^_|^\d/.test(cls)) continue;
-        var clsSelector = tag + '.' + cssEscape(cls);
-        try {
-          if (document.querySelectorAll(clsSelector).length === 1) {
-            result.css = clsSelector;
-            return result;
-          }
-        } catch (_) { /* skip */ }
-      }
-    }
-
-    // --- Phase 7: Table cell selectors (th/td/caption with row/col context) ---
-    if (['th', 'td', 'caption'].indexOf(tag) !== -1) {
-      if (tag === 'caption') {
-        var tableParent = el.closest('table');
-        if (tableParent) {
-          var tableId = tableParent.getAttribute('id');
-          if (tableId) {
-            var capSelector = '#' + cssEscape(tableId) + ' > caption';
-            try { if (document.querySelectorAll(capSelector).length === 1) { result.css = capSelector; return result; } } catch (_) {}
-          }
-        }
-      }
-      if (tag === 'td' || tag === 'th') {
-        var row = el.parentElement;
-        if (row && row.tagName.toLowerCase() === 'tr') {
-          var cellIndex = 0;
-          var siblings = row.children;
-          for (var si = 0; si < siblings.length; si++) {
-            if (siblings[si] === el) { cellIndex = si + 1; break; }
-          }
-          var table = el.closest('table');
-          if (table) {
-            var tblId = table.getAttribute('id');
-            if (tblId) {
-              var section = row.parentElement;
-              if (section) {
-                var rows = section.children;
-                var rowIndex = 0;
-                for (var ri = 0; ri < rows.length; ri++) {
-                  if (rows[ri] === row) { rowIndex = ri + 1; break; }
-                }
-                var secTag = section.tagName.toLowerCase();
-                var tblSelector = '#' + cssEscape(tblId) + ' > ' + secTag + ' > tr:nth-child(' + rowIndex + ') > ' + tag + ':nth-child(' + cellIndex + ')';
-                try { if (document.querySelectorAll(tblSelector).length === 1) { result.css = tblSelector; return result; } } catch (_) {}
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // --- Phase 8: Compound attribute fallback (combine two non-unique attrs) ---
-    if (attrs) {
-      // Collect usable attribute pairs from the element
-      var usable = [];
-      for (var ui = 0; ui < attrs.length; ui++) {
-        var uName = attrs[ui].name;
-        var uVal = attrs[ui].value;
-        if (SKIP_ATTRS[uName] || !uVal || uName === 'id') continue;
-        if (uName.indexOf('on') === 0 && uName.length > 2) continue;
-        if (uVal.length > 60) continue; // skip very long values for compound
-        usable.push({ n: uName, v: uVal });
-      }
-      // Try pairs (max 10 combinations to keep fast)
-      var maxPairs = Math.min(usable.length, 5);
-      for (var p1 = 0; p1 < maxPairs; p1++) {
-        for (var p2 = p1 + 1; p2 < maxPairs; p2++) {
-          var compound = tag + '[' + usable[p1].n + '="' + usable[p1].v.replace(/"/g, '\\\\"') + '"][' + usable[p2].n + '="' + usable[p2].v.replace(/"/g, '\\\\"') + '"]';
-          try { if (document.querySelectorAll(compound).length === 1) { result.css = compound; return result; } } catch (_) {}
-        }
-      }
-      // Also try class + attribute compound
-      if (el.classList && el.classList.length > 0) {
-        for (var cci = 0; cci < el.classList.length && cci < 3; cci++) {
-          var ccls = el.classList[cci];
-          if (ccls.length < 3) continue;
-          for (var cai = 0; cai < maxPairs; cai++) {
-            var clsCompound = tag + '.' + cssEscape(ccls) + '[' + usable[cai].n + '="' + usable[cai].v.replace(/"/g, '\\\\"') + '"]';
-            try { if (document.querySelectorAll(clsCompound).length === 1) { result.css = clsCompound; return result; } } catch (_) {}
-          }
-        }
-      }
-    }
-
-    // --- Phase 9: Indexed fallback — tag:nth-of-type(n) as last CSS resort ---
-    //     Marked with /*idx*/ so AI/healer knows this is positional and fragile
-    var parent = el.parentElement;
-    if (parent) {
-      var nthIndex = 0;
-      var sibs = parent.children;
-      for (var ni = 0; ni < sibs.length; ni++) {
-        if (sibs[ni].tagName === el.tagName) nthIndex++;
-        if (sibs[ni] === el) break;
-      }
-      var chain = tag + ':nth-of-type(' + nthIndex + ')';
-      var ancestor = parent;
-      for (var depth = 0; depth < 2 && ancestor; depth++) {
-        var aTag = ancestor.tagName.toLowerCase();
-        if (aTag === 'body' || aTag === 'html') break;
-        var aId = ancestor.getAttribute('id');
-        if (aId) {
-          chain = '#' + cssEscape(aId) + ' > ' + chain;
-          break;
-        }
-        var aClass = '';
-        if (ancestor.classList && ancestor.classList.length > 0) {
-          for (var aci = 0; aci < ancestor.classList.length; aci++) {
-            var ac = ancestor.classList[aci];
-            if (ac.length >= 3 && !/^[a-z]{1,2}\d|^css-|^_|^\d/.test(ac)) { aClass = '.' + cssEscape(ac); break; }
-          }
-        }
-        chain = aTag + aClass + ' > ' + chain;
-        ancestor = ancestor.parentElement;
-      }
-      var idxSelector = '/*idx*/ ' + chain;
-      try {
-        if (document.querySelectorAll(chain).length === 1) {
-          result.css = idxSelector;
-          return result;
-        }
-      } catch (_) { /* skip */ }
-    }
-
-    // --- Phase 10: XPath text fallback ---
-    var textContent = (el.textContent || '').trim();
-    if (textContent.length > 0 && textContent.length <= 80) {
-      var safeText = textContent.replace(/'/g, "\\'").slice(0, 50);
-      result.xpath = '//' + tag + "[contains(text(),'" + safeText + "')]";
-    }
-
-    return result;
-  }
+  ${SELECTOR_COMPUTATION_CODE}
 
   function getRole(el) {
-    // 1. Explicit role attribute
     var explicit = el.getAttribute('role');
     if (explicit) return explicit.split(' ')[0];
 
     var tag = el.tagName.toLowerCase();
-
-    // 2. Implicit role from tag
     var fn = IMPLICIT_ROLES[tag];
     if (fn) {
       var r = fn(el);
       if (r) return r;
     }
 
-    // 3. Interactive attributes
     if (el.getAttribute('contenteditable') === 'true') return 'textbox';
     if (el.hasAttribute('onclick') || el.hasAttribute('draggable')) return 'generic';
     if (el.hasAttribute('tabindex') && el.tabIndex >= 0) return 'generic';
@@ -369,11 +657,9 @@ const ACCESSIBILITY_TREE_SCRIPT = `
   }
 
   function getAccessibleName(el) {
-    // 1. aria-label
     var ariaLabel = el.getAttribute('aria-label');
     if (ariaLabel) return ariaLabel.trim();
 
-    // 2. aria-labelledby
     var labelledBy = el.getAttribute('aria-labelledby');
     if (labelledBy) {
       var parts = labelledBy.split(/\\s+/);
@@ -387,20 +673,17 @@ const ACCESSIBILITY_TREE_SCRIPT = `
 
     var tag = el.tagName.toLowerCase();
 
-    // 3. alt for images
     if (tag === 'img' || tag === 'input' && (el.getAttribute('type') || '').toLowerCase() === 'image') {
       var alt = el.getAttribute('alt');
       if (alt) return alt.trim();
     }
 
-    // 4. label[for] for form elements
     if (['input','select','textarea'].indexOf(tag) !== -1) {
       var id = el.getAttribute('id');
       if (id) {
         var label = document.querySelector('label[for="' + id + '"]');
         if (label) return (label.textContent || '').trim();
       }
-      // Wrapping label
       var parentLabel = el.closest('label');
       if (parentLabel) {
         var clone = parentLabel.cloneNode(true);
@@ -411,15 +694,12 @@ const ACCESSIBILITY_TREE_SCRIPT = `
       }
     }
 
-    // 5. placeholder
     var ph = el.getAttribute('placeholder');
     if (ph) return ph.trim();
 
-    // 6. title
     var title = el.getAttribute('title');
     if (title) return title.trim();
 
-    // 7. Text content (for non-container elements)
     var textContent = (el.textContent || '').trim();
     if (textContent.length > 0 && textContent.length <= 100) return textContent;
     if (textContent.length > 100) return textContent.slice(0, 100);
@@ -450,7 +730,6 @@ const ACCESSIBILITY_TREE_SCRIPT = `
   var elements = [];
   var refCount = 0;
 
-  // Flatten promoted children (recursively — nested non-semantic wrappers)
   function flatten(items) {
     var out = [];
     for (var j = 0; j < items.length; j++) {
@@ -467,8 +746,6 @@ const ACCESSIBILITY_TREE_SCRIPT = `
   function walk(node) {
     if (node.nodeType !== 1) return null;
     if (!isVisible(node)) {
-      // Zero-size containers (e.g. React portal wrappers) may have visible
-      // overflow children.  Still walk their subtree and promote any results.
       var _r = node.getBoundingClientRect();
       if (_r.width === 0 && _r.height === 0) {
         var _s = window.getComputedStyle(node);
@@ -489,7 +766,6 @@ const ACCESSIBILITY_TREE_SCRIPT = `
     var level = getHeadingLevel(node);
     var isLandmark = role && LANDMARK_ROLES[role];
 
-    // Walk children first
     var childNodes = [];
     var children = node.children;
     for (var i = 0; i < children.length; i++) {
@@ -497,14 +773,11 @@ const ACCESSIBILITY_TREE_SCRIPT = `
       if (childResult) childNodes.push(childResult);
     }
 
-    // Skip nodes with no role
     if (!role) {
-      // Promote children of non-semantic wrappers
       if (childNodes.length > 0) return { __promote: childNodes };
       return null;
     }
 
-    // Assign ref if the node has a role + name, or is a landmark
     var ref = null;
     if ((name || isLandmark) && refCount < maxElements) {
       refCount++;
@@ -513,16 +786,14 @@ const ACCESSIBILITY_TREE_SCRIPT = `
       var tag = node.tagName.toLowerCase();
       var rect = node.getBoundingClientRect();
       var attrs = {};
-      // Dynamically collect all attributes (skip volatile/layout-only ones)
       var nodeAttrs = node.attributes;
       for (var nai = 0; nai < nodeAttrs.length; nai++) {
         var aName = nodeAttrs[nai].name;
         var aVal = nodeAttrs[nai].value;
-        // Skip style, class (stored separately), event handlers, layout attrs
         if (aName === 'style' || aName === 'class' || aName === 'slot') continue;
         if (aName.indexOf('on') === 0 && aName.length > 2) continue;
         if (aName === 'data-reactid' || aName === 'data-reactroot' || aName === 'data-react-checksum') continue;
-        if (!aVal || aVal.length > 200) continue; // skip empty or excessively long values
+        if (!aVal || aVal.length > 200) continue;
         attrs[aName] = aVal;
       }
 
@@ -566,7 +837,10 @@ const ACCESSIBILITY_TREE_SCRIPT = `
     if (level !== undefined) treeNode.level = level;
     if (ref && elements.length > 0) {
       var lastEl = elements[elements.length - 1];
-      if (lastEl.ref === ref && lastEl.css) treeNode.css = lastEl.css;
+      if (lastEl.ref === ref) {
+        if (lastEl.css) treeNode.css = lastEl.css;
+        if (lastEl.xpath) treeNode.xpath = lastEl.xpath;
+      }
     }
 
     return treeNode;
@@ -647,36 +921,188 @@ export async function discoverElements(
   return { elements, tree: raw.tree };
 }
 
+/** Options for formatting the accessibility tree. */
+export interface FormatTreeOptions {
+  maxLength?: number;
+  mode?: SnapshotMode;
+}
+
+/**
+ * Format a single node line.
+ * In smart mode: truncate long names, show only one selector.
+ */
+function formatNodeLine(node: AccessibilityNode, indent: string, smart: boolean): string {
+  let line = `${indent}- ${node.role}`;
+  if (node.name) {
+    let name = node.name;
+    if (smart && name.length > 80) {
+      name = name.slice(0, 77) + '...';
+    }
+    line += ` "${name}"`;
+  }
+  if (node.level !== undefined) line += ` [level=${node.level}]`;
+  if (node.ref) {
+    const sel = node.css || node.xpath;
+    if (smart) {
+      // Single best selector to save space
+      line += sel ? ` [ref=${node.ref}, ${node.css ? 'css' : 'xpath'}=${sel}]` : ` [ref=${node.ref}]`;
+    } else {
+      if (node.css && node.xpath) {
+        line += ` [ref=${node.ref}, css=${node.css}, xpath=${node.xpath}]`;
+      } else if (sel) {
+        line += ` [ref=${node.ref}, ${node.css ? 'css' : 'xpath'}=${sel}]`;
+      } else {
+        line += ` [ref=${node.ref}]`;
+      }
+    }
+  }
+  return line;
+}
+
+/** Count total ref'd elements in a subtree (memoized per call). */
+function countRefs(node: AccessibilityNode, cache: Map<AccessibilityNode, number>): number {
+  const cached = cache.get(node);
+  if (cached !== undefined) return cached;
+  let count = node.ref ? 1 : 0;
+  for (const child of node.children) {
+    count += countRefs(child, cache);
+  }
+  cache.set(node, count);
+  return count;
+}
+
+/** Smart mode constants. */
+const MAX_SMART_LINES = 200;
+const SMART_REPEAT_SHOW = 2;       // Show first N of repeated siblings
+const SMART_COLLAPSE_DEPTH = 3;    // Depth at which to collapse large subtrees
+const SMART_COLLAPSE_THRESHOLD = 8; // Min descendant refs to trigger collapse
+
 /**
  * Format an accessibility tree as indented text for snapshot output.
  */
-export function formatAccessibilityTree(tree: AccessibilityNode, maxLength?: number): string {
+export function formatAccessibilityTree(tree: AccessibilityNode, options?: FormatTreeOptions): string {
+  const mode = options?.mode ?? 'full';
+  const maxLength = options?.maxLength;
+  const smart = mode === 'smart';
+
+  if (mode === 'minimal') {
+    return formatMinimal(tree, maxLength);
+  }
+
   const lines: string[] = [];
+  const refCache = smart ? new Map<AccessibilityNode, number>() : new Map();
 
   function walk(node: AccessibilityNode, depth: number): void {
+    // Smart: hard line cap
+    if (smart && lines.length >= MAX_SMART_LINES) return;
+
+    if (smart) {
+      const refs = countRefs(node, refCache);
+
+      // Skip subtrees with zero interactive elements (except root-level landmarks)
+      if (refs === 0 && depth > 0) return;
+
+      // Flatten single-child wrappers that have no ref
+      if (!node.ref && node.children.length === 1 && depth > 0) {
+        walk(node.children[0], depth);
+        return;
+      }
+
+      // Collapse large subtrees at depth
+      if (depth >= SMART_COLLAPSE_DEPTH && refs > SMART_COLLAPSE_THRESHOLD) {
+        const indent = '  '.repeat(depth);
+        lines.push(formatNodeLine(node, indent, true));
+        lines.push(`${indent}  - ... (${refs - (node.ref ? 1 : 0)} interactive elements inside)`);
+        return;
+      }
+    }
+
     const indent = '  '.repeat(depth);
-    const prefix = '- ';
+    lines.push(formatNodeLine(node, indent, smart));
 
-    let line = `${indent}${prefix}${node.role}`;
-    if (node.name) line += ` "${node.name}"`;
-    if (node.level !== undefined) line += ` [level=${node.level}]`;
-    if (node.ref && node.css) line += ` [ref=${node.ref}, css=${node.css}]`;
-    else if (node.ref) line += ` [ref=${node.ref}]`;
+    if (smart) {
+      // Collapse repeated similar siblings (e.g., product cards, nav items)
+      collapseChildren(node.children, depth + 1);
+    } else {
+      for (const child of node.children) {
+        walk(child, depth + 1);
+      }
+    }
+  }
 
-    lines.push(line);
+  /** Group consecutive children with the same role and collapse repeats. */
+  function collapseChildren(children: AccessibilityNode[], depth: number): void {
+    let i = 0;
+    while (i < children.length) {
+      if (lines.length >= MAX_SMART_LINES) return;
 
+      // Find run of siblings with same role
+      const role = children[i].role;
+      let runEnd = i + 1;
+      while (runEnd < children.length && children[runEnd].role === role) {
+        runEnd++;
+      }
+      const runLen = runEnd - i;
+
+      if (runLen > SMART_REPEAT_SHOW + 1) {
+        // Show first N, summarize rest
+        for (let j = i; j < i + SMART_REPEAT_SHOW; j++) {
+          walk(children[j], depth);
+        }
+        const skipped = runLen - SMART_REPEAT_SHOW;
+        let skippedRefs = 0;
+        for (let j = i + SMART_REPEAT_SHOW; j < runEnd; j++) {
+          skippedRefs += countRefs(children[j], refCache);
+        }
+        const indent = '  '.repeat(depth);
+        lines.push(`${indent}- ... (+${skipped} more ${role} items, ${skippedRefs} interactive elements)`);
+      } else {
+        for (let j = i; j < runEnd; j++) {
+          walk(children[j], depth);
+        }
+      }
+      i = runEnd;
+    }
+  }
+
+  const roots = tree.role !== 'document' ? [tree] : tree.children;
+  for (const child of roots) {
+    walk(child, 0);
+  }
+
+  // Safety cap
+  if (smart && lines.length > MAX_SMART_LINES) {
+    lines.length = MAX_SMART_LINES;
+    lines.push('\n... (truncated, use snapshotOptions.mode: "full" to see all)');
+  }
+
+  let text = lines.join('\n');
+  if (maxLength && text.length > maxLength) {
+    text = text.slice(0, maxLength) + '\n... (truncated)';
+  }
+  return text;
+}
+
+/**
+ * Minimal mode: flat list of only ref'd elements with role, name, and selectors.
+ */
+function formatMinimal(tree: AccessibilityNode, maxLength?: number): string {
+  const lines: string[] = [];
+
+  function collect(node: AccessibilityNode): void {
+    if (node.ref) {
+      lines.push(formatNodeLine(node, '', false));
+    }
     for (const child of node.children) {
-      walk(child, depth + 1);
+      collect(child);
     }
   }
 
   if (tree.role !== 'document') {
-    // Non-document root: include the root node itself
-    walk(tree, 0);
+    collect(tree);
   } else {
-    // Document root: just walk children at top level
     for (const child of tree.children) {
-      walk(child, 0);
+      collect(child);
     }
   }
 
@@ -691,229 +1117,12 @@ export function formatAccessibilityTree(tree: AccessibilityNode, maxLength?: num
 
 /**
  * Browser-side script that computes a CSS/XPath selector for a single element.
- * Mirrors the computeSelector() logic from ACCESSIBILITY_TREE_SCRIPT.
+ * Uses the shared SELECTOR_COMPUTATION_CODE.
  */
 const COMPUTE_SELECTOR_SCRIPT = `
+  ${SELECTOR_COMPUTATION_CODE}
   var el = arguments[0];
-  var tag = el.tagName.toLowerCase();
-
-  function cssEscape(str) {
-    try { return CSS.escape(str); } catch (_) { return str.replace(/([^\\w-])/g, '\\\\$1'); }
-  }
-
-  function tryAttr(prefix, attr, value) {
-    if (!value) return null;
-    var escaped = value.replace(/"/g, '\\\\"');
-    var exact = prefix + '[' + attr + '="' + escaped + '"]';
-    try { if (document.querySelectorAll(exact).length === 1) return exact; } catch (_) {}
-    if (value.length > 40) {
-      var truncated = value.slice(0, 40).replace(/"/g, '\\\\"');
-      var startsWith = prefix + '[' + attr + '^="' + truncated + '"]';
-      try { if (document.querySelectorAll(startsWith).length === 1) return startsWith; } catch (_) {}
-    }
-    return null;
-  }
-
-  var s;
-
-  var SKIP_ATTRS = {
-    'id': 1, 'class': 1, 'style': 1, 'slot': 1,
-    'onclick': 1, 'onchange': 1, 'onsubmit': 1, 'onload': 1, 'onerror': 1,
-    'onfocus': 1, 'onblur': 1, 'onmouseover': 1, 'onmouseout': 1, 'onkeydown': 1,
-    'onkeyup': 1, 'onkeypress': 1, 'oninput': 1, 'onscroll': 1, 'onresize': 1,
-    'data-reactid': 1, 'data-reactroot': 1, 'data-react-checksum': 1,
-    'tabindex': 1, 'draggable': 1, 'hidden': 1, 'dir': 1, 'lang': 1,
-    'width': 1, 'height': 1, 'colspan': 1, 'rowspan': 1
-  };
-
-  var PRIORITY_ATTRS = [
-    'data-testid', 'data-test', 'data-cy', 'data-qa',
-    'name', 'placeholder', 'alt', 'aria-label', 'title',
-    'datetime', 'value', 'for', 'src', 'action', 'href',
-    'formaction', 'formcontrolname', 'ng-model', 'v-model', 'data-bind',
-    'aria-controls', 'aria-describedby', 'aria-labelledby',
-    'type', 'role', 'method', 'target', 'rel', 'accept',
-    'scope', 'headers', 'contenteditable', 'autocomplete',
-    'pattern', 'min', 'max', 'step'
-  ];
-
-  // Phase 1: #id
-  var id = el.getAttribute('id');
-  if (id && id.length > 0) {
-    try {
-      if (document.querySelectorAll('#' + cssEscape(id)).length === 1) {
-        return { css: '#' + cssEscape(id), xpath: null };
-      }
-    } catch (_) {}
-  }
-
-  // Phase 2: Priority attributes
-  var tried = {};
-  for (var pi = 0; pi < PRIORITY_ATTRS.length; pi++) {
-    var pAttr = PRIORITY_ATTRS[pi];
-    tried[pAttr] = 1;
-    s = tryAttr(tag, pAttr, el.getAttribute(pAttr));
-    if (s) return { css: s, xpath: null };
-  }
-
-  // Phase 3: Dynamic discovery — ALL remaining attributes
-  var attrs = el.attributes;
-  if (attrs) {
-    for (var di = 0; di < attrs.length; di++) {
-      var attrName = attrs[di].name;
-      if (SKIP_ATTRS[attrName] || tried[attrName]) continue;
-      if (attrName.indexOf('on') === 0 && attrName.length > 2) continue;
-      s = tryAttr(tag, attrName, attrs[di].value);
-      if (s) return { css: s, xpath: null };
-    }
-  }
-
-  // Phase 4: Role-based selectors
-  var elRole = el.getAttribute('role');
-  if (elRole && ['dialog', 'alertdialog', 'tabpanel', 'menu', 'listbox', 'grid', 'tree', 'tooltip'].indexOf(elRole) !== -1) {
-    var roleAriaLabel = el.getAttribute('aria-label');
-    if (roleAriaLabel) {
-      s = tryAttr('[role="' + elRole + '"]', 'aria-label', roleAriaLabel);
-      if (s) return { css: s, xpath: null };
-    }
-    var rs = '[role="' + elRole + '"]';
-    try { if (document.querySelectorAll(rs).length === 1) return { css: rs, xpath: null }; } catch (_) {}
-  }
-
-  // Phase 5: Stateful selectors
-  if ((tag === 'dialog' || tag === 'details') && el.hasAttribute('open')) {
-    var os = tag + '[open]';
-    try { if (document.querySelectorAll(os).length === 1) return { css: os, xpath: null }; } catch (_) {}
-  }
-  if (el.getAttribute('aria-expanded') !== null) {
-    var expLabel = el.getAttribute('aria-label');
-    if (expLabel) {
-      s = tryAttr(tag + '[aria-expanded]', 'aria-label', expLabel);
-      if (s) return { css: s, xpath: null };
-    }
-  }
-
-  // Phase 6: Unique class
-  if (el.classList && el.classList.length > 0) {
-    for (var ci = 0; ci < el.classList.length; ci++) {
-      var cls = el.classList[ci];
-      if (cls.length < 3 || /^[a-z]{1,2}\\d|^css-|^_|^\\d/.test(cls)) continue;
-      var cs = tag + '.' + cssEscape(cls);
-      try { if (document.querySelectorAll(cs).length === 1) return { css: cs, xpath: null }; } catch (_) {}
-    }
-  }
-
-  // Phase 7: Table cell selectors
-  if (['th', 'td', 'caption'].indexOf(tag) !== -1) {
-    if (tag === 'caption') {
-      var tableParent = el.closest('table');
-      if (tableParent) {
-        var tableId = tableParent.getAttribute('id');
-        if (tableId) {
-          var capSel = '#' + cssEscape(tableId) + ' > caption';
-          try { if (document.querySelectorAll(capSel).length === 1) return { css: capSel, xpath: null }; } catch (_) {}
-        }
-      }
-    }
-    if (tag === 'td' || tag === 'th') {
-      var row = el.parentElement;
-      if (row && row.tagName.toLowerCase() === 'tr') {
-        var cellIndex = 0;
-        var siblings = row.children;
-        for (var si = 0; si < siblings.length; si++) {
-          if (siblings[si] === el) { cellIndex = si + 1; break; }
-        }
-        var table = el.closest('table');
-        if (table) {
-          var tblId = table.getAttribute('id');
-          if (tblId) {
-            var section = row.parentElement;
-            if (section) {
-              var rows = section.children;
-              var rowIndex = 0;
-              for (var ri = 0; ri < rows.length; ri++) {
-                if (rows[ri] === row) { rowIndex = ri + 1; break; }
-              }
-              var secTag = section.tagName.toLowerCase();
-              var tblSel = '#' + cssEscape(tblId) + ' > ' + secTag + ' > tr:nth-child(' + rowIndex + ') > ' + tag + ':nth-child(' + cellIndex + ')';
-              try { if (document.querySelectorAll(tblSel).length === 1) return { css: tblSel, xpath: null }; } catch (_) {}
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Phase 8: Compound attribute fallback
-  if (attrs) {
-    var usable = [];
-    for (var ui = 0; ui < attrs.length; ui++) {
-      var uName = attrs[ui].name;
-      var uVal = attrs[ui].value;
-      if (SKIP_ATTRS[uName] || !uVal || uName === 'id') continue;
-      if (uName.indexOf('on') === 0 && uName.length > 2) continue;
-      if (uVal.length > 60) continue;
-      usable.push({ n: uName, v: uVal });
-    }
-    var maxPairs = Math.min(usable.length, 5);
-    for (var p1 = 0; p1 < maxPairs; p1++) {
-      for (var p2 = p1 + 1; p2 < maxPairs; p2++) {
-        var compound = tag + '[' + usable[p1].n + '="' + usable[p1].v.replace(/"/g, '\\\\"') + '"][' + usable[p2].n + '="' + usable[p2].v.replace(/"/g, '\\\\"') + '"]';
-        try { if (document.querySelectorAll(compound).length === 1) return { css: compound, xpath: null }; } catch (_) {}
-      }
-    }
-    if (el.classList && el.classList.length > 0) {
-      for (var cci = 0; cci < el.classList.length && cci < 3; cci++) {
-        var ccls = el.classList[cci];
-        if (ccls.length < 3) continue;
-        for (var cai = 0; cai < maxPairs; cai++) {
-          var clsCompound = tag + '.' + cssEscape(ccls) + '[' + usable[cai].n + '="' + usable[cai].v.replace(/"/g, '\\\\"') + '"]';
-          try { if (document.querySelectorAll(clsCompound).length === 1) return { css: clsCompound, xpath: null }; } catch (_) {}
-        }
-      }
-    }
-  }
-
-  // Phase 9: Indexed fallback
-  var parent = el.parentElement;
-  if (parent) {
-    var nthIndex = 0;
-    var sibs = parent.children;
-    for (var ni = 0; ni < sibs.length; ni++) {
-      if (sibs[ni].tagName === el.tagName) nthIndex++;
-      if (sibs[ni] === el) break;
-    }
-    var chain = tag + ':nth-of-type(' + nthIndex + ')';
-    var ancestor = parent;
-    for (var depth = 0; depth < 2 && ancestor; depth++) {
-      var aTag = ancestor.tagName.toLowerCase();
-      if (aTag === 'body' || aTag === 'html') break;
-      var aId = ancestor.getAttribute('id');
-      if (aId) { chain = '#' + cssEscape(aId) + ' > ' + chain; break; }
-      var aClass = '';
-      if (ancestor.classList && ancestor.classList.length > 0) {
-        for (var aci = 0; aci < ancestor.classList.length; aci++) {
-          var ac = ancestor.classList[aci];
-          if (ac.length >= 3 && !/^[a-z]{1,2}\\d|^css-|^_|^\\d/.test(ac)) { aClass = '.' + cssEscape(ac); break; }
-        }
-      }
-      chain = aTag + aClass + ' > ' + chain;
-      ancestor = ancestor.parentElement;
-    }
-    var idxSelector = '/*idx*/ ' + chain;
-    try {
-      if (document.querySelectorAll(chain).length === 1) return { css: idxSelector, xpath: null };
-    } catch (_) {}
-  }
-
-  // Phase 10: XPath text fallback
-  var text = (el.textContent || '').trim();
-  if (text.length > 0 && text.length <= 80) {
-    var safe = text.replace(/'/g, "\\\\'").slice(0, 50);
-    return { css: null, xpath: '//' + tag + "[contains(text(),'" + safe + "')]" };
-  }
-
-  return { css: null, xpath: null };
+  return computeSelector(el);
 `;
 
 /**
@@ -927,7 +1136,6 @@ const COLLECT_ATTRS_SCRIPT = `
   var ESSENTIAL = { 'id':1, 'name':1, 'type':1, 'role':1, 'data-testid':1, 'data-test':1, 'data-cy':1, 'data-qa':1 };
   var result = {};
   var attrs = el.attributes;
-  // Extract the winning attr from the CSS selector
   var winner = null;
   if (cssSel) {
     var m = cssSel.match(/\\[([a-zA-Z][a-zA-Z0-9_-]*)(?:[\\^\\$\\*]?=)/);

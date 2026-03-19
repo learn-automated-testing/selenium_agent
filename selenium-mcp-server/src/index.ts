@@ -15,6 +15,7 @@ export type {
   ToolResult,
   ToolDefinition,
   BrowserConfig,
+  SnapshotMode,
   ConsoleLogEntry,
   NetworkEntry,
   TabInfo,
@@ -43,3 +44,4 @@ export { DEFAULT_EXPECTATIONS } from './types.js';
 
 // Utility exports
 export { discoverElements, extractElementInfo, findElementByInfo, formatAccessibilityTree } from './utils/element-discovery.js';
+export type { FormatTreeOptions } from './utils/element-discovery.js';
