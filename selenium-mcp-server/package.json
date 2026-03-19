@@ -1,6 +1,6 @@
 {
   "name": "selenium-ai-agent",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "description": "AI-powered Selenium MCP server for browser automation — 74 tools with accessibility tree discovery, test generation, self-healing, and Selenium Grid parallel execution for AI agents",
   "type": "module",
   "main": "dist/index.js",

@@ -1,6 +1,6 @@
 import { WebDriver, WebElement } from 'selenium-webdriver';
 import { PageSnapshot, ElementInfo, GridSessionInfo, SnapshotOptions, SnapshotMode } from '../types.js';
-import { discoverElements, findElementByInfo, formatAccessibilityTree } from '../utils/element-discovery.js';
+import { discoverElements, findElementByInfo, formatAccessibilityTree } from '../utils/element-discovery/index.js';
 
 export class GridSession {
   readonly sessionId: string;

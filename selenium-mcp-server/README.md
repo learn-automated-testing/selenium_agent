@@ -1,6 +1,6 @@
 # selenium-ai-agent
 
-AI-powered Selenium MCP server for browser automation — **74 tools** with accessibility tree discovery, BiDi cross-browser support, Selenium Grid parallel execution, test generation & self-healing pipeline, and session tracing.
+AI-powered Selenium MCP server for browser automation — **75 tools** with accessibility tree discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, test generation & self-healing pipeline, and session tracing.
 
 ### One-Click Install
 
@@ -229,7 +229,7 @@ npx selenium-ai-agent [flags]
 
 ---
 
-## Tools (74)
+## Tools (75)
 
 ### Navigation (5)
 
@@ -245,10 +245,10 @@ npx selenium-ai-agent [flags]
 
 | Tool | Description |
 |------|-------------|
-| `capture_page` | Capture the current page state as an accessibility tree — returns elements with ARIA roles, semantic hierarchy, and refs (e1, e2, ...). Read-only. |
+| `capture_page` | Capture the current page state as an accessibility tree — returns elements with ARIA roles, semantic hierarchy, and refs (e1, e2, ...). Discovers up to 300 elements with visibility-aware selectors, ancestor scoping, and Shadow DOM traversal. Read-only. |
 | `take_screenshot` | Take a screenshot (viewport, full-page, or element). Uses BiDi when available for full-page/element screenshots, falls back to classic API. Params: `origin` (viewport/document), `ref` (element), `format` (png/jpeg), `quality`. |
 
-### Elements (4)
+### Elements (5)
 
 | Tool | Description |
 |------|-------------|
@@ -256,6 +256,7 @@ npx selenium-ai-agent [flags]
 | `hover_element` | Hover over an element using its ref. |
 | `select_option` | Select a dropdown option by value, text, or index. |
 | `drag_drop` | Drag from one element to another using refs. |
+| `teach_selector` | Teach the system a preferred CSS selector for an element. Saved as Phase 0 (highest priority) in future element discovery on that domain. Auto-scopes to site-wide for header/nav/footer elements, or path-specific for content. |
 
 ### Input (3)
 
@@ -449,6 +450,80 @@ BiDi features degrade gracefully — if a browser doesn't support a specific BiD
 
 ---
 
+## Selector Teaching & Hints
+
+The `teach_selector` tool lets you override auto-computed selectors with your own preferred CSS selectors. Taught selectors are persisted to `<output>/selector-hints.json` and loaded as **Phase 0** (highest priority) during element discovery on matching pages.
+
+### How It Works
+
+1. Call `teach_selector` with a description and CSS selector while on the page
+2. The selector is validated in-browser (must match exactly 1 visible element)
+3. Scope is auto-determined: header/nav/footer elements default to site-wide (`*`), content elements default to the current path pattern
+4. On subsequent page snapshots, matching hints are loaded and used before any auto-computation
+
+### Example
+
+```
+teach_selector({
+  description: "the NL language link",
+  css: "a[href='/nl/']",
+  scope: "*"  // optional — auto-determined if omitted
+})
+```
+
+Hints file structure (`selector-hints.json`):
+
+```json
+{
+  "example.com": {
+    "*": [
+      { "css": "a[href='/nl/']", "tag": "a", "text": "NL" }
+    ],
+    "/blog/*": [
+      { "css": "#post-title", "tag": "h1", "text": "My Post" }
+    ]
+  }
+}
+```
+
+---
+
+## Element Discovery
+
+The server uses a 16-phase selector computation engine that produces human-readable, semantically meaningful CSS and XPath selectors for every discovered element.
+
+### Selector Priority (Phases 0–16)
+
+| Phase | Strategy | Example |
+|-------|----------|---------|
+| 0 | **Taught hints** | User-taught `a[href="/nl/"]` |
+| 1 | **By ID** | `#login-form` |
+| 2 | **By test ID** | `[data-testid="submit-btn"]` |
+| 2b | **By descendant test ID** | `form:has([data-testid="email"])` |
+| 3 | **By role + name** | `button[aria-label="Close"]` |
+| 4 | **By label** | `//label[normalize-space()='Email']//input` |
+| 5 | **By placeholder** | `input[placeholder="Search..."]` |
+| 6 | **By text** | `//a[normalize-space()='Sign In']` |
+| 7 | **By attribute** | `a[hreflang="nl"]`, `img[alt="Logo"]` |
+| 9 | **By ARIA role** | `[role="dialog"]` |
+| 10 | **By state** | `dialog[open]`, `[aria-expanded]` |
+| 11 | **By table cell** | `#data-table > tbody > tr:nth-child(2) > td:nth-child(3)` |
+| 12 | **By compound attrs** | `input[type="email"][name="user"]` |
+| 13 | **By semantic class** | `button.primary-action` |
+| 14 | **By position** | `#sidebar > ul > li:nth-of-type(3)` |
+| 15 | **By text (loose)** | `//span[contains(normalize-space(),'Welcome')]` |
+| 16 | **By positional index** | `(//button[normalize-space()='Save'])[2]` |
+
+### Key Capabilities
+
+- **Visibility-aware** — only visible elements are counted for uniqueness, preventing hidden duplicates from causing fallbacks to fragile selectors
+- **Ancestor scoping** — when a selector isn't unique globally, it's scoped to the nearest ancestor with an ID, test attribute, or landmark (`nav[aria-label="Main"] a[href="/"]`)
+- **Shadow DOM** — traverses open shadow roots, scopes CSS within shadow boundaries, uses `>>>` notation for cross-boundary selectors
+- **Two-pass discovery** — semantic elements (links, buttons, headings) get refs first; generic elements with test attributes fill remaining budget
+- **Non-semantic class filtering** — auto-skips CSS-in-JS hashes, Tailwind utilities, and framework-generated classes
+
+---
+
 ## Test Generation & Healing Pipeline
 
 The generator and healer tools form a complete test automation pipeline:
@@ -611,7 +686,14 @@ selenium-mcp-server/src/
 ├── utils/
 │   ├── bidi-helpers.ts    # BiDi WebSocket URL rewriting + context factory
 │   ├── chrome-options.ts  # Chrome options builder + stealth scripts
-│   ├── element-discovery.ts # Accessibility tree discovery (e1-e200)
+│   ├── element-discovery/   # Accessibility tree discovery (e1-e300)
+│   │   ├── index.ts         # Barrel exports
+│   │   ├── discover.ts      # discoverElements() with selector hints
+│   │   ├── selector-scripts.ts # Browser-side computeSelector() (15 phases)
+│   │   ├── tree-scripts.ts  # Browser-side accessibility tree walker
+│   │   ├── format-tree.ts   # formatAccessibilityTree() (full/smart/minimal)
+│   │   └── element-scripts.ts # extractElementInfo(), findElementByInfo()
+│   ├── selector-hints.ts    # Persistent domain-scoped selector hint storage
 │   ├── paths.ts           # Output directory resolution
 │   ├── sandbox.ts         # Workspace path validation
 │   ├── selector-validation.ts # Extract + validate selectors from test code
@@ -623,12 +705,12 @@ selenium-mcp-server/src/
 │   ├── session-pool.ts    # Session lifecycle management
 │   ├── session-context.ts # Context adapter for grid sessions
 │   └── exploration-coordinator.ts
-└── tools/                 # 74 tools grouped by domain
+└── tools/                 # 75 tools grouped by domain
     ├── base.ts            # BaseTool abstract class + MCP annotations
     ├── index.ts           # Tool registry
     ├── navigation/        # navigate_to, go_back, go_forward, refresh_page, scroll_page
     ├── page/              # capture_page, take_screenshot
-    ├── elements/          # click, hover, select, drag_drop
+    ├── elements/          # click, hover, select, drag_drop, teach_selector
     ├── input/             # input_text, key_press, file_upload
     ├── mouse/             # mouse_move, mouse_click, mouse_drag
     ├── tabs/              # tab_list, tab_select, tab_new, tab_close

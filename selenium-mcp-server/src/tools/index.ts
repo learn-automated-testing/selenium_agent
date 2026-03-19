@@ -7,7 +7,7 @@ import { NavigateTool, GoBackTool, GoForwardTool, RefreshTool, ScrollPageTool } 
 import { SnapshotTool, ScreenshotTool } from './page/index.js';
 
 // Elements
-import { ClickTool, HoverTool, SelectTool, DragDropTool } from './elements/index.js';
+import { ClickTool, HoverTool, SelectTool, DragDropTool, TeachSelectorTool } from './elements/index.js';
 
 // Input
 import { TypeTool, KeyPressTool, FileUploadTool } from './input/index.js';
@@ -106,11 +106,12 @@ export async function getAllTools(): Promise<BaseTool[]> {
     new SnapshotTool(),
     new ScreenshotTool(),
 
-    // Elements (4)
+    // Elements (5)
     new ClickTool(),
     new HoverTool(),
     new SelectTool(),
     new DragDropTool(),
+    new TeachSelectorTool(),
 
     // Input (3)
     new TypeTool(),
@@ -239,6 +240,7 @@ export {
   HoverTool,
   SelectTool,
   DragDropTool,
+  TeachSelectorTool,
   // Input
   TypeTool,
   KeyPressTool,

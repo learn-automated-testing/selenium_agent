@@ -1,6 +1,6 @@
 import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
 import { PageSnapshot, BrowserConfig, TabInfo, ConsoleLogEntry, SnapshotOptions, ConsoleOptions, DiffOptions } from './types.js';
-import { discoverElements, findElementByInfo, formatAccessibilityTree } from './utils/element-discovery.js';
+import { discoverElements, findElementByInfo, formatAccessibilityTree } from './utils/element-discovery/index.js';
 import { buildChromeOptions, applyStealthScripts } from './utils/chrome-options.js';
 import { EventCollector } from './bidi/event-collector.js';
 import { SessionTracer } from './trace/session-tracer.js';
@@ -328,7 +328,19 @@ export class Context {
 
     const url = await driver.getCurrentUrl();
     const title = await driver.getTitle();
-    const { elements, tree } = await discoverElements(driver, options?.selector, this.getVerboseAttributes());
+
+    // Load selector hints for current domain+path
+    let selectorHints: Array<{ css: string; tag: string; text?: string; ariaLabel?: string }> = [];
+    try {
+      const parsedUrl = new URL(url);
+      const { loadHints, getHintsForPage } = await import('./utils/selector-hints.js');
+      const allHints = await loadHints();
+      selectorHints = getHintsForPage(allHints, parsedUrl.hostname, parsedUrl.pathname);
+    } catch {
+      // Hints loading is non-critical
+    }
+
+    const { elements, tree } = await discoverElements(driver, options?.selector, this.getVerboseAttributes(), selectorHints);
 
     this.snapshot = {
       url,

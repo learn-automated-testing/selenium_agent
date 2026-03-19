@@ -11,7 +11,7 @@ import {
 } from '../types.js';
 import { SessionPool } from './session-pool.js';
 import { GridSession } from './grid-session.js';
-import { discoverElements } from '../utils/element-discovery.js';
+import { discoverElements } from '../utils/element-discovery/index.js';
 
 let explorationCounter = 0;
 
