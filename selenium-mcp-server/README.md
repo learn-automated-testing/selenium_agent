@@ -691,7 +691,7 @@ selenium-mcp-server/src/
 │   │   ├── discover.ts      # discoverElements() with selector hints
 │   │   ├── selector-scripts.ts # Browser-side computeSelector() (15 phases)
 │   │   ├── tree-scripts.ts  # Browser-side accessibility tree walker
-│   │   ├── format-tree.ts   # formatAccessibilityTree() (full/smart/minimal)
+│   │   ├── format-tree.ts   # formatAccessibilityTree()
 │   │   └── element-scripts.ts # extractElementInfo(), findElementByInfo()
 │   ├── selector-hints.ts    # Persistent domain-scoped selector hint storage
 │   ├── paths.ts           # Output directory resolution

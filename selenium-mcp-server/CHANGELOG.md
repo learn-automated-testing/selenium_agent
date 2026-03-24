@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.1.0] - 2026-03-24
+
+### Breaking Changes
+
+- **Removed smart and minimal snapshot modes** — only full mode remains. Smart mode silently collapsed elements (hiding them from the AI), causing missed assertions and inability to interact with hidden refs. Minimal mode stripped all tree hierarchy, losing context about element location on the page. Both produced unreliable results even on simple pages. The `SnapshotMode` type, `SELENIUM_MCP_SNAPSHOT_MODE` env var, `snapshotOptions.mode` parameter, and `snapshotMode` config option have all been removed.
+
 ## [3.0.0] - 2026-03-19
 
 ### Breaking Changes

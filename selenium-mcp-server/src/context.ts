@@ -218,10 +218,6 @@ export class Context {
     return this.config.verboseAttributes ?? false;
   }
 
-  getSnapshotMode(): 'full' | 'smart' | 'minimal' {
-    return this.config.snapshotMode ?? 'full';
-  }
-
   setStealthEnabled(enabled: boolean): void {
     this.config.stealth = enabled;
   }
@@ -367,16 +363,15 @@ export class Context {
 
   formatSnapshotAsText(options?: SnapshotOptions): string {
     if (this.activeGridSession) {
-      return this.activeGridSession.formatSnapshotAsText(options, this.getSnapshotMode());
+      return this.activeGridSession.formatSnapshotAsText(options);
     }
 
     if (!this.snapshot) {
       return 'No snapshot available';
     }
 
-    const mode = options?.mode ?? this.getSnapshotMode();
     const header = `Page: ${this.snapshot.title}\nURL: ${this.snapshot.url}\n`;
-    const treeText = formatAccessibilityTree(this.snapshot.tree, { maxLength: options?.maxLength, mode });
+    const treeText = formatAccessibilityTree(this.snapshot.tree, { maxLength: options?.maxLength });
     let text = header + '\n' + treeText;
 
     if (options?.maxLength && text.length > options.maxLength) {
@@ -550,7 +545,7 @@ export class Context {
   async captureSnapshotWithDiff(options?: SnapshotOptions, diffOptions?: DiffOptions): Promise<{ snapshot: string; diff: string | null }> {
     if (this.activeGridSession) {
       await this.activeGridSession.captureSnapshot(options, this.getVerboseAttributes());
-      const currentText = this.activeGridSession.formatSnapshotAsText(options, this.getSnapshotMode());
+      const currentText = this.activeGridSession.formatSnapshotAsText(options);
       // Grid sessions don't track previous snapshot text for diffs yet
       return { snapshot: currentText, diff: null };
     }

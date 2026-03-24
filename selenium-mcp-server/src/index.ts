@@ -15,7 +15,6 @@ export type {
   ToolResult,
   ToolDefinition,
   BrowserConfig,
-  SnapshotMode,
   ConsoleLogEntry,
   NetworkEntry,
   TabInfo,

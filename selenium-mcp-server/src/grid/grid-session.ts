@@ -1,5 +1,5 @@
 import { WebDriver, WebElement } from 'selenium-webdriver';
-import { PageSnapshot, ElementInfo, GridSessionInfo, SnapshotOptions, SnapshotMode } from '../types.js';
+import { PageSnapshot, ElementInfo, GridSessionInfo, SnapshotOptions } from '../types.js';
 import { discoverElements, findElementByInfo, formatAccessibilityTree } from '../utils/element-discovery/index.js';
 
 export class GridSession {
@@ -42,14 +42,13 @@ export class GridSession {
     return this.snapshot;
   }
 
-  formatSnapshotAsText(options?: SnapshotOptions, defaultMode?: SnapshotMode): string {
+  formatSnapshotAsText(options?: SnapshotOptions): string {
     if (!this.snapshot) {
       return 'No snapshot available';
     }
 
-    const mode = options?.mode ?? defaultMode ?? 'full';
     const header = `Page: ${this.snapshot.title}\nURL: ${this.snapshot.url}\n`;
-    const treeText = formatAccessibilityTree(this.snapshot.tree, { maxLength: options?.maxLength, mode });
+    const treeText = formatAccessibilityTree(this.snapshot.tree, { maxLength: options?.maxLength });
     let text = header + '\n' + treeText;
 
     if (options?.maxLength && text.length > options.maxLength) {
