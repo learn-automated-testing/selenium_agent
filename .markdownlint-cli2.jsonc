@@ -1,0 +1,10 @@
+{
+  "globs": [
+    "**/*.md",
+    "!node_modules/**",
+    "!**/node_modules/**",
+    "!test-plans/**",
+    "!.qlonie/**",
+    "!.claude/**"
+  ]
+}
