@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.3.6] - 2026-11-18
+
+### New Features
+
+- **Window state and position in `resize_window`.** New `state`: `fullscreen` (whole screen and in front, for demos and screen recordings), `maximize`, `minimize` (out of view, so the AI chat or another app shows again) and `normal` (back to the exact size and position from before). New `x`/`y` move the window. Before, the window could only be resized, so an AI could not put the browser in front for a recording or next to another window.
+
 ## [3.3.5] - 2026-11-18
 
 ### Fixes
