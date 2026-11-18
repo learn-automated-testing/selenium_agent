@@ -46,3 +46,67 @@ jobs:
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "npm install selenium-ai-agent" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Publish the server metadata to the official MCP Registry
+  # (https://registry.modelcontextprotocol.io) once the npm package is live.
+  publish-mcp-registry:
+    name: Publish to MCP Registry
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC login for the io.github.learn-automated-testing namespace
+      contents: read
+    defaults:
+      run:
+        working-directory: selenium-mcp-server
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Sync server.json version with package.json
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp
+          mv server.tmp server.json
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      # The registry checks the published npm package for a matching mcpName.
+      - name: Wait for the npm package
+        run: |
+          for i in $(seq 1 30); do
+            NAME=$(npm view "selenium-ai-agent@${VERSION}" mcpName 2>/dev/null || true)
+            if [ "$NAME" = "io.github.learn-automated-testing/selenium-ai-agent" ]; then
+              echo "selenium-ai-agent@${VERSION} is live with mcpName"; exit 0
+            fi
+            echo "Waiting for selenium-ai-agent@${VERSION} on npm ($i/30)..."; sleep 10
+          done
+          echo "selenium-ai-agent@${VERSION} not found on npm with the expected mcpName"; exit 1
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          arch="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          archive="mcp-publisher_${os}_${arch}.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish
