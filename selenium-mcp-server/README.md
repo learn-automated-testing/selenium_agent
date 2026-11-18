@@ -1,6 +1,6 @@
 # selenium-ai-agent
 
-AI-powered Selenium MCP server for browser automation — **75 tools** with accessibility tree discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, test generation & self-healing pipeline, and session tracing.
+AI-powered Selenium MCP server for browser automation — **61 tools (75 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, test generation & self-healing pipeline, and session tracing.
 
 ### One-Click Install
 
@@ -21,7 +21,7 @@ npx selenium-ai-agent
 ## Requirements
 
 - Node.js 18+
-- Chrome browser (or Firefox/Edge)
+- Chrome browser for local runs (Firefox and Edge are available through Selenium Grid)
 - ChromeDriver is provisioned automatically — the server detects your installed
   Chrome version, reuses a matching cached driver, and only downloads a new one
   when the version no longer matches. Run `npx selenium-ai-agent doctor` to verify.
@@ -253,13 +253,7 @@ After the first approval, click **"Always allow"** for each tool to stop future 
 
 ### Claude Code
 
-Use `--allow-mcp selenium-mcp` to pre-approve all tools from this server:
-
-```bash
-claude --allow-mcp selenium-mcp
-```
-
-Or configure in `.claude/settings.json`:
+Pre-approve all tools from this server in `.claude/settings.json`:
 
 ```json
 {
@@ -280,9 +274,10 @@ These clients typically allow you to configure auto-approval per tool or per ser
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SELENIUM_GRID_URL` | — | Grid hub URL (enables parallel features) |
-| `SELENIUM_BROWSER` | `chrome` | Browser to use (`chrome`, `firefox`, `edge`) |
 | `SELENIUM_HEADLESS` | `false` | Run browser in headless mode |
-| `SELENIUM_STEALTH` | `false` | Enable stealth mode (hide automation indicators) |
+| `SELENIUM_STEALTH` | `false` | Enable stealth mode (masks basic automation flags; does not get past advanced bot protection such as Cloudflare) |
+| `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated [tool groups](#tool-groups) to load, e.g. `core,generator,healer` |
+| `SELENIUM_ATTACH_CDP` | — | Attach to an already running Chrome at `host:port` (e.g. `127.0.0.1:9222`) instead of launching one |
 | `SELENIUM_MCP_OUTPUT_MODE` | `stdout` | Output mode: `stdout` (return data to LLM) or `file` (save to disk) |
 | `SELENIUM_MCP_OUTPUT_DIR` | auto | Output directory for generated files (auto-detected from project root) |
 | `SELENIUM_MCP_SAVE_TRACE` | `false` | Save session trace JSON to `<output>/traces/` |
@@ -332,9 +327,30 @@ npx selenium-ai-agent doctor   # run driver/proxy diagnostics and exit
 | `--output-mode=stdout\|file` | Set output mode |
 | `--output-dir=<path>` | Set output directory |
 | `--grid-url=<url>` | Set Selenium Grid hub URL |
+| `--toolsets=<list>` | Load only these [tool groups](#tool-groups), e.g. `--toolsets=core,healer` |
 | `--allow-unrestricted-file-access` | Bypass workspace file path validation |
 
 ---
+
+## Tool Groups
+
+Every tool definition is sent to the model on each request, so loading fewer tools saves context and helps the model pick the right one. Some MCP clients also limit how many tools they load. Use `SELENIUM_MCP_TOOLSETS` (or `--toolsets=`) to choose groups:
+
+| Group | Tools | Contents |
+|-------|-------|----------|
+| `core` | 37 | Navigation, page analysis, elements, input, mouse, tabs, verification, browser, session, batch. Always loaded. |
+| `recording` | 4 | Record actions for test generation |
+| `planner` | 3 | Explore an app and save a test plan |
+| `generator` | 6 | Generate tests (pytest, Java, C#, WebdriverIO, …). Also loads `recording`. |
+| `healer` | 5 | Run, debug and fix failing tests |
+| `analyzer` | 6 | Regression risk analysis |
+| `grid` | 14 | Selenium Grid management and parallel execution (needs `SELENIUM_GRID_URL`) |
+
+The default is `all`. For example, browsing and self-healing only:
+
+```json
+"env": { "SELENIUM_MCP_TOOLSETS": "core,healer" }
+```
 
 ## Tools (75)
 
@@ -417,7 +433,7 @@ npx selenium-ai-agent doctor   # run driver/proxy diagnostics and exit
 |------|-------------|
 | `close_browser` | Close the browser and end the session. |
 | `reset_session` | Reset the browser session (close and restart). |
-| `set_stealth_mode` | Enable/disable stealth mode — hides `navigator.webdriver`, patches plugins, sets realistic languages. |
+| `set_stealth_mode` | Enable/disable stealth mode — masks `navigator.webdriver` and the automation info bar. Does not get past advanced bot protection such as Cloudflare. |
 
 ### Recording (4)
 
@@ -812,7 +828,7 @@ selenium-mcp-server/src/
 │   ├── session-pool.ts    # Session lifecycle management
 │   ├── session-context.ts # Context adapter for grid sessions
 │   └── exploration-coordinator.ts
-└── tools/                 # 75 tools grouped by domain
+└── tools/                 # 75 tools grouped by domain (see Tool Groups)
     ├── base.ts            # BaseTool abstract class + MCP annotations
     ├── index.ts           # Tool registry
     ├── navigation/        # navigate_to, go_back, go_forward, refresh_page, scroll_page
