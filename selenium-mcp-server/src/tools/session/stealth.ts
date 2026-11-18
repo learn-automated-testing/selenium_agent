@@ -10,8 +10,10 @@ const schema = z.object({
 export class SetStealthModeTool extends BaseTool {
   readonly name = 'set_stealth_mode';
   readonly description =
-    'Enable or disable stealth mode for undetected browsing. ' +
-    'Hides automation indicators like navigator.webdriver to avoid bot detection. ' +
+    'Enable or disable stealth mode, which masks basic automation flags ' +
+    '(navigator.webdriver, the "controlled by automated software" bar). ' +
+    'Useful when testing your own site behind simple bot checks; it does not get past ' +
+    'advanced bot protection such as Cloudflare challenges. ' +
     'If the browser is already running it will be restarted with the new setting.';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'session';
