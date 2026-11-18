@@ -1,6 +1,6 @@
 {
   "name": "selenium-ai-agent",
-  "version": "3.3.4",
+  "version": "3.3.5",
   "description": "AI-powered Selenium MCP server — test generation and self-healing for pytest, Java, C# and WebdriverIO, accessibility tree discovery, and Selenium Grid parallel execution. 61 tools, 75 with Grid.",
   "mcpName": "io.github.learn-automated-testing/selenium-ai-agent",
   "type": "module",
