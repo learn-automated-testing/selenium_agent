@@ -6,7 +6,7 @@ import { SessionContext } from '../../grid/session-context.js';
 
 const StepSchema = z.object({
   tool: z.string().describe('Name of the tool to execute'),
-  arguments: z.record(z.unknown()).describe('Arguments to pass to the tool'),
+  arguments: z.record(z.string(), z.unknown()).describe('Arguments to pass to the tool'),
 });
 
 const TaskSchema = z.object({
