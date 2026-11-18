@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixes
+
+- **Recover from a dead local browser session.** A closed window, crashed browser or idle-killed chromedriver left a stale driver behind, and every later call failed with `invalid session id` until `reset_session` was called by hand. `ensureBrowser()` now probes the cached local/attached driver and relaunches with the same settings when it is gone, switching to a remaining window when only the current one was closed. Any tool that hits a lost session now clears it and says the next `navigate_to` starts a fresh browser. Recording state survives the recovery.
+- **`SELENIUM_HEADLESS` / `--headless` now work.** The setting was documented but never passed to the browser config.
+- **Stealth script no longer gives itself away.** `navigator.webdriver` now reads `false` (as in a normal Chrome) instead of `undefined`, and is patched on `Navigator.prototype` only when needed. The fake `plugins` array, forced `languages` and fake `chrome.runtime` were removed: each was easier to detect than the value it replaced. Descriptions now say plainly that stealth masks basic automation flags and does not get past advanced bot protection such as Cloudflare.
+
+### New Features
+
+- **Tool groups.** `SELENIUM_MCP_TOOLSETS` (or `--toolsets=`) loads only the groups you need: `core`, `recording`, `planner`, `generator`, `healer`, `analyzer`, `grid`. Default is `all`, so existing setups are unchanged.
+- **Official MCP Registry.** Added `mcpName`, `server.json` and a `publish-mcp-registry` job that publishes to registry.modelcontextprotocol.io after each npm release.
+
+### Housekeeping
+
+- The npm package no longer ships compiled tests or source maps.
+- Docs: tool counts made consistent (61 tools, 75 with Grid); removed the non-existent `claude --allow-mcp` flag and the unused `SELENIUM_BROWSER` / `SELENIUM_TIMEOUT` variables.
+
 ## [3.3.2] - 2026-06-19
 
 ### Fixes

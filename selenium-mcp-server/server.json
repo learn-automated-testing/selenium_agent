@@ -1,0 +1,63 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.learn-automated-testing/selenium-ai-agent",
+  "title": "Selenium AI Agent",
+  "description": "Selenium MCP: AI test generation and self-healing for pytest, Java, C# and WebdriverIO, plus Grid",
+  "repository": {
+    "url": "https://github.com/learn-automated-testing/selenium_agent",
+    "source": "github",
+    "subfolder": "selenium-mcp-server"
+  },
+  "websiteUrl": "https://github.com/learn-automated-testing/selenium_agent#readme",
+  "version": "3.3.4",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "selenium-ai-agent",
+      "version": "3.3.4",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SELENIUM_HEADLESS",
+          "description": "Run the browser in headless mode",
+          "isRequired": false,
+          "format": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "SELENIUM_MCP_TOOLSETS",
+          "description": "Tool groups to load: core, recording, planner, generator, healer, analyzer, grid or all",
+          "isRequired": false,
+          "format": "string",
+          "default": "all"
+        },
+        {
+          "name": "SELENIUM_GRID_URL",
+          "description": "Selenium Grid hub URL, e.g. http://localhost:4444 (enables parallel execution)",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "SELENIUM_ATTACH_CDP",
+          "description": "Attach to an already running Chrome at host:port, e.g. 127.0.0.1:9222",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "SELENIUM_MCP_OUTPUT_MODE",
+          "description": "stdout returns data to the LLM; file saves screenshots and outputs to disk",
+          "isRequired": false,
+          "format": "string",
+          "default": "stdout",
+          "choices": [
+            "stdout",
+            "file"
+          ]
+        }
+      ]
+    }
+  ]
+}
