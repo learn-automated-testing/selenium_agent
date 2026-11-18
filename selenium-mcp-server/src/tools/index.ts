@@ -1,4 +1,5 @@
 import { BaseTool } from './base.js';
+import { parseToolsets, TOOLSET_NAMES, type ToolsetName } from '../toolsets.js';
 
 // Navigation
 import { NavigateTool, GoBackTool, GoForwardTool, RefreshTool, ScrollPageTool } from './navigation/index.js';
@@ -94,102 +95,128 @@ async function isGridReachable(gridUrl: string): Promise<boolean> {
 export async function getAllTools(): Promise<BaseTool[]> {
   const batchTool = new BatchExecuteTool();
 
-  const tools: BaseTool[] = [
-    // Navigation (5)
-    new NavigateTool(),
-    new GoBackTool(),
-    new GoForwardTool(),
-    new RefreshTool(),
-    new ScrollPageTool(),
+  const groups: Record<Exclude<ToolsetName, 'grid'>, BaseTool[]> = {
+    core: [
+      // Navigation (5)
+      new NavigateTool(),
+      new GoBackTool(),
+      new GoForwardTool(),
+      new RefreshTool(),
+      new ScrollPageTool(),
 
-    // Page (2)
-    new SnapshotTool(),
-    new ScreenshotTool(),
+      // Page (2)
+      new SnapshotTool(),
+      new ScreenshotTool(),
 
-    // Elements (5)
-    new ClickTool(),
-    new HoverTool(),
-    new SelectTool(),
-    new DragDropTool(),
-    new TeachSelectorTool(),
+      // Elements (5)
+      new ClickTool(),
+      new HoverTool(),
+      new SelectTool(),
+      new DragDropTool(),
+      new TeachSelectorTool(),
 
-    // Input (3)
-    new TypeTool(),
-    new KeyPressTool(),
-    new FileUploadTool(),
+      // Input (3)
+      new TypeTool(),
+      new KeyPressTool(),
+      new FileUploadTool(),
 
-    // Mouse (3)
-    new MouseMoveTool(),
-    new MouseClickTool(),
-    new MouseDragTool(),
+      // Mouse (3)
+      new MouseMoveTool(),
+      new MouseClickTool(),
+      new MouseDragTool(),
 
-    // Tabs (4)
-    new TabListTool(),
-    new TabSelectTool(),
-    new TabNewTool(),
-    new TabCloseTool(),
+      // Tabs (4)
+      new TabListTool(),
+      new TabSelectTool(),
+      new TabNewTool(),
+      new TabCloseTool(),
 
-    // Verification (4)
-    new VerifyElementVisibleTool(),
-    new VerifyTextVisibleTool(),
-    new VerifyValueTool(),
-    new VerifyListVisibleTool(),
+      // Verification (4)
+      new VerifyElementVisibleTool(),
+      new VerifyTextVisibleTool(),
+      new VerifyValueTool(),
+      new VerifyListVisibleTool(),
 
-    // Browser (7)
-    new WaitTool(),
-    new JavaScriptTool(),
-    new ResizeTool(),
-    new DialogTool(),
-    new ConsoleTool(),
-    new NetworkTool(),
-    new PDFTool(),
+      // Browser (7)
+      new WaitTool(),
+      new JavaScriptTool(),
+      new ResizeTool(),
+      new DialogTool(),
+      new ConsoleTool(),
+      new NetworkTool(),
+      new PDFTool(),
 
-    // Session (3)
-    new CloseBrowserTool(),
-    new ResetSessionTool(),
-    new SetStealthModeTool(),
+      // Session (3)
+      new CloseBrowserTool(),
+      new ResetSessionTool(),
+      new SetStealthModeTool(),
+
+      // Batch (1)
+      batchTool,
+    ],
 
     // Recording (4)
-    new StartRecordingTool(),
-    new StopRecordingTool(),
-    new RecordingStatusTool(),
-    new ClearRecordingTool(),
+    recording: [
+      new StartRecordingTool(),
+      new StopRecordingTool(),
+      new RecordingStatusTool(),
+      new ClearRecordingTool(),
+    ],
 
     // Planner Agent (3)
-    new PlannerSetupTool(),
-    new PlannerExplorePageTool(),
-    new PlannerSavePlanTool(),
+    planner: [
+      new PlannerSetupTool(),
+      new PlannerExplorePageTool(),
+      new PlannerSavePlanTool(),
+    ],
 
     // Generator Agent (6)
-    new GeneratorSetupTool(),
-    new GeneratorReadLogTool(),
-    new GeneratorWriteTestTool(),
-    new GeneratorWriteSeedTestTool(),
-    new GeneratorSaveSpecTool(),
-    new GeneratorReadSpecTool(),
+    generator: [
+      new GeneratorSetupTool(),
+      new GeneratorReadLogTool(),
+      new GeneratorWriteTestTool(),
+      new GeneratorWriteSeedTestTool(),
+      new GeneratorSaveSpecTool(),
+      new GeneratorReadSpecTool(),
+    ],
 
     // Healer Agent (5)
-    new HealerRunTestsTool(),
-    new HealerDebugTestTool(),
-    new HealerFixTestTool(),
-    new BrowserGenerateLocatorTool(),
-    new HealerInspectPageTool(),
+    healer: [
+      new HealerRunTestsTool(),
+      new HealerDebugTestTool(),
+      new HealerFixTestTool(),
+      new BrowserGenerateLocatorTool(),
+      new HealerInspectPageTool(),
+    ],
 
     // Analyzer (6)
-    new AnalyzerSetupTool(),
-    new AnalyzerImportContextTool(),
-    new AnalyzerScanProductTool(),
-    new AnalyzerBuildRiskProfileTool(),
-    new AnalyzerSaveProfileTool(),
-    new AnalyzerGenerateDocumentationTool(),
+    analyzer: [
+      new AnalyzerSetupTool(),
+      new AnalyzerImportContextTool(),
+      new AnalyzerScanProductTool(),
+      new AnalyzerBuildRiskProfileTool(),
+      new AnalyzerSaveProfileTool(),
+      new AnalyzerGenerateDocumentationTool(),
+    ],
+  };
 
-    // Batch (1)
-    batchTool,
-  ];
+  // SELENIUM_MCP_TOOLSETS limits which groups are exposed (default: all).
+  const selection = parseToolsets(process.env.SELENIUM_MCP_TOOLSETS);
+  if (selection.unknown.length > 0) {
+    console.error('[selenium-mcp] Ignoring unknown toolset(s): %s. Valid: %s, all',
+      selection.unknown.join(', '), TOOLSET_NAMES.join(', '));
+  }
+
+  const tools: BaseTool[] = [];
+  for (const [name, group] of Object.entries(groups) as [ToolsetName, BaseTool[]][]) {
+    if (selection.enabled.has(name)) tools.push(...group);
+  }
 
   // Always expose grid_start and grid_status so users can start/diagnose the grid
   const gridUrl = process.env.SELENIUM_GRID_URL;
-  if (gridUrl) {
+  if (gridUrl && !selection.enabled.has('grid')) {
+    console.error('[selenium-mcp] SELENIUM_GRID_URL is set but the grid toolset is not enabled — grid tools hidden.');
+  } else if (gridUrl) {
     tools.push(new GridStatusTool(), new GridStartTool(), new GridStopTool(), new GridScaleTool());
 
     // Only expose session/parallel tools when the grid is actually reachable
