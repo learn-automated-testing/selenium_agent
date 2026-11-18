@@ -47,6 +47,8 @@ for (const arg of args) {
     default:
       if (arg.startsWith('--output-dir=')) {
         process.env.SELENIUM_MCP_OUTPUT_DIR = arg.slice('--output-dir='.length);
+      } else if (arg.startsWith('--toolsets=')) {
+        process.env.SELENIUM_MCP_TOOLSETS = arg.slice('--toolsets='.length);
       } else if (arg.startsWith('--grid-url=')) {
         process.env.SELENIUM_GRID_URL = arg.slice('--grid-url='.length);
       } else if (arg.startsWith('--transport=')) {

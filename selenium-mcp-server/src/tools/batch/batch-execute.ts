@@ -5,7 +5,7 @@ import { ToolResult, ToolCategory, Expectation, DEFAULT_EXPECTATIONS } from '../
 
 const BatchStepSchema = z.object({
   tool: z.string().describe('Name of the tool to execute'),
-  arguments: z.record(z.unknown()).describe('Arguments to pass to the tool'),
+  arguments: z.record(z.string(), z.unknown()).describe('Arguments to pass to the tool'),
   expectation: ExpectationSchema.unwrap().optional().describe('Per-step expectation override'),
   continueOnError: z.boolean().optional().default(false).describe('Continue executing next steps if this step fails'),
 });

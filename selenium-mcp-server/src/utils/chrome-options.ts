@@ -81,32 +81,34 @@ export function buildChromeOptions(config: BrowserConfig): chrome.Options {
 
 /**
  * Stealth preload function injected via WebDriver BiDi `script.addPreloadScript`.
- * Runs before every new document to mask automation indicators.
- * Wrapped as an IIFE string because BiDi expects a function declaration.
+ * Runs before every new document to mask basic automation indicators.
+ * Wrapped as a string because BiDi expects a function declaration.
+ *
+ * Kept deliberately small: every patch is itself detectable, so it only
+ * corrects values that differ from a normal browser and leaves the rest alone.
+ * - navigator.webdriver must read `false` (what a normal Chrome reports), not
+ *   `undefined`, and is patched on Navigator.prototype, where the real property
+ *   lives. Chrome already reports false with --disable-blink-features=
+ *   AutomationControlled, so this mainly matters for Firefox.
+ * - plugins, languages and chrome.runtime are no longer faked: real Chrome
+ *   already reports its PDF plugins, a fake array fails `instanceof PluginArray`,
+ *   forced languages contradict the Accept-Language header, and regular pages
+ *   have no chrome.runtime.
+ *
+ * This hides simple automation checks. It does not get past advanced bot
+ * protection such as Cloudflare challenges.
  */
-const STEALTH_PRELOAD_FUNCTION = `() => {
-  // 1. Remove navigator.webdriver flag
-  Object.defineProperty(navigator, 'webdriver', {
-    get: () => undefined,
-  });
-
-  // 2. Patch navigator.plugins to report a non-empty length
-  Object.defineProperty(navigator, 'plugins', {
-    get: () => [1, 2, 3, 4, 5],
-  });
-
-  // 3. Set realistic languages
-  Object.defineProperty(navigator, 'languages', {
-    get: () => ['en-US', 'en'],
-  });
-
-  // 4. Ensure window.chrome.runtime exists (absent in headless / automation)
-  if (!window.chrome) {
-    window.chrome = {};
-  }
-  if (!window.chrome.runtime) {
-    window.chrome.runtime = {};
-  }
+export const STEALTH_PRELOAD_FUNCTION = `() => {
+  try {
+    const proto = Object.getPrototypeOf(navigator);
+    if (navigator.webdriver !== false) {
+      Object.defineProperty(proto, 'webdriver', {
+        get: () => false,
+        configurable: true,
+        enumerable: true,
+      });
+    }
+  } catch (e) { /* leave the page untouched if the property is locked */ }
 }`;
 
 /**

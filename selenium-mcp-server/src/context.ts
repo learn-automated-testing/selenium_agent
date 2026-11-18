@@ -7,6 +7,7 @@ import { EventCollector } from './bidi/event-collector.js';
 import { SessionTracer } from './trace/session-tracer.js';
 import { wrapDriverError } from './driver-errors.js';
 import { resolveDriver } from './driver-provision.js';
+import { SESSION_PROBE_TIMEOUT_MS, withTimeout } from './session-recovery.js';
 
 // Forward-declared types for grid support — modules loaded dynamically via ensureGrid()
 import type { SessionPool } from './grid/session-pool.js';
@@ -307,6 +308,14 @@ export class Context {
       this.activeSessionId = session.sessionId;
       return session.getDriver();
     }
+    // A local (or attached) browser can also die underneath us: the user
+    // closes the window, the browser crashes, or chromedriver exits while the
+    // machine sleeps. Probe the cached driver; if it's gone, drop it and launch
+    // a fresh one below with the same settings instead of failing every call
+    // with "invalid session id".
+    if (this.driver && !(await this.isLocalSessionAlive())) {
+      await this.discardLocalSession();
+    }
     if (!this.driver) {
       // Provision a verified chromedriver up-front so Selenium's .build() reuses
       // it instead of triggering a proxy-blind auto-download. Set
@@ -381,6 +390,61 @@ export class Context {
       }
     }
     return this.driver;
+  }
+
+  /**
+   * Cheap liveness probe for the local/attached driver. If the current window
+   * was closed but others remain, switch to one of them and keep the session.
+   */
+  private async isLocalSessionAlive(): Promise<boolean> {
+    const driver = this.driver;
+    if (!driver) return false;
+    try {
+      const handles = await withTimeout(driver.getAllWindowHandles(), SESSION_PROBE_TIMEOUT_MS, 'session probe');
+      if (handles.length === 0) return false;
+      try {
+        await withTimeout(driver.getWindowHandle(), SESSION_PROBE_TIMEOUT_MS, 'session probe');
+      } catch {
+        await driver.switchTo().window(handles[0]);
+        this.snapshot = null;
+        this.previousSnapshotText = null;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Forget a dead local/attached session so the next ensureBrowser() launches
+   * a fresh one. Recording state is kept so a recovered session can continue it.
+   */
+  private async discardLocalSession(): Promise<void> {
+    const driver = this.driver;
+    this.driver = null;
+    this.snapshot = null;
+    this.previousSnapshotText = null;
+    this.consoleLogs = [];
+    this.eventCollector = null;
+    if (driver && !this.isAttachMode()) {
+      // Best effort: stop a hung chromedriver process if it is still around.
+      try { await withTimeout(driver.quit(), SESSION_PROBE_TIMEOUT_MS, 'quit'); } catch { /* already gone */ }
+    }
+  }
+
+  /**
+   * Drop whichever session is active after a tool hit a "session lost" error,
+   * so the next ensureBrowser() call recreates it.
+   */
+  async discardDeadSession(): Promise<void> {
+    if (this.activeGridSession) {
+      this.activeGridSession = null;
+      this.activeSessionId = null;
+      this.snapshot = null;
+      this.previousSnapshotText = null;
+      return;
+    }
+    await this.discardLocalSession();
   }
 
   async getDriver(): Promise<WebDriver> {

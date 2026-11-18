@@ -13,6 +13,7 @@ import { ExpectationSchema } from './tools/base.js';
 import { Expectation } from './types.js';
 import { SessionTracer } from './trace/session-tracer.js';
 import { preflightCheck, type PreflightResult } from './preflight.js';
+import { isSessionLostError, SESSION_LOST_HINT } from './session-recovery.js';
 
 // Pre-compute the expectation JSON schema once
 const expectationJsonSchema = zodToJsonSchema(ExpectationSchema.unwrap());
@@ -34,6 +35,7 @@ export async function createServer(externalContext?: Context) {
   const saveTrace = process.env.SELENIUM_MCP_SAVE_TRACE === 'true';
   const context = externalContext ?? new Context({
     stealth: process.env.SELENIUM_STEALTH === 'true',
+    headless: process.env.SELENIUM_HEADLESS === 'true',
     outputMode,
     verboseAttributes: process.env.SELENIUM_MCP_VERBOSE_ATTRIBUTES === 'true',
   });
@@ -182,6 +184,15 @@ export async function createServer(externalContext?: Context) {
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      if (isSessionLostError(err)) {
+        // Clear the dead session so the next call starts a fresh browser
+        // instead of failing with "invalid session id" forever.
+        try { await context.discardDeadSession(); } catch { /* best effort */ }
+        return {
+          content: [{ type: 'text', text: `Error: ${message}\n\n${SESSION_LOST_HINT}` }],
+          isError: true
+        };
+      }
       return {
         content: [{ type: 'text', text: `Error: ${message}` }],
         isError: true

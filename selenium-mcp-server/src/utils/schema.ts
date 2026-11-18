@@ -4,9 +4,10 @@ import { z } from 'zod';
  * Convert Zod schema to JSON Schema for MCP tool definitions
  */
 export function zodToJsonSchema(schema: z.ZodType): Record<string, unknown> {
-  // Unwrap ZodEffects (from .refine()/.transform()/.superRefine()) to get the inner schema
-  if (schema instanceof z.ZodEffects) {
-    return zodToJsonSchema(schema._def.schema);
+  // .transform()/.pipe() produce a ZodPipe: describe its input side.
+  // (.refine()/.superRefine() keep the original schema type in zod 4.)
+  if (schema instanceof z.ZodPipe) {
+    return zodToJsonSchema(schema.in as z.ZodType);
   }
 
   if (schema instanceof z.ZodObject) {
@@ -51,18 +52,18 @@ function zodTypeToJsonSchema(schema: z.ZodType): Record<string, unknown> {
   if (schema instanceof z.ZodArray) {
     return {
       type: 'array',
-      items: zodTypeToJsonSchema(schema.element),
+      items: zodTypeToJsonSchema(schema.element as z.ZodType),
       description
     };
   }
 
   if (schema instanceof z.ZodOptional) {
-    return zodTypeToJsonSchema(schema.unwrap());
+    return zodTypeToJsonSchema(schema.unwrap() as z.ZodType);
   }
 
   if (schema instanceof z.ZodDefault) {
-    const inner = zodTypeToJsonSchema(schema._def.innerType);
-    return { ...inner, default: schema._def.defaultValue() };
+    const inner = zodTypeToJsonSchema(schema.unwrap() as z.ZodType);
+    return { ...inner, default: schema.def.defaultValue };
   }
 
   if (schema instanceof z.ZodEnum) {
@@ -83,13 +84,13 @@ function zodTypeToJsonSchema(schema: z.ZodType): Record<string, unknown> {
 
   if (schema instanceof z.ZodUnion) {
     return {
-      oneOf: schema.options.map((opt: z.ZodType) => zodTypeToJsonSchema(opt)),
+      oneOf: schema.options.map(opt => zodTypeToJsonSchema(opt as z.ZodType)),
       description
     };
   }
 
   if (schema instanceof z.ZodRecord) {
-    return { type: 'object', additionalProperties: zodTypeToJsonSchema((schema as z.ZodRecord<z.ZodString, z.ZodType>).valueSchema), description };
+    return { type: 'object', additionalProperties: zodTypeToJsonSchema(schema.valueType as z.ZodType), description };
   }
 
   if (schema instanceof z.ZodObject) {
@@ -97,7 +98,7 @@ function zodTypeToJsonSchema(schema: z.ZodType): Record<string, unknown> {
   }
 
   if (schema instanceof z.ZodNullable) {
-    const inner = zodTypeToJsonSchema(schema.unwrap());
+    const inner = zodTypeToJsonSchema(schema.unwrap() as z.ZodType);
     return { ...inner, nullable: true, description };
   }
 
