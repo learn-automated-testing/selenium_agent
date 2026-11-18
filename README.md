@@ -373,7 +373,7 @@ parallel_explore({
 docker-compose up -d --scale chrome-node=10
 ```
 
-## 73 Tools
+## 75 Tools (61 without Grid)
 
 ### Grid & Parallel Execution
 | Tool | Description |
@@ -456,9 +456,9 @@ See [Example Chats](#example-chats) above for full copy-paste prompts covering e
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `SELENIUM_GRID_URL` | — | Grid hub URL (enables parallel features) |
-| `SELENIUM_BROWSER` | `chrome` | Browser to use (`chrome`, `firefox`, `edge`) |
 | `SELENIUM_HEADLESS` | `false` | Run browser in headless mode |
-| `SELENIUM_TIMEOUT` | `30000` | Default timeout in ms |
+| `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated tool groups to load, e.g. `core,generator,healer` (see the package README) |
+| `SELENIUM_STEALTH` | `false` | Mask basic automation flags (does not get past advanced bot protection) |
 | `SE_AVOID_STATS` | — | Set to `true` to disable Selenium usage statistics |
 
 ### Local Browser (No Grid)
@@ -510,7 +510,7 @@ selenium_agent/
 │       │   ├── grid-client.ts
 │       │   ├── session-pool.ts
 │       │   └── exploration-coordinator.ts
-│       └── tools/           # 73 tools
+│       └── tools/           # 75 tools
 │           ├── navigation/
 │           ├── elements/
 │           ├── grid/        # Parallel execution tools
