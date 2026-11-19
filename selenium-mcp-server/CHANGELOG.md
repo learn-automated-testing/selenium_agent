@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.4.1] - 2026-11-19
+
+### New Features
+
+- **Structured test plans, as in Playwright.** `planner_save_plan` takes the plan structured like Playwright's planner: `name`, `overview`, `suites` (with the `seedFile` they start from) containing `tests` (with the `file` the generated test goes to) and `steps`, each with one action (`perform`) and its own expected results (`expect`). On top of Playwright's format it keeps the `elements` found while exploring (name + locator) and the `gaps` in the application. The server writes the Markdown, so every plan has the same layout (`### 1. Suite`, `**Seed:**`, `#### 1.1. Test`, `**File:**`, `  1. step` / `    - expect: …`), names the file after the plan (`specs/shopping-cart-and-checkout.md`) and reports the number of suites, tests and steps. Free-form `planContent` still works. The planner agent saves plans this way, and the generator writes one test per plan test, to its file, with an assertion for every `expect`.
+
+### Fixes
+
+- **Better labels in `planner_explore_page`.** Labels that are not linked to their field (`<label>` without `for`, as on many React pages) are found; a dropdown's label no longer contains its own options ("AllElectronics…"); icon-font text ("shopping_cart", "login") and `aria-hidden` text are left out of buttons, links and headings; required markers (`*`) are dropped; fields without any label fall back to their name or test id.
+- **Pop-ups are explored on their own.** While a dialog or a full-screen overlay is open (also one without `role="dialog"`), the inventory lists only what is inside it, and says so ("Pop-up on page …"), instead of the whole page behind it.
+
 ## [3.4.0] - 2026-11-19
 
 ### New Features

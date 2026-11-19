@@ -452,7 +452,7 @@ The default is `all`. For example, browsing and self-healing only:
 |------|-------------|
 | `planner_setup_page` | Start test planning: open the app, run optional `setupSteps` (e.g. a login) and load the `seedTest` that generated tests follow. |
 | `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
-| `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. |
+| `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. Structured as in Playwright: suites (seed file) → tests (target file) → steps with `expect`, plus elements and gaps. |
 
 ### Test Generator (6)
 

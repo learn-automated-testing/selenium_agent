@@ -132,7 +132,7 @@ Copy-paste these prompts into your AI assistant after configuring the MCP server
 2. `planner_explore_page` — explores the homepage, discovers links to products
 3. `planner_explore_page` — follows the product → add-to-cart → cart page flow
 4. `planner_explore_page` — continues through checkout, captures form fields and validation
-5. `planner_save_plan` — writes the test plan to a markdown file
+5. `planner_save_plan` — writes the test plan to `specs/`, structured as in Playwright (suites → tests → steps with `expect`), plus the elements found and the gaps
 
 **AI responds:**
 > I explored the checkout flow across 4 pages and saved a test plan to `test-plans/checkout-flow.md`. The plan covers 6 test scenarios including add to cart, checkout form validation, and successful order. Please review the plan before I generate test code.
