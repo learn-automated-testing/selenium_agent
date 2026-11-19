@@ -12,10 +12,7 @@ export function validateOutputPath(filePath: string, allowUnrestricted = false):
   if (allowUnrestricted) return;
 
   const outputDir = getOutputDir();
-  const resolved = path.resolve(filePath);
-  const resolvedOutput = path.resolve(outputDir);
-
-  if (!resolved.startsWith(resolvedOutput + path.sep) && resolved !== resolvedOutput) {
+  if (!isInside(filePath, outputDir)) {
     throw new Error(
       `Path "${filePath}" resolves outside the output directory "${outputDir}". ` +
       `All output files must be within the output directory. ` +
@@ -23,4 +20,13 @@ export function validateOutputPath(filePath: string, allowUnrestricted = false):
       `or use --allow-unrestricted-file-access to disable this check.`
     );
   }
+}
+
+/**
+ * True when `filePath` is `dir` itself or inside it. Uses path.relative, so it also
+ * works when `dir` is a filesystem root ("/" or "C:\\"), where "dir + sep" would be "//".
+ */
+export function isInside(filePath: string, dir: string): boolean {
+  const rel = path.relative(path.resolve(dir), path.resolve(filePath));
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }

@@ -5,6 +5,7 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { TestManifest, findManifest } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
+import { collectLocatorCandidates, locatorSnippets, rankCandidates, type LocatorCandidate } from '../../utils/locator-match.js';
 
 // ============================================================================
 // Shared command runner
@@ -314,65 +315,49 @@ const generateLocatorSchema = z.object({
 
 export class BrowserGenerateLocatorTool extends BaseTool {
   readonly name = 'browser_generate_locator';
-  readonly description = 'Generate a robust locator strategy for a specific element';
+  readonly description =
+    'Generate a robust locator for an element described in plain words, e.g. "search box" or ' +
+    '"the Add to Cart button of the Mechanical Keyboard". Matches text, label, placeholder, test id, ' +
+    'element kind and the surrounding content; returns ready-to-paste locators for JavaScript, Python and Java';
   readonly inputSchema = generateLocatorSchema;
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { elementDescription } = this.parseParams(generateLocatorSchema, params);
 
+    const driver = await context.getDriver();
+    const ranked = rankCandidates(elementDescription, await collectLocatorCandidates(driver));
+    if (ranked.length === 0) {
+      return this.error(
+        `No element matches "${elementDescription}". Describe it by its visible text, label or placeholder, ` +
+          'or use capture_page to see the elements on the page.'
+      );
+    }
+
     await context.captureSnapshot();
     const snapshot = await context.getSnapshot();
+    const refFor = (css: string) => [...snapshot.elements].find(([, e]) => e.css === css)?.[0];
 
-    const matchingElements: Array<{
-      ref: string; tag: string; text: string;
-      id?: string; name?: string; css?: string; xpath?: string;
-    }> = [];
+    const [best, ...rest] = ranked;
+    const result = {
+      message: `Generated locator for: ${elementDescription}`,
+      element: {
+        ref: refFor(best.css),
+        tag: best.tag,
+        text: best.text || best.label || best.placeholder,
+        testId: best.testId || undefined,
+        context: best.context || undefined,
+      },
+      locators: locatorSnippets(best),
+      alternatives: rest.slice(0, 3).map(m => ({
+        text: m.text || m.label || m.placeholder,
+        context: m.context || undefined,
+        css: m.css,
+        score: m.score,
+      })),
+    };
 
-    for (const [ref, elem] of snapshot.elements) {
-      const text = elem.text?.toLowerCase() || '';
-      const ariaLabel = elem.ariaLabel?.toLowerCase() || '';
-      const searchTerm = elementDescription.toLowerCase();
-
-      if (text.includes(searchTerm) || ariaLabel.includes(searchTerm)) {
-        matchingElements.push({
-          ref,
-          tag: elem.tagName,
-          text: elem.text || '',
-          id: elem.attributes['id'],
-          name: elem.attributes['name'],
-          css: elem.css,
-          xpath: elem.xpath,
-        });
-      }
-    }
-
-    if (matchingElements.length > 0) {
-      const best = matchingElements[0];
-      const locators: string[] = [];
-
-      // Prefer precomputed CSS selector
-      if (best.css) locators.push(`By.css("${best.css}")`);
-      // Then specific strategies
-      if (best.id) locators.push(`By.id("${best.id}")`);
-      if (best.name) locators.push(`By.name("${best.name}")`);
-      // XPath fallback
-      if (best.xpath) {
-        locators.push(`By.xpath("${best.xpath}")`);
-      } else {
-        locators.push(`By.xpath("//${best.tag}[contains(text(), '${best.text.slice(0, 30)}')]")`);
-      }
-
-      const result = {
-        message: `Generated locator for: ${elementDescription}`,
-        element: best,
-        suggestedLocators: locators,
-      };
-
-      return this.success(JSON.stringify(result, null, 2), false);
-    }
-
-    return this.error(`No matching element found for: ${elementDescription}`);
+    return this.success(JSON.stringify(result, null, 2), false);
   }
 }
 
@@ -418,6 +403,7 @@ Use after a test failure to understand UI drift before applying a fix. Reports:
       suggestion?: string;
     }> = [];
 
+    let candidates: LocatorCandidate[] | undefined;
     for (const loc of locators) {
       try {
         let matchCount = 0;
@@ -446,18 +432,13 @@ Use after a test failure to understand UI drift before applying a fix. Reports:
         if (matchCount > 0) {
           results.push({ name: loc.name, strategy: loc.strategy, value: loc.value, status: 'found', matchCount });
         } else {
-          // Try to find a suggestion from the snapshot
-          let suggestion: string | undefined;
-          const searchTerm = loc.value.toLowerCase();
-          for (const [ref, info] of snapshot.elements) {
-            const text = (info.text || '').toLowerCase();
-            const label = (info.ariaLabel || '').toLowerCase();
-            if (text.includes(searchTerm) || label.includes(searchTerm)) {
-              const id = info.attributes['id'];
-              suggestion = id ? `Try id="${id}" (ref: ${ref})` : `Try ref="${ref}" (${info.tagName}: ${info.text?.slice(0, 30)})`;
-              break;
-            }
-          }
+          // Suggest the element that best fits the locator's name and the words in its old value
+          // (e.g. "checkout button" + "#checkout-btn"), with a ready-to-use selector.
+          candidates ??= await collectLocatorCandidates(driver);
+          const [match] = rankCandidates(`${loc.name} ${loc.value.replace(/[^A-Za-z0-9]+/g, ' ')}`, candidates);
+          const suggestion = match
+            ? `Try ${locatorSnippets(match).recommended} (${match.tag}: ${(match.text || match.label || match.placeholder).slice(0, 40)})`
+            : undefined;
           results.push({ name: loc.name, strategy: loc.strategy, value: loc.value, status: 'missing', suggestion });
         }
       } catch {

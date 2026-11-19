@@ -1,5 +1,11 @@
 # Selenium Test Agents
 
+> **Replaced.** The agents now ship with `selenium-ai-agent` itself and are installed with the right
+> tool names for your client: `npx selenium-ai-agent init-agents --loop=claude` (or `vscode`, `copilot`,
+> `cursor`). This package copied the definitions to `.agents/`, a folder no client reads, and its tool
+> names did not match the server's.
+
+
 AI-powered test agents for Selenium - Planner, Generator, and Healer agents for automated test creation and maintenance.
 
 ## Overview

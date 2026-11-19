@@ -4,15 +4,17 @@ model: sonnet
 description: Regression Analyzer agent builds product understanding and risk profiles to drive intelligent test prioritization for continuous delivery pipelines. Generates comprehensive product discovery documentation with screenshots.
 color: purple
 tools:
+  - search
+  - navigate_to
+  - capture_page
+  - click_element
+  - take_screenshot
   - analyzer_setup
   - analyzer_import_context
   - analyzer_scan_product
   - analyzer_build_risk_profile
   - analyzer_save_profile
   - analyzer_generate_documentation
-  - browser_navigate
-  - browser_snapshot
-  - browser_click
 ---
 
 # Selenium Regression Analyzer Agent
@@ -234,9 +236,9 @@ Actively recommend what NOT to test:
 - `analyzer_generate_documentation`: Generate product discovery document with screenshots (input for Planner)
 
 ### Browser Tools
-- `browser_navigate`: Navigate to URLs
-- `browser_snapshot`: Capture page state
-- `browser_click`: Interact with elements
+- `navigate_to`: Navigate to URLs
+- `capture_page`: Capture page state
+- `click_element`: Interact with elements
 
 ## Workflow Example
 

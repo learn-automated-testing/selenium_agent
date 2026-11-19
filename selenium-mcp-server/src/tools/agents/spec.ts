@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
-import { getSpecsDir } from '../../utils/paths.js';
+import { expandHome, getOutputDir, getSpecsDir } from '../../utils/paths.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
 
 // ============================================================================
@@ -57,7 +57,7 @@ Saved to <outputDir>/specs/<title-slug>.md`;
 // ============================================================================
 
 const readSpecSchema = z.object({
-  specFile: z.string().describe('Path to the spec file to read'),
+  specFile: z.string().describe('Spec or test plan to read: a path, or just its name in specs/ (e.g. "shopping-cart" or "shopping-cart.md")'),
 });
 
 export class GeneratorReadSpecTool extends BaseTool {
@@ -67,12 +67,28 @@ export class GeneratorReadSpecTool extends BaseTool {
   readonly category: ToolCategory = 'generator';
 
   async execute(_context: Context, params: unknown): Promise<ToolResult> {
-    const { specFile } = this.parseParams(readSpecSchema, params);
+    let { specFile } = this.parseParams(readSpecSchema, params);
 
     const fs = await import('fs/promises');
+    const path = await import('path');
+
+    // A bare name means a plan in specs/ (where planner_save_plan puts them).
+    const expanded = expandHome(specFile);
+    const named = path.join(getSpecsDir(), expanded.endsWith('.md') ? expanded : `${expanded}.md`);
+    const candidates = path.isAbsolute(expanded) ? [expanded] : [path.join(getOutputDir(), expanded), named, path.resolve(expanded)];
 
     try {
-      const content = await fs.readFile(specFile, 'utf-8');
+      let content: string | undefined;
+      for (const candidate of candidates) {
+        try {
+          content = await fs.readFile(candidate, 'utf-8');
+          specFile = candidate;
+          break;
+        } catch {
+          continue;
+        }
+      }
+      if (content === undefined) throw new Error(`not found (looked in ${[...new Set(candidates)].join(', ')})`);
       return this.success(JSON.stringify({
         message: 'Spec loaded',
         file: specFile,

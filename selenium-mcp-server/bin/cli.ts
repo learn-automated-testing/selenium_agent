@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { runServer, runHttpServer } from '../src/server.js';
+import { getOutputDir } from '../src/utils/paths.js';
 
 // Parse CLI flags and set corresponding env vars
 const args = process.argv.slice(2);
@@ -8,6 +9,23 @@ const args = process.argv.slice(2);
 if (args[0] === 'install') {
   const { handleInstall } = await import('./install.js');
   handleInstall(args.slice(1));
+  process.exit(0);
+}
+
+if (args[0] === 'init-agents') {
+  const { initAgents, LOOPS } = await import('../src/init-agents.js');
+  const value = (flag: string) => args.find(a => a.startsWith(`--${flag}=`))?.slice(flag.length + 3);
+  const loop = value('loop') ?? 'claude';
+  if (!(LOOPS as readonly string[]).includes(loop)) {
+    console.error(`Unknown --loop=${loop}. Use one of: ${LOOPS.join(', ')}`);
+    process.exit(1);
+  }
+  const result = initAgents({ loop: loop as (typeof LOOPS)[number], server: value('server') });
+  console.log(`Selenium AI Agent: test agents for ${loop} (MCP server "${result.server}")\n`);
+  for (const file of result.written) console.log(`  wrote ${file}`);
+  if (result.mcpConfig) console.log(`  added the "${result.server}" server to ${result.mcpConfig}`);
+  console.log('\nAsk your AI assistant to use the selenium-test-planner, -generator or -healer agent.');
+  console.log('Run this again after updating selenium-ai-agent to pick up new tools and instructions.');
   process.exit(0);
 }
 
@@ -66,6 +84,7 @@ if (transport === 'http') {
     process.exit(1);
   });
 } else {
+  console.error(`[selenium-mcp] Output folder for test plans, tests and reports: ${getOutputDir()}`);
   runServer().catch(err => {
     console.error('Failed to start Selenium MCP server:', err);
     process.exit(1);

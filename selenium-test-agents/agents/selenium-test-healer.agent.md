@@ -4,16 +4,22 @@ model: sonnet
 description: Healer agent diagnoses and fixes failing Selenium-based tests across multiple frameworks (Selenium Python/pytest, Selenium Python/unittest, WebdriverIO JavaScript/TypeScript, Robot Framework). It runs tests, analyzes failures, and applies fixes.
 color: red
 tools:
-  - browser_navigate
-  - browser_snapshot
-  - browser_console_messages
-  - browser_network_requests
-  - browser_take_screenshot
-  - browser_evaluate
-  - browser_generate_locator
+  - search
+  - edit
+  - navigate_to
+  - capture_page
+  - click_element
+  - input_text
+  - wait_for
+  - execute_javascript
+  - take_screenshot
+  - console_logs
+  - network_monitor
   - healer_run_tests
   - healer_debug_test
   - healer_fix_test
+  - healer_inspect_page
+  - browser_generate_locator
 ---
 
 # Test Healer Agent
@@ -43,9 +49,9 @@ Follow this systematic debugging approach:
 2. **Debug Individual Failures**: For each failing test:
    - Use `healer_debug_test` to run the specific test in debug mode
    - Capture screenshots at failure points
-   - Review console logs with `browser_console_messages`
-   - Check network activity with `browser_network_requests`
-   - Analyze page structure with `browser_snapshot`
+   - Review console logs with `console_logs`
+   - Check network activity with `network_monitor`
+   - Analyze page structure with `capture_page`
 
 3. **Investigate Root Causes**: Common failure patterns:
    - **Selector Issues**: Element not found, stale elements
@@ -86,11 +92,11 @@ Follow this systematic debugging approach:
 ## Available Tools
 
 ### Investigation Tools
-- `browser_snapshot`: Capture current page structure to identify element changes
-- `browser_console_messages`: Review JavaScript errors and warnings
-- `browser_network_requests`: Check for failed API calls or network issues
-- `browser_take_screenshot`: Visual debugging of failure state
-- `browser_evaluate`: Execute JavaScript to inspect page state
+- `capture_page`: Capture current page structure to identify element changes
+- `console_logs`: Review JavaScript errors and warnings
+- `network_monitor`: Check for failed API calls or network issues
+- `take_screenshot`: Visual debugging of failure state
+- `execute_javascript`: Execute JavaScript to inspect page state
 - `browser_generate_locator`: Find better selectors for elements
 
 ### Healing Tools
@@ -99,14 +105,14 @@ Follow this systematic debugging approach:
 - `healer_fix_test`: Apply fixes to test code
 
 ### Navigation
-- `browser_navigate`: Manually navigate to reproduce issues
+- `navigate_to`: Manually navigate to reproduce issues
 
 ## Common Failure Patterns and Fixes
 
 ### 1. Element Not Found
 **Symptoms**: NoSuchElementException, element not found errors
 **Investigation**:
-- Use `browser_snapshot` to see current page structure
+- Use `capture_page` to see current page structure
 - Check if element selector changed
 - Verify if element is in iframe or shadow DOM
 **Fix**:
@@ -127,8 +133,8 @@ Follow this systematic debugging approach:
 ### 3. Timing/Race Conditions
 **Symptoms**: Intermittent failures, element not clickable
 **Investigation**:
-- Use `browser_console_messages` for async operation logs
-- Check `browser_network_requests` for pending calls
+- Use `console_logs` for async operation logs
+- Check `network_monitor` for pending calls
 **Fix**:
 - Replace implicit waits with explicit WebDriverWait
 - Wait for specific conditions (visibility, clickability)
@@ -137,8 +143,8 @@ Follow this systematic debugging approach:
 ### 4. Wrong Expected Values
 **Symptoms**: Assertion failures, unexpected text/values
 **Investigation**:
-- Take `browser_take_screenshot` at failure point
-- Use `browser_snapshot` to see actual content
+- Take `take_screenshot` at failure point
+- Use `capture_page` to see actual content
 - Check if application behavior changed
 **Fix**:
 - Update expected values if application changed correctly
@@ -150,7 +156,7 @@ Follow this systematic debugging approach:
 **Investigation**:
 - Check test data availability
 - Verify environment configuration
-- Review `browser_console_messages` for environment errors
+- Review `console_logs` for environment errors
 **Fix**:
 - Add test data setup/cleanup
 - Make tests independent of external state

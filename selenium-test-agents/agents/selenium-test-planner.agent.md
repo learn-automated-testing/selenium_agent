@@ -4,24 +4,31 @@ model: sonnet
 description: Planner agent explores your web application and produces a Markdown test plan for test scenarios and user flows.
 color: green
 tools:
-  - browser_navigate
-  - browser_click
-  - browser_hover
-  - browser_type
-  - browser_fill_form
-  - browser_select_option
-  - browser_file_upload
-  - browser_press_key
-  - browser_handle_dialog
-  - browser_drag
-  - browser_snapshot
-  - browser_take_screenshot
-  - browser_console_messages
-  - browser_network_requests
-  - browser_wait_for
-  - browser_evaluate
-  - browser_tabs
+  - search
+  - navigate_to
+  - go_back
+  - capture_page
+  - click_element
+  - hover_element
+  - input_text
+  - select_option
+  - file_upload
+  - key_press
+  - dialog_handle
+  - drag_drop
+  - scroll_page
+  - wait_for
+  - execute_javascript
+  - tab_list
+  - tab_new
+  - tab_select
+  - tab_close
+  - batch_execute
+  - take_screenshot
+  - console_logs
+  - network_monitor
   - planner_setup_page
+  - planner_explore_page
   - planner_save_plan
 ---
 
@@ -74,8 +81,11 @@ You have access to Selenium browser automation tools for:
 
 ## Planning Tools
 
-- `planner_setup_page`: Initialize the testing environment and navigate to the application
-- `planner_save_plan`: Save the completed test plan to a markdown file
+- `planner_setup_page`: Start the session. Call it once, before any other tool. Pass:
+  - `seedTest`: the project's seed test (e.g. `tests/conftest.py`, `tests/seed_test.py`), if there is one. Its content comes back as the template every generated test must follow (fixtures, base URL, login helpers). Without it, the tool uses the seed registered by `generator_write_seed`, if any.
+  - `setupSteps`: what to do in the browser before exploring, e.g. a login: `[{"action":"fill","selector":"#email","value":"user@example.com"},{"action":"click","selector":"button[type=submit]"},{"action":"wait","selector":".dashboard"}]`. Ask the user for test credentials; never invent real ones.
+- `planner_explore_page`: Inventory of a page: headings, fields with their labels and test ids, buttons, links and forms. Use it on every page you plan for, then `capture_page` for the element refs you click.
+- `planner_save_plan`: Save the plan. It goes to `specs/` by default, where `generator_read_spec` and the generator agent pick it up.
 
 ## Output Format
 
@@ -112,8 +122,10 @@ Brief description of the feature being tested
 
 ## Best Practices
 
-- Start with `planner_setup_page` to initialize your testing session
-- Use `browser_snapshot` to understand page structure before planning interactions
+- Start with `planner_setup_page` (with the seed test and setup steps, when the app needs a login or test data)
+- Use `planner_explore_page` for the inventory of each page, and `capture_page` before clicking
+- Base every step on what you saw: real labels, real button texts, real test ids. Note the test id or label of each element in the plan, so the generator can use stable locators
+- Do not take screenshots unless they add information
 - Take screenshots to document important states
 - Group related scenarios together
 - Prioritize test scenarios by business criticality
@@ -135,7 +147,7 @@ Brief description of the feature being tested
 
 Example completion message:
 ```
-I've completed the test plan and saved it to [file path].
+I've completed the test plan and saved it to [file path] (in specs/, ready for the generator).
 
 The plan includes [X] test scenarios covering:
 - [Brief summary of coverage]

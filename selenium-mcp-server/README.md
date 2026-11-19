@@ -279,7 +279,7 @@ These clients typically allow you to configure auto-approval per tool or per ser
 | `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated [tool groups](#tool-groups) to load, e.g. `core,generator,healer` |
 | `SELENIUM_ATTACH_CDP` | — | Attach to an already running Chrome at `host:port` (e.g. `127.0.0.1:9222`) instead of launching one |
 | `SELENIUM_MCP_OUTPUT_MODE` | `stdout` | Output mode: `stdout` (return data to LLM) or `file` (save to disk) |
-| `SELENIUM_MCP_OUTPUT_DIR` | auto | Output directory for generated files (auto-detected from project root) |
+| `SELENIUM_MCP_OUTPUT_DIR` | auto | Output folder for test plans, tests, specs and reports. Auto: the project folder (found via `.git`, `package.json` or `.claude`); when the server is started outside a project, as Claude Desktop does, `~/selenium-ai-agent`. `~` is allowed. `doctor` shows the folder in use |
 | `SELENIUM_MCP_SAVE_TRACE` | `false` | Save session trace JSON to `<output>/traces/` |
 | `SELENIUM_MCP_UNRESTRICTED_FILES` | `false` | Bypass workspace path validation (allow writing outside output dir) |
 | `SE_AVOID_STATS` | — | Set to `true` to disable Selenium usage statistics |
@@ -316,11 +316,13 @@ Pass env vars in your MCP config:
 ```bash
 npx selenium-ai-agent [flags]
 npx selenium-ai-agent doctor   # run driver/proxy diagnostics and exit
+npx selenium-ai-agent init-agents --loop=claude   # install the planner/generator/healer agents
 ```
 
 | Flag | Description |
 |------|-------------|
-| `doctor` | Run preflight diagnostics (Chrome, driver, proxy, cache) and exit |
+| `doctor` | Run preflight diagnostics (Chrome, driver, proxy, cache, output folder) and exit |
+| `init-agents --loop=claude\|vscode\|copilot\|cursor [--server=name]` | Install the test agents for your AI client (see [Test Agents](#test-agents)) and exit |
 | `--stealth` | Enable stealth mode |
 | `--headless` | Run browser headless |
 | `--save-trace` | Save session trace JSON |
@@ -421,7 +423,7 @@ The default is `all`. For example, browsing and self-healing only:
 |------|-------------|
 | `wait_for` | Wait for a condition: element visible, clickable, present, URL contains, or title contains. |
 | `execute_javascript` | Execute JavaScript code in the browser context with optional return value. |
-| `resize_window` | Resize the browser window to specified dimensions. |
+| `resize_window` | Resize or move the window (`width`/`height`, `x`/`y`, presets) or change its state: `fullscreen` (in front, for demos and recordings), `maximize`, `minimize`, `normal` (restore). |
 | `dialog_handle` | Handle browser dialogs (alert, confirm, prompt). |
 | `console_logs` | Get or clear browser console logs. Uses BiDi event collector when available for cross-browser support, falls back to classic log API. |
 | `network_monitor` | Monitor network requests: get requests, clear, or toggle offline mode. |
@@ -448,9 +450,9 @@ The default is `all`. For example, browsing and self-healing only:
 
 | Tool | Description |
 |------|-------------|
-| `planner_setup_page` | Initialize test planning — navigate to app and start exploring. |
-| `planner_explore_page` | Explore a page in detail, discovering elements, forms, and links. |
-| `planner_save_plan` | Save completed test plan to a markdown file. |
+| `planner_setup_page` | Start test planning: open the app, run optional `setupSteps` (e.g. a login) and load the `seedTest` that generated tests follow. |
+| `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
+| `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. |
 
 ### Test Generator (6)
 
@@ -461,7 +463,7 @@ The default is `all`. For example, browsing and self-healing only:
 | `generator_write_test` | Save generated test code and update `.test-manifest.json`. Supports `verify` (validates selectors against live page) and `specFile` (links to spec). |
 | `generator_write_seed` | Write a seed/bootstrap test (auth, fixtures, env setup) and register in manifest under `seedTests[]`. |
 | `generator_save_spec` | Save a structured markdown spec to `<output>/specs/`. |
-| `generator_read_spec` | Read a spec file. Read-only. |
+| `generator_read_spec` | Read a spec or test plan, by path or by name in `specs/`. Read-only. |
 
 ### Test Healer (5)
 
@@ -471,7 +473,7 @@ The default is `all`. For example, browsing and self-healing only:
 | `healer_debug_test` | Run a single test in verbose mode with detailed output (15KB stdout, 8KB stderr). |
 | `healer_fix_test` | Apply a fix to a test file with `.bak` backup. Supports `verify` (validates selectors in fixed code). |
 | `healer_inspect_page` | Inspect current page against expected locators — reports found, missing, and changed elements with suggested updated locators. Use after test failure to understand UI drift. |
-| `browser_generate_locator` | Generate robust locator strategy for an element by description. Read-only. |
+| `browser_generate_locator` | Find an element from a plain description ("search box", "the Add to Cart button of the Mechanical Keyboard") using its text, label, placeholder, test id, kind and surrounding content; returns ready-to-paste locators for JavaScript, Python and Java. Read-only. |
 
 ### Regression Analyzer (6)
 
@@ -488,7 +490,7 @@ The default is `all`. For example, browsing and self-healing only:
 
 | Tool | Description |
 |------|-------------|
-| `batch_execute` | Execute up to 20 tool steps in a single round trip. Intermediate steps skip snapshots for speed. |
+| `batch_execute` | Execute up to 20 tool steps in a single round trip; step arguments can be any JSON (text, numbers, lists). Intermediate steps skip snapshots for speed. |
 
 ### Grid Management (4)
 
@@ -647,6 +649,36 @@ The server uses a 16-phase selector computation engine that produces human-reada
 
 ---
 
+## Test Agents
+
+Like Playwright's test agents, Selenium AI Agent ships three agents (plus a regression analyzer) that work alone or in a loop:
+
+- **selenium-test-planner** explores the app and writes a Markdown test plan to `specs/`
+- **selenium-test-generator** turns a plan from `specs/` into tests (pytest, unittest, WebdriverIO, Robot Framework, …), verifying selectors live
+- **selenium-test-healer** runs the tests and repairs failing ones
+- **selenium-regression-analyzer** builds a risk profile to decide what to test first
+
+Install them into your project for your AI client, with the tool names that client expects:
+
+```bash
+npx selenium-ai-agent init-agents --loop=claude    # .claude/agents/*.md (Claude Code subagents)
+npx selenium-ai-agent init-agents --loop=vscode    # .github/chatmodes/*.chatmode.md
+npx selenium-ai-agent init-agents --loop=copilot   # .github/agents/*.agent.md (GitHub Copilot coding agent)
+npx selenium-ai-agent init-agents --loop=cursor    # .cursor/rules/*.mdc (attach with @selenium-test-planner)
+```
+
+It reuses the server name from your project's MCP config (`.mcp.json`, `.vscode/mcp.json`, `.cursor/mcp.json`), or adds a `selenium-mcp` server when there is none; `--server=<name>` overrides it. Run it again after updating to pick up new tools and instructions.
+
+**Seed test and login.** Like Playwright's `seed.spec.ts`, the planner can start from a seed: `planner_setup_page` takes `seedTest` (a file whose fixtures, base URL and login the generated tests follow; default: the seed registered with `generator_write_seed`) and `setupSteps` (actions run in the browser before exploring, e.g. `fill` / `click` / `wait` for a login), so apps behind a login can be planned.
+
+```
+specs/                 # test plans from the planner, read by the generator
+tests/                 # generated tests (+ seed test)
+.test-manifest.json    # framework, run command, seed tests (used by the healer)
+```
+
+---
+
 ## Test Generation & Healing Pipeline
 
 The generator and healer tools form a complete test automation pipeline:
@@ -654,7 +686,7 @@ The generator and healer tools form a complete test automation pipeline:
 ### 1. Plan
 
 ```
-planner_setup_page → planner_explore_page → planner_save_plan
+planner_setup_page (seedTest, setupSteps) → planner_explore_page → planner_save_plan → specs/<plan>.md
 ```
 
 ### 2. Record & Generate

@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.4.0] - 2026-11-19
+
+### New Features
+
+- **`init-agents`: install the test agents like Playwright's `init-agents`.** `npx selenium-ai-agent init-agents --loop=claude|vscode|copilot|cursor` writes the planner, generator, healer and analyzer agents where each client reads them (`.claude/agents/`, `.github/chatmodes/`, `.github/agents/`, `.cursor/rules/`), with tool names in that client's format (`mcp__<server>__navigate_to`, `<server>/navigate_to`), reuses the server name from the project's MCP config and registers the server when missing. The agent templates now ship in the npm package. The separate `selenium-test-agents` package, which copied the files to an unused `.agents/` folder, is replaced.
+- **Planner seed test and setup steps.** `planner_setup_page` takes `seedTest` (its content comes back as the template generated tests follow; default: the seed registered with `generator_write_seed`) and `setupSteps` (`navigate`, `fill`, `click`, `select`, `press`, `wait` with CSS selectors, run in the planner's browser before exploring, e.g. a login). A failing step is reported by number.
+- **Plans go to `specs/`.** `planner_save_plan` saves to `specs/` by default, and `generator_read_spec` finds a plan by name there, so the planner's output is the generator's input, as in Playwright.
+
+### Fixes
+
+- **The agent definitions used tools that do not exist.** They listed Playwright MCP names (`browser_navigate`, `browser_click`, `browser_snapshot`, …), so an agent limited to its tool list could not use the browser. They now list this server's tools (a test checks every name against the registry), and the planner and generator instructions describe the seed, the page inventory and the `specs/` hand-off.
+
+### Fixes
+
+- **Saving works in Claude Desktop.** Claude Desktop starts MCP servers in `/`, which made `/` the output folder: test plans, tests, specs and risk profiles went to `/test-plans` etc. and failed, and the path check compared against `//`, so even an explicit folder was "outside the output directory". The check now uses `path.relative` (correct for any root), and when the server runs outside a project (in `/` or the home folder) files go to `~/selenium-ai-agent`. `~` works in `SELENIUM_MCP_OUTPUT_DIR` and `outputDir`. The output folder is logged at start-up and checked by `doctor`.
+- **`planner_explore_page` reports the page.** It only counted `<form>` tags, so modern apps came back as "0 forms". It now returns headings, input fields with their labels, test ids, required flag and dropdown options, buttons (with disabled state), links (internal/external) and forms, in one browser round trip.
+- **`browser_generate_locator` finds elements from a description.** It matched only literal text ("search box" failed for a field labelled "Search for items") and produced invalid code (`By.css("button[data-testid="x"]")`). It now scores text, label, placeholder, test id, element kind and the surrounding content (so "the Add to Cart button of the Mechanical Keyboard" picks the right one), and returns correctly quoted locators for JavaScript, Python and Java plus alternatives.
+- **`healer_inspect_page` suggests replacements** for broken locators, based on the locator's name and old value.
+- **`batch_execute` accepts lists and numbers.** Unknown values were described to clients as strings, so tools such as `verify_list_visible` could not run in a batch.
+- **`resize_window` `fullscreen`/`maximize` work from a minimized window** (the window is restored first).
+- **Clear message without a browser:** "No browser is open yet. Open a page with navigate_to first" instead of "Call ensureBrowser() first".
+
 ## [3.3.6] - 2026-11-18
 
 ### New Features

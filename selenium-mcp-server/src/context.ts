@@ -452,7 +452,7 @@ export class Context {
       return this.activeGridSession.getDriver();
     }
     if (!this.driver) {
-      throw new Error('Browser not started. Call ensureBrowser() first.');
+      throw new Error('No browser is open yet. Open a page with navigate_to first, then try again.');
     }
     return this.driver;
   }

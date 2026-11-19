@@ -1,5 +1,7 @@
 import net from 'node:net';
-import { existsSync } from 'node:fs';
+import { accessSync, constants, existsSync } from 'node:fs';
+import path from 'node:path';
+import { getOutputDir } from './utils/paths.js';
 import {
   detectChromeVersion,
   findCachedDriver,
@@ -42,6 +44,7 @@ export interface DoctorDeps {
   probe: (host: string, port: number, timeoutMs: number) => Promise<boolean>;
   proxy?: string;
   cacheDir: string;
+  outputDir: string;
 }
 
 /** Raw TCP reachability probe — dependency-free, honours no proxy itself. */
@@ -228,6 +231,7 @@ function defaultDeps(): DoctorDeps {
     probe: tcpProbe,
     proxy: loadProxyConfig().proxy,
     cacheDir: getSeleniumCacheDir(),
+    outputDir: getOutputDir(),
   };
 }
 
@@ -248,9 +252,37 @@ export async function runDoctor(deps: Partial<DoctorDeps> = {}): Promise<DoctorR
     checkProvisionPlan(chrome, d.override, onPath, cached),
     ...(await checkHosts(d.proxy, d.probe)),
     checkCache(d.cacheDir),
+    checkOutputDir(d.outputDir),
   ];
 
   return { checks, ok: checks.every((c) => c.ok) };
+}
+
+/** Where generated files go, and whether that folder can be written. */
+export function checkOutputDir(dir: string): DoctorCheck {
+  const writable = canWriteTo(dir);
+  return {
+    name: 'Output folder',
+    ok: writable,
+    detail: `${dir}${process.env.SELENIUM_MCP_OUTPUT_DIR ? ' (SELENIUM_MCP_OUTPUT_DIR)' : ''}`,
+    fix: 'Set SELENIUM_MCP_OUTPUT_DIR to a folder you can write to, e.g. ~/selenium-ai-agent',
+  };
+}
+
+function canWriteTo(dir: string): boolean {
+  let probe = path.resolve(dir);
+  // The folder may not exist yet: check the nearest existing parent.
+  while (!existsSync(probe)) {
+    const parent = path.dirname(probe);
+    if (parent === probe) return false;
+    probe = parent;
+  }
+  try {
+    accessSync(probe, constants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Render a report as a human-readable, 80-column-friendly block. */
