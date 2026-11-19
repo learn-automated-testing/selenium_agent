@@ -12,6 +12,23 @@ if (args[0] === 'install') {
   process.exit(0);
 }
 
+if (args[0] === 'init-agents') {
+  const { initAgents, LOOPS } = await import('../src/init-agents.js');
+  const value = (flag: string) => args.find(a => a.startsWith(`--${flag}=`))?.slice(flag.length + 3);
+  const loop = value('loop') ?? 'claude';
+  if (!(LOOPS as readonly string[]).includes(loop)) {
+    console.error(`Unknown --loop=${loop}. Use one of: ${LOOPS.join(', ')}`);
+    process.exit(1);
+  }
+  const result = initAgents({ loop: loop as (typeof LOOPS)[number], server: value('server') });
+  console.log(`Selenium AI Agent: test agents for ${loop} (MCP server "${result.server}")\n`);
+  for (const file of result.written) console.log(`  wrote ${file}`);
+  if (result.mcpConfig) console.log(`  added the "${result.server}" server to ${result.mcpConfig}`);
+  console.log('\nAsk your AI assistant to use the selenium-test-planner, -generator or -healer agent.');
+  console.log('Run this again after updating selenium-ai-agent to pick up new tools and instructions.');
+  process.exit(0);
+}
+
 if (args[0] === 'doctor') {
   const { runDoctor, formatDoctorReport } = await import('../src/doctor.js');
   const report = await runDoctor();

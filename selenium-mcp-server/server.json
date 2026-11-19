@@ -9,13 +9,13 @@
     "subfolder": "selenium-mcp-server"
   },
   "websiteUrl": "https://github.com/learn-automated-testing/selenium_agent#readme",
-  "version": "3.3.7",
+  "version": "3.4.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "selenium-ai-agent",
-      "version": "3.3.7",
+      "version": "3.4.0",
       "transport": {
         "type": "stdio"
       },

@@ -4,25 +4,42 @@ model: sonnet
 description: Generator agent uses the Markdown test plan to produce executable Selenium-based tests in various frameworks (Selenium Python/pytest, Selenium Python/unittest, WebdriverIO JavaScript/TypeScript, Robot Framework). It verifies selectors and assertions live as it performs the scenarios.
 color: blue
 tools:
-  - browser_navigate
-  - browser_click
-  - browser_hover
-  - browser_type
-  - browser_select_option
-  - browser_file_upload
-  - browser_press_key
-  - browser_handle_dialog
-  - browser_drag
-  - browser_snapshot
-  - browser_evaluate
-  - browser_wait_for
-  - browser_verify_element_visible
-  - browser_verify_text_visible
-  - browser_verify_value
-  - browser_verify_list_visible
+  - search
+  - edit
+  - navigate_to
+  - go_back
+  - capture_page
+  - click_element
+  - hover_element
+  - input_text
+  - select_option
+  - file_upload
+  - key_press
+  - dialog_handle
+  - drag_drop
+  - scroll_page
+  - wait_for
+  - execute_javascript
+  - tab_list
+  - tab_new
+  - tab_select
+  - tab_close
+  - batch_execute
+  - verify_element_visible
+  - verify_text_visible
+  - verify_value
+  - verify_list_visible
+  - start_recording
+  - stop_recording
+  - recording_status
+  - clear_recording
   - generator_setup_page
-  - generator_write_test
   - generator_read_log
+  - generator_write_test
+  - generator_write_seed
+  - generator_save_spec
+  - generator_read_spec
+  - browser_generate_locator
 ---
 
 # Selenium Test Generator Agent
@@ -57,7 +74,7 @@ Follow this systematic approach:
    - Use Selenium MCP tools to interact with the application
    - Verify that each step works as expected
    - Capture element locators and validation points
-   - Use `browser_snapshot` to identify reliable selectors
+   - Use `capture_page` to identify reliable selectors
 
 4. **Retrieve Execution Logs**: Use `generator_read_log` to get the sequence of actions performed
 
@@ -107,11 +124,11 @@ The accessibility tree snapshot includes precomputed CSS selectors for each elem
 - Drag and drop operations
 
 ### Verification Tools
-- `browser_verify_element_visible`: Check element visibility
-- `browser_verify_text_visible`: Verify text content
-- `browser_verify_value`: Validate input values
-- `browser_verify_list_visible`: Check multiple elements
-- `browser_snapshot`: Capture page structure for locator selection
+- `verify_element_visible`: Check element visibility
+- `verify_text_visible`: Verify text content
+- `verify_value`: Validate input values
+- `verify_list_visible`: Check multiple elements
+- `capture_page`: Capture page structure for locator selection
 
 ### Generator-Specific Tools
 - `generator_setup_page`: Initialize test session and navigate to application
@@ -196,12 +213,13 @@ Scenario Name
    - `webdriverio-ts` - WebdriverIO with TypeScript (Selenium-based)
    - `robot-framework` - Robot Framework with SeleniumLibrary
 
-2. **Initialize**: Start with `generator_setup_page` providing the test plan, target URL, and chosen framework
-3. **Execute**: Perform all test steps using browser tools in real-time
-4. **Verify**: Add assertions to validate expected outcomes
-5. **Review Logs**: Use `generator_read_log` to see the complete action sequence
-6. **Generate Code**: Transform actions into structured test code for the chosen framework
-7. **Save**: Use `generator_write_test` to save the generated test file with appropriate extension
+2. **Read the plan**: The planner saves plans in `specs/`. Read the one the user names with `generator_read_spec` (a file name is enough) and follow its scenarios, labels and test ids. If the plan mentions a seed test, every generated test follows that seed's fixtures and setup.
+3. **Initialize**: Start with `generator_setup_page` providing the test plan, target URL, and chosen framework
+4. **Execute**: Perform all test steps using browser tools in real-time
+5. **Verify**: Add assertions to validate expected outcomes
+6. **Review Logs**: Use `generator_read_log` to see the complete action sequence
+7. **Generate Code**: Transform actions into structured test code for the chosen framework
+8. **Save**: Use `generator_write_test` to save the generated test file with appropriate extension
 
 ## Best Practices
 
@@ -266,9 +284,9 @@ project/
 │   ├── test_checkout.robot  # Robot Framework tests
 │   └── login.test.js        # WebDriverIO tests
 │
-├── test-plans/              # Test plan documents (from Planner)
-│   ├── login_plan.md
-│   └── shopping_plan.md
+├── specs/                   # Test plans (from the planner) and specs
+│   ├── login.md
+│   └── shopping-cart.md
 │
 ├── conftest.py              # pytest configuration (create if needed)
 ├── pytest.ini               # pytest settings (create if needed)
@@ -516,8 +534,8 @@ User: "Option 1"
 1. Ask user: "Which framework would you like? (selenium-python-pytest, selenium-python-unittest, webdriverio-js, webdriverio-ts, robot-framework)"
 2. User selects: `selenium-python-pytest`
 3. Read test plan: "User Login - Valid Credentials"
-4. Execute: `generator_setup_page(url, test_plan, framework)` → `browser_navigate` → `browser_type` → `browser_click`
-5. Verify: `browser_verify_text_visible` for success message
+4. Execute: `generator_setup_page(url, test_plan, framework)` → `navigate_to` → `input_text` → `click_element`
+5. Verify: `verify_text_visible` for success message
 6. Get logs: `generator_read_log` returns action sequence
 7. Generate: Create pytest test with proper structure
 8. Save: `generator_write_test` saves to `tests/test_login.py`

@@ -1,6 +1,16 @@
 # Changelog
 
-## [3.3.7] - 2026-11-19
+## [3.4.0] - 2026-11-19
+
+### New Features
+
+- **`init-agents`: install the test agents like Playwright's `init-agents`.** `npx selenium-ai-agent init-agents --loop=claude|vscode|copilot|cursor` writes the planner, generator, healer and analyzer agents where each client reads them (`.claude/agents/`, `.github/chatmodes/`, `.github/agents/`, `.cursor/rules/`), with tool names in that client's format (`mcp__<server>__navigate_to`, `<server>/navigate_to`), reuses the server name from the project's MCP config and registers the server when missing. The agent templates now ship in the npm package. The separate `selenium-test-agents` package, which copied the files to an unused `.agents/` folder, is replaced.
+- **Planner seed test and setup steps.** `planner_setup_page` takes `seedTest` (its content comes back as the template generated tests follow; default: the seed registered with `generator_write_seed`) and `setupSteps` (`navigate`, `fill`, `click`, `select`, `press`, `wait` with CSS selectors, run in the planner's browser before exploring, e.g. a login). A failing step is reported by number.
+- **Plans go to `specs/`.** `planner_save_plan` saves to `specs/` by default, and `generator_read_spec` finds a plan by name there, so the planner's output is the generator's input, as in Playwright.
+
+### Fixes
+
+- **The agent definitions used tools that do not exist.** They listed Playwright MCP names (`browser_navigate`, `browser_click`, `browser_snapshot`, …), so an agent limited to its tool list could not use the browser. They now list this server's tools (a test checks every name against the registry), and the planner and generator instructions describe the seed, the page inventory and the `specs/` hand-off.
 
 ### Fixes
 
