@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { planFileName, renderPlan, type StructuredPlan } from './plan-format.js';
+import { codeCell, planFileName, renderPlan, tableCell, type StructuredPlan } from './plan-format.js';
 import { PlannerSavePlanTool } from '../tools/agents/planner.js';
 
 const PLAN: StructuredPlan = {
@@ -38,6 +38,19 @@ describe('structured test plans (Playwright layout)', () => {
     const md = renderPlan(PLAN);
     expect(md).to.contain('| Cart button | `[data-testid="cart-button"]` |');
     expect(md).to.contain('## Gaps and Questions\n\n- There is no way to change quantities in the cart.');
+  });
+
+  it('escapes backslashes, pipes and line breaks in table cells', () => {
+    expect(tableCell('a|b')).to.equal('a\\|b');
+    expect(tableCell('ends with \\')).to.equal('ends with \\\\');
+    expect(tableCell('C:\\x|y')).to.equal('C:\\\\x\\|y');
+    expect(tableCell('two\nlines')).to.equal('two lines');
+  });
+
+  it('keeps locator backslashes and escapes only pipes in code cells', () => {
+    expect(codeCell('#\\31 23')).to.equal('`#\\31 23`');
+    expect(codeCell('[title="a|b"]')).to.equal('`[title="a\\|b"]`');
+    expect(codeCell('a`b')).to.equal("`a'b`");
   });
 
   it('names the file after the plan', () => {

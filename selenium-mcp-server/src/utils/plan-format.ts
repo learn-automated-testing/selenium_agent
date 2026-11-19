@@ -38,6 +38,21 @@ export const structuredPlanSchema = z.object({
 
 export type StructuredPlan = z.infer<typeof structuredPlanSchema>;
 
+/** Text for a Markdown table cell: backslashes first, then the pipes that would end the cell, then line breaks. */
+export function tableCell(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+}
+
+/**
+ * A locator as a code span in a table cell. Backslashes stay as they are: inside a code span
+ * they are literal (CSS.escape produces them, e.g. "#\31 23"). In a GFM table only "|" must be
+ * escaped, even inside code: the table reads "\|" as "|", so "\|" in the input still shows
+ * as "\|". Backticks would end the span and become quotes.
+ */
+export function codeCell(locator: string): string {
+  return '`' + locator.replace(/`/g, "'").replace(/\r?\n/g, ' ').split('|').join('\\|') + '`';
+}
+
 /** Markdown in Playwright's planner layout, plus the elements and gaps sections. */
 export function renderPlan(plan: StructuredPlan): string {
   const lines: string[] = [`# ${plan.name}`, '', '## Application Overview', '', plan.overview.trim()];
@@ -45,7 +60,7 @@ export function renderPlan(plan: StructuredPlan): string {
   if (plan.elements?.length) {
     lines.push('', '## Elements', '', '| Element | Locator |', '|---|---|');
     for (const e of plan.elements) {
-      lines.push(`| ${e.name.replace(/\|/g, '\\|')} | \`${e.locator.replace(/`/g, "'")}\` |`);
+      lines.push(`| ${tableCell(e.name)} | ${codeCell(e.locator)} |`);
     }
   }
 
