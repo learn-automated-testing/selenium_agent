@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { detectServerName, initAgents, loadAgents, renderAgent } from './init-agents.js';
+import { detectServerName, initAgents, loadAgents, parseAgent, renderAgent } from './init-agents.js';
 import { getAllTools } from './tools/index.js';
 
 const AGENTS_DIR = path.resolve('agents');
@@ -22,6 +22,14 @@ describe('test agents', () => {
       const leftovers = (agent.instructions.match(/\bbrowser_[a-z_]+/g) ?? []).filter(t => t !== 'browser_generate_locator');
       expect(leftovers, agent.name).to.deep.equal([]);
     }
+  });
+
+  it('read agent files with Windows line endings (CRLF) and a byte order mark', () => {
+    const text = '\uFEFF---\r\nname: a\r\ndescription: d\r\ntools:\r\n  - navigate_to\r\n---\r\n\r\nDo it.\r\n';
+    const agent = parseAgent(text);
+    expect(agent.name).to.equal('a');
+    expect(agent.tools).to.deep.equal(['navigate_to']);
+    expect(agent.instructions).to.equal('Do it.\n');
   });
 
   it('render Claude Code agents with mcp__<server>__ tool names', () => {

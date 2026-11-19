@@ -29,7 +29,8 @@ export function agentsSourceDir(): string {
 }
 
 export function parseAgent(text: string): AgentSpec {
-  const match = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  // Windows checkouts (git autocrlf) and editors may use CRLF line endings.
+  const match = text.replace(/\r\n?/g, '\n').match(/^\uFEFF?---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) throw new Error('Agent file has no front matter');
   const header = YAML.parse(match[1]) as Partial<AgentSpec>;
   if (!header.name || !header.description || !Array.isArray(header.tools)) {
