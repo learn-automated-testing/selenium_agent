@@ -6,6 +6,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 import { getOutputDir, getSpecsDir, resolveOutputDir } from '../../utils/paths.js';
 import { readManifest } from '../../types/manifest.js';
 import { runSetupSteps, setupStepSchema } from '../../utils/setup-steps.js';
+import { planFileName, renderPlan, structuredPlanSchema } from '../../utils/plan-format.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
 import { getPageInventory } from '../../utils/page-inventory.js';
 
@@ -156,8 +157,11 @@ export class PlannerExplorePageTool extends BaseTool {
 
     const result = {
       message:
-        `Page '${pageName}' explored: ${inventory.totals.fields} fields, ` +
-        `${inventory.totals.buttons} buttons, ${inventory.totals.links} links, ${inventory.forms.length} forms`,
+        `${inventory.scope === 'dialog' ? 'Pop-up on ' : ''}Page '${pageName}' explored: ${inventory.totals.fields} fields, ` +
+        `${inventory.totals.buttons} buttons, ${inventory.totals.links} links, ${inventory.forms.length} forms` +
+        (inventory.totals.inShadowDom
+          ? `; ${inventory.totals.inShadowDom} of them inside web components (shadow DOM): get their locators with browser_generate_locator`
+          : ''),
       url: await driver.getCurrentUrl(),
       title: await driver.getTitle(),
       ...inventory,
@@ -168,25 +172,47 @@ export class PlannerExplorePageTool extends BaseTool {
 }
 
 // Planner Save Plan Tool
-const savePlanSchema = z.object({
-  planContent: z.string().describe('Complete test plan content in markdown format'),
-  filename: z.string().optional().describe('Filename for the test plan'),
+const savePlanSchema = structuredPlanSchema.partial().extend({
+  planContent: z.string().optional()
+    .describe('Free-form markdown plan. Prefer the structured fields (name, overview, suites), which give every plan the same layout'),
+  filename: z.string().optional().describe('File name (default: from the plan name, e.g. shopping-cart-and-checkout.md)'),
   outputDir: z.string().optional().describe('Folder for the plan (default: specs/, where the generator reads plans)')
 });
 
 export class PlannerSavePlanTool extends BaseTool {
   readonly name = 'planner_save_plan';
-  readonly description = 'Save the completed test plan to a markdown file';
+  readonly description =
+    'Save the test plan to specs/. Give it structured, as in Playwright: name, overview, suites (name, seedFile) with ' +
+    'tests (name, target file) and steps (perform + expect per step); add the elements you found (name + locator) ' +
+    'and any gaps. It is written as Markdown in a fixed layout. Free-form planContent is still accepted';
   readonly inputSchema = savePlanSchema;
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { planContent, filename, outputDir } = this.parseParams(savePlanSchema, params);
+    const parsed = this.parseParams(savePlanSchema, params);
+    const { planContent, filename, outputDir } = parsed;
+
+    let content: string;
+    let summary = '';
+    if (parsed.suites?.length) {
+      const structured = structuredPlanSchema.safeParse(parsed);
+      if (!structured.success) {
+        return this.error(`Incomplete plan: ${structured.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
+      }
+      content = renderPlan(structured.data);
+      const tests = structured.data.suites.reduce((n, s) => n + s.tests.length, 0);
+      const steps = structured.data.suites.reduce((n, s) => n + s.tests.reduce((m, t) => m + t.steps.length, 0), 0);
+      summary = `\n${structured.data.suites.length} suite(s), ${tests} test(s), ${steps} steps.`;
+    } else if (planContent) {
+      content = planContent;
+    } else {
+      return this.error('Give the plan as name, overview and suites (preferred), or as planContent.');
+    }
 
     const fs = await import('fs/promises');
     const path = await import('path');
 
-    const finalFilename = filename || 'test-plan.md';
+    const finalFilename = filename || (parsed.name ? planFileName(parsed.name) : 'test-plan.md');
     const plansDir = resolveOutputDir(outputDir, getSpecsDir());
 
     try {
@@ -194,10 +220,10 @@ export class PlannerSavePlanTool extends BaseTool {
       const planPath = path.join(plansDir, finalFilename);
       const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
       validateOutputPath(planPath, unrestricted);
-      await fs.writeFile(planPath, planContent);
+      await fs.writeFile(planPath, content);
 
       return this.success(
-        `Test plan saved to: ${planPath}\nThe generator reads it with generator_read_spec (specFile: "${finalFilename}").`,
+        `Test plan saved to: ${planPath}${summary}\nThe generator reads it with generator_read_spec (specFile: "${finalFilename}").`,
         false
       );
     } catch (err) {

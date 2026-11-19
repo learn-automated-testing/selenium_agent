@@ -3,6 +3,7 @@ import { until, By } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { untilLocatedDeep } from '../../utils/shadow-dom.js';
 
 const schema = z.object({
   condition: z.enum(['element_visible', 'element_clickable', 'element_present', 'url_contains', 'title_contains']).describe('Condition to wait for'),
@@ -25,24 +26,24 @@ export class WaitTool extends BaseTool {
       switch (condition) {
         case 'element_visible':
           await driver.wait(
-            until.elementLocated(By.css(value)),
+            untilLocatedDeep(value),
             timeout
           );
-          const visibleEl = await driver.findElement(By.css(value));
-          await driver.wait(until.elementIsVisible(visibleEl), timeout);
+          const visibleEl = await driver.wait(untilLocatedDeep(value), timeout);
+          await driver.wait(until.elementIsVisible(visibleEl!), timeout);
           break;
 
         case 'element_clickable':
           const clickableEl = await driver.wait(
-            until.elementLocated(By.css(value)),
+            untilLocatedDeep(value),
             timeout
           );
-          await driver.wait(until.elementIsEnabled(clickableEl), timeout);
+          await driver.wait(until.elementIsEnabled(clickableEl!), timeout);
           break;
 
         case 'element_present':
           await driver.wait(
-            until.elementLocated(By.css(value)),
+            untilLocatedDeep(value),
             timeout
           );
           break;

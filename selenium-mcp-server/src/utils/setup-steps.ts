@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { By, Key, until, type WebDriver } from 'selenium-webdriver';
+import { untilLocatedDeep } from './shadow-dom.js';
 
 /**
  * Steps that prepare the app before exploring, e.g. a login. They run in the same browser
@@ -37,7 +38,7 @@ const KEYS: Record<string, string> = {
 };
 
 async function find(driver: WebDriver, selector: string, timeoutMs: number) {
-  const element = await driver.wait(until.elementLocated(By.css(selector)), timeoutMs, `No element matches ${selector}`);
+  const element = (await driver.wait(untilLocatedDeep(selector), timeoutMs, `No element matches ${selector}`))!;
   await driver.wait(until.elementIsVisible(element), timeoutMs, `${selector} is not visible`);
   return element;
 }

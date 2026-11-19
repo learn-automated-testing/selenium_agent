@@ -85,40 +85,36 @@ You have access to Selenium browser automation tools for:
   - `seedTest`: the project's seed test (e.g. `tests/conftest.py`, `tests/seed_test.py`), if there is one. Its content comes back as the template every generated test must follow (fixtures, base URL, login helpers). Without it, the tool uses the seed registered by `generator_write_seed`, if any.
   - `setupSteps`: what to do in the browser before exploring, e.g. a login: `[{"action":"fill","selector":"#email","value":"user@example.com"},{"action":"click","selector":"button[type=submit]"},{"action":"wait","selector":".dashboard"}]`. Ask the user for test credentials; never invent real ones.
 - `planner_explore_page`: Inventory of a page: headings, fields with their labels and test ids, buttons, links and forms. Use it on every page you plan for, then `capture_page` for the element refs you click.
-- `planner_save_plan`: Save the plan. It goes to `specs/` by default, where `generator_read_spec` and the generator agent pick it up.
+- `planner_save_plan`: Save the plan, structured as in Playwright's planner. It goes to `specs/<plan-name>.md`, where `generator_read_spec` and the generator agent pick it up. Pass:
+  - `name` and `overview`
+  - `suites`: each with a `name`, the `seedFile` it starts from (if any) and `tests`
+  - each test: a `name`, the `file` the generated test will be saved to (e.g. `tests/cart/test_add_from_grid.py`) and `steps`
+  - each step: `perform` (one action) and `expect` (the results to check right after that action)
+  - `elements`: the elements you found, with their most stable locator (test id first)
+  - `gaps`: features the page or requirements mention that the application does not have, and open questions
 
 ## Output Format
 
-Your test plans should follow this structure:
+Always save with the structured fields of `planner_save_plan`; the tool writes the Markdown, so every plan has the same layout:
 
 ```markdown
-# Test Plan: [Feature Name]
+### 1. Cart
 
-## Overview
-Brief description of the feature being tested
+**Seed:** `tests/seed_test.py`
 
-## Test Scenarios
+#### 1.1. Add a product from the grid
 
-### 1. [Scenario Name]
-**Description**: What this test validates
+**File:** `tests/cart/test_add_from_grid.py`
 
-**Prerequisites**:
-- Required setup or data
-
-**Steps**:
-1. Navigate to [URL]
-2. Click on [element]
-3. Enter [data] in [field]
-...
-
-**Expected Results**:
-- Step 1: [expected outcome]
-- Step 2: [expected outcome]
-...
-
-**Test Data**:
-- Input values needed
+**Steps:**
+  1. Open the shop
+    - expect: 10 products are listed
+  2. Click "Add to Cart" for the Mechanical Keyboard
+    - expect: The cart button shows "1 items"
+    - expect: The total is "$89.99"
 ```
+
+Assume a fresh state at the start of every test, keep tests independent, include negative and edge cases, and give every step that changes something at least one `expect`.
 
 ## Best Practices
 

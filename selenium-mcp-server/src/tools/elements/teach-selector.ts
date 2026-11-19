@@ -3,6 +3,7 @@ import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { loadHints, saveHints } from '../../utils/selector-hints.js';
+import { DEEP_QUERY } from '../../utils/shadow-dom.js';
 
 const schema = z.object({
   description: z.string().describe('Description of the element (e.g., "the NL language link", "the search button")'),
@@ -14,10 +15,10 @@ const schema = z.object({
  * Browser-side script that validates a CSS selector and extracts element metadata.
  * Returns { count, tag, text, ariaLabel, inHeader } or null.
  */
-const VALIDATE_SCRIPT = `
+const VALIDATE_SCRIPT = `${DEEP_QUERY}
   var selector = arguments[0];
   try {
-    var els = document.querySelectorAll(selector);
+    var els = queryAllPath(selector);
     // Count visible matches
     var visible = [];
     for (var i = 0; i < els.length; i++) {

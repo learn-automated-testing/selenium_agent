@@ -452,7 +452,7 @@ The default is `all`. For example, browsing and self-healing only:
 |------|-------------|
 | `planner_setup_page` | Start test planning: open the app, run optional `setupSteps` (e.g. a login) and load the `seedTest` that generated tests follow. |
 | `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
-| `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. |
+| `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. Structured as in Playwright: suites (seed file) → tests (target file) → steps with `expect`, plus elements and gaps. |
 
 ### Test Generator (6)
 
@@ -473,7 +473,7 @@ The default is `all`. For example, browsing and self-healing only:
 | `healer_debug_test` | Run a single test in verbose mode with detailed output (15KB stdout, 8KB stderr). |
 | `healer_fix_test` | Apply a fix to a test file with `.bak` backup. Supports `verify` (validates selectors in fixed code). |
 | `healer_inspect_page` | Inspect current page against expected locators — reports found, missing, and changed elements with suggested updated locators. Use after test failure to understand UI drift. |
-| `browser_generate_locator` | Find an element from a plain description ("search box", "the Add to Cart button of the Mechanical Keyboard") using its text, label, placeholder, test id, kind and surrounding content; returns ready-to-paste locators for JavaScript, Python and Java. Read-only. |
+| `browser_generate_locator` | Find an element from a plain description ("search box", "the Add to Cart button of the Mechanical Keyboard") using its text, label, placeholder, test id, kind and surrounding content; returns ready-to-paste locators for JavaScript, Python and Java. Inside web components it returns a `host >>> inner` path with Selenium `shadow_root` code. Read-only. |
 
 ### Regression Analyzer (6)
 

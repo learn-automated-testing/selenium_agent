@@ -213,7 +213,7 @@ Scenario Name
    - `webdriverio-ts` - WebdriverIO with TypeScript (Selenium-based)
    - `robot-framework` - Robot Framework with SeleniumLibrary
 
-2. **Read the plan**: The planner saves plans in `specs/`. Read the one the user names with `generator_read_spec` (a file name is enough) and follow its scenarios, labels and test ids. If the plan mentions a seed test, every generated test follows that seed's fixtures and setup.
+2. **Read the plan**: The planner saves plans in `specs/`. Read the one the user names with `generator_read_spec` (a file name is enough). Generate one test per plan test (`####`), saved to its **File:**, with one assertion for every `- expect:` right after the step it belongs to. Use the locators from the plan's Elements table. For an element inside a web component (a `host >>> inner` locator, or `shadowHost` in the page inventory), use the shadow DOM code that `browser_generate_locator` returns (`.shadow_root.find_element(...)` in Python, `getShadowRoot()` in Java/JavaScript): plain `By.CSS_SELECTOR` and XPath cannot reach inside shadow roots. Every test follows the suite's **Seed:** (fixtures, base URL, login).
 3. **Initialize**: Start with `generator_setup_page` providing the test plan, target URL, and chosen framework
 4. **Execute**: Perform all test steps using browser tools in real-time
 5. **Verify**: Add assertions to validate expected outcomes
