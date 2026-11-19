@@ -158,7 +158,10 @@ export class PlannerExplorePageTool extends BaseTool {
     const result = {
       message:
         `${inventory.scope === 'dialog' ? 'Pop-up on ' : ''}Page '${pageName}' explored: ${inventory.totals.fields} fields, ` +
-        `${inventory.totals.buttons} buttons, ${inventory.totals.links} links, ${inventory.forms.length} forms`,
+        `${inventory.totals.buttons} buttons, ${inventory.totals.links} links, ${inventory.forms.length} forms` +
+        (inventory.totals.inShadowDom
+          ? `; ${inventory.totals.inShadowDom} of them inside web components (shadow DOM): get their locators with browser_generate_locator`
+          : ''),
       url: await driver.getCurrentUrl(),
       title: await driver.getTitle(),
       ...inventory,

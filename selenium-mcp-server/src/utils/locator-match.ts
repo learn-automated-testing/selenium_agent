@@ -1,4 +1,5 @@
 import type { WebDriver } from 'selenium-webdriver';
+import { DEEP_QUERY, shadowSnippets } from './shadow-dom.js';
 
 /** One interactive element as the page reports it, with the text around it for context. */
 export interface LocatorCandidate {
@@ -25,7 +26,7 @@ export interface LocatorMatch extends LocatorCandidate {
  * selector each (test id, id, name, or a positional path) and the text of the nearest
  * container, so "the Add to Cart button of the Keyboard" can be told apart.
  */
-const COLLECT_CANDIDATES = `
+const COLLECT_CANDIDATES = `${DEEP_QUERY}
 const visible = (el) => {
   const r = el.getBoundingClientRect();
   const s = getComputedStyle(el);
@@ -33,7 +34,7 @@ const visible = (el) => {
 };
 const clean = (t) => (t || '').replace(/\\s+/g, ' ').trim();
 const q = (v) => '"' + String(v).replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"') + '"';
-const unique = (sel) => { try { return document.querySelectorAll(sel).length === 1; } catch (e) { return false; } };
+const unique = (sel, root) => { try { return root.querySelectorAll(sel).length === 1; } catch (e) { return false; } };
 const pathOf = (el) => {
   const parts = [];
   for (let n = el; n && n.nodeType === 1 && n !== document.body; n = n.parentElement) {
@@ -41,13 +42,36 @@ const pathOf = (el) => {
     for (let s = n.previousElementSibling; s; s = s.previousElementSibling) if (s.tagName === n.tagName) i++;
     parts.unshift(n.tagName.toLowerCase() + ':nth-of-type(' + i + ')');
   }
-  return 'body > ' + parts.join(' > ');
+  return (el.getRootNode() === document ? 'body > ' : '') + parts.join(' > ');
+};
+// A selector that is unique within the element's own tree (the document or its shadow root).
+const cssIn = (el) => {
+  const root = el.getRootNode();
+  const tag = el.tagName.toLowerCase();
+  const testAttr = ['data-testid', 'data-test', 'data-qa'].find((a) => el.hasAttribute(a));
+  const id = el.getAttribute('id');
+  const name = el.getAttribute('name');
+  if (testAttr && unique('[' + testAttr + '=' + q(el.getAttribute(testAttr)) + ']', root)) return '[' + testAttr + '=' + q(el.getAttribute(testAttr)) + ']';
+  if (id && unique('#' + CSS.escape(id), root)) return '#' + CSS.escape(id);
+  if (name && unique(tag + '[name=' + q(name) + ']', root)) return tag + '[name=' + q(name) + ']';
+  // Web components (custom tags) and elements alone of their kind in a shadow root.
+  if ((root !== document || tag.includes('-')) && unique(tag, root)) return tag;
+  return pathOf(el);
+};
+const ICON = /(^|\\s)(material-(icons|symbols)[\\w-]*|mat-icon|fa|fas|far|fab|bi|glyphicon)(\\s|$)/;
+const textOf = (el) => {
+  let out = '';
+  for (const n of el.childNodes) {
+    if (n.nodeType === 3) out += n.textContent + ' ';
+    else if (n.nodeType === 1 && n.getAttribute('aria-hidden') !== 'true' && !ICON.test(n.getAttribute('class') || '') && n.tagName !== 'OPTION') out += textOf(n) + ' ';
+  }
+  return clean(out);
 };
 const labelOf = (el) => {
   const id = el.getAttribute('id');
-  const byFor = id ? document.querySelector('label[for="' + CSS.escape(id) + '"]') : null;
+  const byFor = id ? el.getRootNode().querySelector('label[for="' + CSS.escape(id) + '"]') : null;
   const wrapping = el.closest('label');
-  return clean(el.getAttribute('aria-label') || (byFor && byFor.textContent) || (wrapping && wrapping.textContent) || '');
+  return clean(el.getAttribute('aria-label') || (byFor && textOf(byFor)) || (wrapping && textOf(wrapping)) || '');
 };
 const contextOf = (el) => {
   let n = el.parentElement;
@@ -57,23 +81,22 @@ const contextOf = (el) => {
   }
   return '';
 };
-const els = Array.from(document.querySelectorAll(
+const els = deepQueryAll(document,
   'a[href], button, input, textarea, select, [role="button"], [role="link"], [role="checkbox"], [role="tab"], [role="menuitem"], [contenteditable="true"]'
-)).filter((el) => el.type !== 'hidden' && visible(el)).slice(0, 400);
+).filter((el) => el.type !== 'hidden' && visible(el)).slice(0, 400);
 return els.map((el) => {
   const tag = el.tagName.toLowerCase();
   const testAttr = ['data-testid', 'data-test', 'data-qa'].find((a) => el.hasAttribute(a));
   const testId = testAttr ? el.getAttribute(testAttr) : '';
   const id = el.getAttribute('id') || '';
   const name = el.getAttribute('name') || '';
-  let css = '';
-  if (testId && unique('[' + testAttr + '=' + q(testId) + ']')) css = '[' + testAttr + '=' + q(testId) + ']';
-  else if (id && unique('#' + CSS.escape(id))) css = '#' + CSS.escape(id);
-  else if (name && unique(tag + '[name=' + q(name) + ']')) css = tag + '[name=' + q(name) + ']';
-  else css = pathOf(el);
-  const text = clean(el.textContent || el.value || '').slice(0, 80);
+  const hosts = shadowHosts(el);
+  // Inside web components: "host >>> inner", as in Playwright (XPath cannot enter shadow roots).
+  const css = hosts.map(cssIn).concat(cssIn(el)).join(' >>> ');
+  const text = (textOf(el) || clean(el.value || '')).slice(0, 80);
   let xpath;
-  if (testId) xpath = '//' + tag + '[@' + testAttr + '=' + JSON.stringify(testId).replace(/^"|"$/g, "'") + ']';
+  if (hosts.length) xpath = '';
+  else if (testId) xpath = '//' + tag + '[@' + testAttr + '=' + JSON.stringify(testId).replace(/^"|"$/g, "'") + ']';
   else if (text && !text.includes("'")) xpath = '//' + tag + "[normalize-space()='" + text + "']";
   else xpath = '';
   return {
@@ -148,6 +171,10 @@ export function locatorSnippets(m: LocatorCandidate): Record<string, string> {
   const single = (s: string) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
   const double = (s: string) => JSON.stringify(s);
   // A positional path breaks when the page layout changes; text-based XPath is sturdier then.
+  if (m.css.includes('>>>')) {
+    // Inside shadow DOM: Selenium opens each host's shadow root and searches it with CSS.
+    return { recommended: m.css, css: m.css, ...shadowSnippets(m.css) };
+  }
   const positional = m.css.startsWith('body > ');
   const snippets: Record<string, string> = {
     recommended: positional && m.xpath ? m.xpath : m.css,

@@ -1,5 +1,6 @@
 import { WebDriver } from 'selenium-webdriver';
 import type { SelectorValidationResult } from '../types/manifest.js';
+import { DEEP_QUERY } from './shadow-dom.js';
 
 /**
  * Extract selectors from test code using regex patterns for common frameworks.
@@ -65,12 +66,12 @@ export async function validateSelectorsLive(
     const results: SelectorValidationResult[] = [];
 
     // Validate in a single script call
-    const validationScript = `
+    const validationScript = `${DEEP_QUERY}
       const selectors = arguments[0];
       return selectors.map(sel => {
         if (sel === null) return { valid: false, matchCount: 0, error: 'xpath' };
         try {
-          const elements = document.querySelectorAll(sel);
+          const elements = queryAllPath(sel);
           return { valid: elements.length > 0, matchCount: elements.length };
         } catch (e) {
           return { valid: false, matchCount: 0, error: e.message };

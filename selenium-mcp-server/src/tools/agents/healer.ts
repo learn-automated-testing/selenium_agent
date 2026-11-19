@@ -6,6 +6,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 import { TestManifest, findManifest } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { collectLocatorCandidates, locatorSnippets, rankCandidates, type LocatorCandidate } from '../../utils/locator-match.js';
+import { countDeep } from '../../utils/shadow-dom.js';
 
 // ============================================================================
 // Shared command runner
@@ -410,10 +411,7 @@ Use after a test failure to understand UI drift before applying a fix. Reports:
 
         if (loc.strategy === 'css' || loc.strategy === 'id') {
           const selector = loc.strategy === 'id' ? `#${loc.value}` : loc.value;
-          matchCount = await driver.executeScript(
-            `return document.querySelectorAll(arguments[0]).length;`,
-            selector
-          ) as number;
+          matchCount = Math.max(0, await countDeep(driver, selector));
         } else if (loc.strategy === 'xpath') {
           const xpathResult = await driver.executeScript(
             `const r = document.evaluate(arguments[0], document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); return r.snapshotLength;`,

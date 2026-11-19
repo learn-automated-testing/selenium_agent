@@ -6,9 +6,15 @@
 
 - **Structured test plans, as in Playwright.** `planner_save_plan` takes the plan structured like Playwright's planner: `name`, `overview`, `suites` (with the `seedFile` they start from) containing `tests` (with the `file` the generated test goes to) and `steps`, each with one action (`perform`) and its own expected results (`expect`). On top of Playwright's format it keeps the `elements` found while exploring (name + locator) and the `gaps` in the application. The server writes the Markdown, so every plan has the same layout (`### 1. Suite`, `**Seed:**`, `#### 1.1. Test`, `**File:**`, `  1. step` / `    - expect: …`), names the file after the plan (`specs/shopping-cart-and-checkout.md`) and reports the number of suites, tests and steps. Free-form `planContent` still works. The planner agent saves plans this way, and the generator writes one test per plan test, to its file, with an assertion for every `expect`.
 
+- **Shadow DOM support, as in Playwright.** Elements inside web components (open shadow roots, also nested) are found everywhere, not only in page snapshots:
+  - `planner_explore_page` lists their fields, buttons and links, with the component they are in (`shadowHost: "login-form > app-button"`), and counts them.
+  - `browser_generate_locator` returns a `host >>> inner` path (`login-form >>> app-button >>> button`) with ready Selenium code that opens each shadow root in turn: `driver.find_element(By.CSS_SELECTOR, 'login-form').shadow_root.find_element(...)` in Python, `getShadowRoot()` in Java and JavaScript. XPath is not offered there, because it cannot enter shadow roots.
+  - CSS selectors in `wait_for`, setup steps, `teach_selector`, the healer's locator check and the generator's selector validation also match inside open shadow roots, and accept `host >>> inner` paths.
+  - Closed shadow roots stay unreachable, as in Playwright.
+
 ### Fixes
 
-- **Better labels in `planner_explore_page`.** Labels that are not linked to their field (`<label>` without `for`, as on many React pages) are found; a dropdown's label no longer contains its own options ("AllElectronics…"); icon-font text ("shopping_cart", "login") and `aria-hidden` text are left out of buttons, links and headings; required markers (`*`) are dropped; fields without any label fall back to their name or test id.
+- **Better labels in `planner_explore_page` and `browser_generate_locator`.** Labels that are not linked to their field (`<label>` without `for`, as on many React pages) are found; a dropdown's label no longer contains its own options ("AllElectronics…"); icon-font text ("shopping_cart", "login") and `aria-hidden` text are left out of buttons, links and headings; required markers (`*`) are dropped; fields without any label fall back to their name or test id.
 - **Pop-ups are explored on their own.** While a dialog or a full-screen overlay is open (also one without `role="dialog"`), the inventory lists only what is inside it, and says so ("Pop-up on page …"), instead of the whole page behind it.
 
 ## [3.4.0] - 2026-11-19
