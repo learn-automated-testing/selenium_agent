@@ -5,6 +5,7 @@ import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { getTestPlansDir, resolveOutputDir } from '../../utils/paths.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
+import { getPageInventory } from '../../utils/page-inventory.js';
 
 // Planner Setup Tool
 const setupSchema = z.object({
@@ -79,49 +80,33 @@ const exploreSchema = z.object({
 
 export class PlannerExplorePageTool extends BaseTool {
   readonly name = 'planner_explore_page';
-  readonly description = 'Explore a specific page in detail, discovering elements and forms';
+  readonly description =
+    'Explore a page in detail: headings, input fields (with their labels, test ids and dropdown options), ' +
+    'buttons, links and forms, as a compact inventory for writing test cases';
   readonly inputSchema = exploreSchema;
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { pageUrl, pageName } = this.parseParams(exploreSchema, params);
 
-    const driver = await context.getDriver();
-
+    const driver = pageUrl ? await context.ensureBrowser() : await context.getDriver();
     if (pageUrl) {
       await driver.get(pageUrl);
     }
 
     await context.captureSnapshot();
-
-    // Discover forms
-    const forms = await this.discoverForms(driver);
+    const inventory = await getPageInventory(driver);
 
     const result = {
-      message: `Page '${pageName}' explored successfully`,
+      message:
+        `Page '${pageName}' explored: ${inventory.totals.fields} fields, ` +
+        `${inventory.totals.buttons} buttons, ${inventory.totals.links} links, ${inventory.forms.length} forms`,
       url: await driver.getCurrentUrl(),
       title: await driver.getTitle(),
-      formsCount: forms.length,
-      forms
+      ...inventory,
     };
 
     return this.success(JSON.stringify(result, null, 2), true);
-  }
-
-  private async discoverForms(driver: any): Promise<Array<{ action: string; method: string; fields: number }>> {
-    const forms: Array<{ action: string; method: string; fields: number }> = [];
-
-    try {
-      const formElements = await driver.findElements(By.tagName('form'));
-      for (const form of formElements) {
-        const action = await form.getAttribute('action') || '';
-        const method = await form.getAttribute('method') || 'GET';
-        const inputs = await form.findElements(By.css('input, textarea, select'));
-        forms.push({ action, method, fields: inputs.length });
-      }
-    } catch { /* ignore */ }
-
-    return forms;
   }
 }
 

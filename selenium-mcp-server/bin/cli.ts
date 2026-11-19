@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { runServer, runHttpServer } from '../src/server.js';
+import { getOutputDir } from '../src/utils/paths.js';
 
 // Parse CLI flags and set corresponding env vars
 const args = process.argv.slice(2);
@@ -66,6 +67,7 @@ if (transport === 'http') {
     process.exit(1);
   });
 } else {
+  console.error(`[selenium-mcp] Output folder for test plans, tests and reports: ${getOutputDir()}`);
   runServer().catch(err => {
     console.error('Failed to start Selenium MCP server:', err);
     process.exit(1);

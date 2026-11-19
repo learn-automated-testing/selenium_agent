@@ -89,6 +89,12 @@ function zodTypeToJsonSchema(schema: z.ZodType): Record<string, unknown> {
     };
   }
 
+  if (schema instanceof z.ZodUnknown || schema instanceof z.ZodAny) {
+    // Any JSON value: lists, numbers, objects. Falling through to "string" made batch_execute
+    // unable to pass a list to tools such as verify_list_visible.
+    return description ? { description } : {};
+  }
+
   if (schema instanceof z.ZodRecord) {
     return { type: 'object', additionalProperties: zodTypeToJsonSchema(schema.valueType as z.ZodType), description };
   }

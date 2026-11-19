@@ -59,9 +59,20 @@ export class ResizeTool extends BaseTool {
       // Remember where the window was, so "normal" can put it back. Only when it is not
       // already in a special state (going fullscreen → minimize must not overwrite it).
       if (!normalRects.has(driver)) normalRects.set(driver, await window.getRect());
-      if (parsed.state === 'fullscreen') await window.fullscreen();
-      else if (parsed.state === 'maximize') await window.maximize();
-      else await window.minimize();
+      if (parsed.state === 'minimize') {
+        await window.minimize();
+      } else {
+        const apply = () => (parsed.state === 'fullscreen' ? window.fullscreen() : window.maximize());
+        try {
+          await apply();
+        } catch (err) {
+          // Chrome cannot go from minimized straight to fullscreen ("failed to change window
+          // state ... current state is 'normal'"): restore the window first, then retry.
+          if (!/window state/i.test(String(err))) throw err;
+          await window.setRect(normalRects.get(driver) ?? (await window.getRect()));
+          await apply();
+        }
+      }
       return this.success(`Window ${parsed.state === 'fullscreen' ? 'in fullscreen' : parsed.state + 'd'}`, false);
     }
 

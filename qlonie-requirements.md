@@ -105,12 +105,12 @@ No comments unless logic is non-obvious. No JSDoc. No AI headers. Code is self-d
 
 | Setting | Value |
 |---------|-------|
-| **Testing frameworks** | None configured |
-| **Mocking** | N/A |
-| **Test location** | N/A |
-| **Test suffix** | N/A |
+| **Testing framework** | Mocha + Chai, Sinon for stubs |
+| **Runner** | `npm test` (`.mocharc.yml`, TypeScript through `tsx`) |
+| **Test location** | Next to the code: `src/**/*.test.ts` |
+| **Browser** | Not needed: WebDriver is stubbed or faked in unit tests |
 
-This project **generates** tests for other projects in any framework (pytest, playwright, robot, jest, mocha, java, etc.). The framework, output directory, and file naming are chosen at runtime by the user. Testing configuration belongs to consumer projects, not here.
+The project also **generates** tests for other projects in any framework (pytest, playwright, robot, jest, mocha, java, etc.); that configuration belongs to the consumer project.
 
 ## Dependencies
 
@@ -122,6 +122,7 @@ This project **generates** tests for other projects in any framework (pytest, pl
 
 **Dev:**
 - `typescript` — build
-- `@types/node`, `@types/selenium-webdriver` — type definitions
+- `mocha`, `chai`, `sinon`, `tsx` — unit tests
+- `@types/*` — type definitions
 
-No UI libraries. No test libraries. No linters. No bundlers.
+No UI libraries. No linters. No bundlers.

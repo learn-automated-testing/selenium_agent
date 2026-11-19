@@ -279,7 +279,7 @@ These clients typically allow you to configure auto-approval per tool or per ser
 | `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated [tool groups](#tool-groups) to load, e.g. `core,generator,healer` |
 | `SELENIUM_ATTACH_CDP` | — | Attach to an already running Chrome at `host:port` (e.g. `127.0.0.1:9222`) instead of launching one |
 | `SELENIUM_MCP_OUTPUT_MODE` | `stdout` | Output mode: `stdout` (return data to LLM) or `file` (save to disk) |
-| `SELENIUM_MCP_OUTPUT_DIR` | auto | Output directory for generated files (auto-detected from project root) |
+| `SELENIUM_MCP_OUTPUT_DIR` | auto | Output folder for test plans, tests, specs and reports. Auto: the project folder (found via `.git`, `package.json` or `.claude`); when the server is started outside a project, as Claude Desktop does, `~/selenium-ai-agent`. `~` is allowed. `doctor` shows the folder in use |
 | `SELENIUM_MCP_SAVE_TRACE` | `false` | Save session trace JSON to `<output>/traces/` |
 | `SELENIUM_MCP_UNRESTRICTED_FILES` | `false` | Bypass workspace path validation (allow writing outside output dir) |
 | `SE_AVOID_STATS` | — | Set to `true` to disable Selenium usage statistics |
@@ -421,7 +421,7 @@ The default is `all`. For example, browsing and self-healing only:
 |------|-------------|
 | `wait_for` | Wait for a condition: element visible, clickable, present, URL contains, or title contains. |
 | `execute_javascript` | Execute JavaScript code in the browser context with optional return value. |
-| `resize_window` | Resize the browser window to specified dimensions. |
+| `resize_window` | Resize or move the window (`width`/`height`, `x`/`y`, presets) or change its state: `fullscreen` (in front, for demos and recordings), `maximize`, `minimize`, `normal` (restore). |
 | `dialog_handle` | Handle browser dialogs (alert, confirm, prompt). |
 | `console_logs` | Get or clear browser console logs. Uses BiDi event collector when available for cross-browser support, falls back to classic log API. |
 | `network_monitor` | Monitor network requests: get requests, clear, or toggle offline mode. |
@@ -449,7 +449,7 @@ The default is `all`. For example, browsing and self-healing only:
 | Tool | Description |
 |------|-------------|
 | `planner_setup_page` | Initialize test planning — navigate to app and start exploring. |
-| `planner_explore_page` | Explore a page in detail, discovering elements, forms, and links. |
+| `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
 | `planner_save_plan` | Save completed test plan to a markdown file. |
 
 ### Test Generator (6)
@@ -471,7 +471,7 @@ The default is `all`. For example, browsing and self-healing only:
 | `healer_debug_test` | Run a single test in verbose mode with detailed output (15KB stdout, 8KB stderr). |
 | `healer_fix_test` | Apply a fix to a test file with `.bak` backup. Supports `verify` (validates selectors in fixed code). |
 | `healer_inspect_page` | Inspect current page against expected locators — reports found, missing, and changed elements with suggested updated locators. Use after test failure to understand UI drift. |
-| `browser_generate_locator` | Generate robust locator strategy for an element by description. Read-only. |
+| `browser_generate_locator` | Find an element from a plain description ("search box", "the Add to Cart button of the Mechanical Keyboard") using its text, label, placeholder, test id, kind and surrounding content; returns ready-to-paste locators for JavaScript, Python and Java. Read-only. |
 
 ### Regression Analyzer (6)
 
@@ -488,7 +488,7 @@ The default is `all`. For example, browsing and self-healing only:
 
 | Tool | Description |
 |------|-------------|
-| `batch_execute` | Execute up to 20 tool steps in a single round trip. Intermediate steps skip snapshots for speed. |
+| `batch_execute` | Execute up to 20 tool steps in a single round trip; step arguments can be any JSON (text, numbers, lists). Intermediate steps skip snapshots for speed. |
 
 ### Grid Management (4)
 
