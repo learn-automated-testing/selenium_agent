@@ -10,6 +10,17 @@
 
 **61 tools (75 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
 
+### Video Tutorials
+
+Short demos with a voice-over, [on YouTube](https://www.youtube.com/@ralphvanderhorst5193/videos):
+
+| Planner: from one prompt to a test plan | Generator: from the plan to running pytest tests |
+|:---:|:---:|
+| [![Planner demo](https://img.youtube.com/vi/M8JM35nA9hY/hqdefault.jpg)](https://www.youtube.com/watch?v=M8JM35nA9hY) | [![Generator demo](https://img.youtube.com/vi/cPUBRsP9MSo/hqdefault.jpg)](https://www.youtube.com/watch?v=cPUBRsP9MSo) |
+| The planner explores a web shop and writes `specs/shopping-cart-and-checkout.md`: 2 suites, 8 tests, 16 steps. (2:09) | The generator writes one pytest file per plan test, runs them, and shows the HTML report, including a real bug it found. (1:44) |
+
+More tutorials: [youtube.com/@ralphvanderhorst5193](https://www.youtube.com/@ralphvanderhorst5193/videos) · Practice site used in the demos: [practiceautomatedtesting.com](https://practiceautomatedtesting.com)
+
 ### One-Click Install
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
