@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/selenium-ai-agent.svg)](https://www.npmjs.com/package/selenium-ai-agent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![YouTube tutorials](https://img.shields.io/badge/YouTube-Video%20tutorials-red?logo=youtube)](https://www.youtube.com/@ralphvanderhorst5193/videos)
 [![Selenium Grid](https://img.shields.io/badge/Selenium%20Grid-Parallel-blue.svg)](https://www.selenium.dev/documentation/grid/)
 
 > **Selenium AI Agent** (`selenium-ai-agent` on npm) is a Selenium MCP server for AI-driven test automation.
@@ -15,6 +16,17 @@
 ### One-Click Install
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
+
+## Video Tutorials
+
+Short demos with a voice-over, [on YouTube](https://www.youtube.com/@ralphvanderhorst5193/videos):
+
+| Planner: from one prompt to a test plan | Generator: from the plan to running pytest tests |
+|:---:|:---:|
+| [![Planner demo](https://img.youtube.com/vi/M8JM35nA9hY/hqdefault.jpg)](https://www.youtube.com/watch?v=M8JM35nA9hY) | [![Generator demo](https://img.youtube.com/vi/cPUBRsP9MSo/hqdefault.jpg)](https://www.youtube.com/watch?v=cPUBRsP9MSo) |
+| The planner explores a web shop and writes `specs/shopping-cart-and-checkout.md`: 2 suites, 8 tests, 16 steps. (2:09) | The generator writes one pytest file per plan test, runs them, and shows the HTML report, including a real bug it found. (1:44) |
+
+More tutorials: [youtube.com/@ralphvanderhorst5193](https://www.youtube.com/@ralphvanderhorst5193/videos) · Practice site used in the demos: [practiceautomatedtesting.com](https://practiceautomatedtesting.com)
 
 **The first MCP server with true parallel browser automation using Selenium Grid.**
 
@@ -455,7 +467,7 @@ A complete testing pipeline with human review gates:
                         human review       human review
 ```
 
-See [Example Chats](#example-chats) above for full copy-paste prompts covering each stage.
+See [Example Chats](#example-chats) above for full copy-paste prompts covering each stage, and the [Video Tutorials](#video-tutorials) to watch the planner and generator at work.
 
 ## Configuration
 
@@ -533,6 +545,7 @@ selenium_agent/
 
 ## Documentation
 
+- [Video Tutorials](https://www.youtube.com/@ralphvanderhorst5193/videos) — Planner and generator demos on YouTube
 - [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) — Claude Code, Claude Desktop, Cursor, Copilot, Cline, Windsurf
 - [Agent Workflow](docs/AGENT_WORKFLOW.md) — End-to-end testing pipeline
 - [Framework Standards](docs/FRAMEWORK_STANDARDS.md) — Code generation conventions
