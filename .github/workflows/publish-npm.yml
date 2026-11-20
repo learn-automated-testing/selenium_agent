@@ -13,6 +13,8 @@ jobs:
   build-and-publish:
     name: Build and Publish to npm
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.check.outputs.published }}
     defaults:
       run:
         working-directory: selenium-mcp-server
@@ -33,13 +35,29 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check whether this version is already on npm
+        id: check
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "selenium-ai-agent@$VERSION" version >/dev/null 2>&1; then
+            echo "selenium-ai-agent@$VERSION is already on npm: skipping npm and the MCP Registry"
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
+        if: steps.check.outputs.published == 'true'
         run: npm publish --access public
 
       - name: Create deployment summary
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "## NPM Package Published" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.published }}" = "true" ]; then
+            echo "## NPM Package Published" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Already on npm (not published again)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Package:** \`selenium-ai-agent@$VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -90,6 +108,7 @@ jobs:
   publish-mcp-registry:
     name: Publish to MCP Registry
     needs: build-and-publish
+    if: needs.build-and-publish.outputs.published == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write # OIDC login for the io.github.learn-automated-testing namespace
