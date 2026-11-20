@@ -1,5 +1,25 @@
 # Changelog
 
+## [Unreleased]
+
+### New Features
+
+- **The generator and healer follow Selenium's official rules for AI agents.** The Selenium project publishes guidance for AI coding assistants ([selenium.dev/documentation/ai_agents](https://www.selenium.dev/documentation/ai_agents/)) and a rules file with examples per language binding (`rust/src/resources/rules.md` in SeleniumHQ/selenium, bundled unchanged, Apache-2.0).
+  - `generator_setup_page` returns the rules for the language the tests are written in: the core principles, that language's examples for starting and quitting a browser, locating elements and explicit waits, common expected conditions, common errors and the anti-patterns.
+  - `generator_write_test` and `healer_fix_test` check the code against the guidance and do not write a file that breaks it: sleeps (`time.sleep`, `Thread.sleep`, `driver.sleep`, Robot `Sleep`, ...), third-party driver managers and hard-coded driver paths, `DesiredCapabilities`, removed Selenium 3 APIs (`find_element_by_*`, `switch_to_alert`, `findElementBy*`), the old headless API, Java `TimeUnit` timeouts, Grid 3 invocations, and implicit waits mixed with explicit waits. The error lists each line with the rule and how to fix it. Absolute XPath, JavaScript clicks, CDP, `BrowserType` and a lone implicit wait are reported as warnings. `allowRuleViolations` writes the file anyway, only when the user explicitly asks.
+  - The generator and healer agents follow the rules; the healer no longer fixes flaky tests with sleeps or longer timeouts, but waits for the condition that was not yet true.
+  - **Robot Framework (SeleniumLibrary)** gets Selenium's rules in keywords, from the [SeleniumLibrary keyword docs](https://robotframework.org/SeleniumLibrary/SeleniumLibrary.html): `Sleep` and `Set Selenium Speed` (which SeleniumLibrary says is for demos and debugging, not waiting) are refused, a non-zero implicit wait next to `Wait Until` keywords is an error, the deprecated `desired_capabilities` and `executable_path` arguments and `webdrivermanager` are refused, and absolute XPath and the deprecated `sizzle:` strategy are warnings.
+  - **WebdriverIO gets its own rules**, from WebdriverIO's docs ([llms.txt](https://webdriver.io/llms.txt), [AI agents](https://webdriver.io/docs/ai-agents), [best practices](https://webdriver.io/docs/bestpractices), [auto-waiting](https://webdriver.io/docs/autowait), [v9 → v10 migration](https://webdriver.io/docs/v10-migration)), since it is not a Selenium binding. `generator_setup_page` returns them: v10 APIs only, await everything, user-facing selectors first, `expect-webdriverio` matchers, and `$()` matching exactly one element (strict in v10). `browser.pause()` and promise sleeps, the removed sync mode and v4 APIs, and APIs that v10 removed or renamed (`executeAsync`, `switchToFrame`, `toHaveAttr`, `toHaveClass`, `'page load'`, `throttle`, positional `addCommand`/`getCookies`/`getHTML`, ...) are refused; XPath and implicit timeouts are warnings.
+  - Playwright tests are not checked.
+  - `scripts/update-selenium-rules.mjs` refreshes the bundled rules from the Selenium repository.
+- **`get_selenium_docs` reads the current docs.** A new core tool reads Selenium's (or WebdriverIO's) documentation as Markdown from their `llms.txt` indexes: the index itself, a page by URL or path (Selenium pages as `<page>/index.md`, WebdriverIO pages as `<page>.md`), or the best page for a topic such as "explicit waits", with other matches listed. Only selenium.dev and webdriver.io are fetched, pages are cached for a day, and offline it falls back to the bundled rules. The generator and healer agents check the docs before using an API they are not sure of: an API that is not in the current docs does not exist.
+- **MCP resources.** The server now offers resources, for clients without web access: `selenium://docs/llms.txt` and `webdriverio://docs/llms.txt` (live, with the bundled rules as fallback), `selenium://rules/selenium.md` (Selenium's rules file) and `selenium://rules/<python|java|javascript|csharp|ruby|robot-framework|webdriverio>`.
+- **`--with-rules` puts the rules in your project.** `init-agents --with-rules` and `install <client> --with-rules` write a rules section for every AI tool in the project, as Selenium's guide recommends: `CLAUDE.md`, `.cursor/rules/selenium.mdc`, `.github/copilot-instructions.md`, `.windsurf/rules/selenium.md` or `AGENTS.md` (`--with-rules=claude,agents` picks the files). It names the docs index and examples, says to read the docs before an unfamiliar API, pins the Selenium (or WebdriverIO) version found in `requirements.txt`, `pyproject.toml`, `pom.xml`, `build.gradle` or `package.json`, and lists the required patterns with the language's own notes. The section sits between markers, so running it again replaces only that section; `--framework=` overrides the detected language.
+
+### Fixes
+
+- **No implicit waits in the examples.** The generator agent and `docs/FRAMEWORK_STANDARDS.md` showed `driver.implicitly_wait(10)` next to explicit waits, which Selenium's guidance says never to mix.
+
 ## [3.4.2] - 2026-11-20
 
 ### Changes

@@ -6,6 +6,7 @@ color: blue
 tools:
   - search
   - edit
+  - get_selenium_docs
   - navigate_to
   - go_back
   - capture_page
@@ -85,11 +86,36 @@ Follow this systematic approach:
    - Explicit waits and assertions
    - Descriptive comments
 
+## Check the Docs First
+
+Selenium and WebdriverIO publish their current documentation for AI assistants: an index at
+https://www.selenium.dev/llms.txt (WebdriverIO: https://webdriver.io/llms.txt), and the guide
+https://www.selenium.dev/documentation/ai_agents/ (WebdriverIO: https://webdriver.io/docs/ai-agents).
+
+- Before using an API, option or keyword you are not sure of, read its page with `get_selenium_docs`
+  (a topic such as "explicit waits", a path such as "documentation/webdriver/waits", or a URL;
+  `framework: "webdriverio"` for WebdriverIO). The same pages are MCP resources: `selenium://docs/llms.txt`,
+  `selenium://rules/<language>`.
+- An API that is not in the current docs or API reference does not exist: don't guess it from memory.
+- Never write Selenium 3 or older patterns: no `DesiredCapabilities`, no `find_element_by_*` / `findElementBy*`,
+  no `webdriver-manager` or driver paths (Selenium Manager finds the driver), Java timeouts as `Duration`,
+  explicit waits only. For WebdriverIO: v10 APIs only, no `browser.pause()`.
+
 ## Key Principles
 
 - **Execute Before Generating**: Always interact with the real application before writing test code
 - **Reliable Locators**: Prefer ID > CSS > XPath, avoid brittle selectors
 - **Explicit Waits**: Use proper wait conditions instead of hard sleeps
+- **Selenium's Official Rules**: For Selenium frameworks, `generator_setup_page` returns Selenium's official rules for AI
+  assistants for your language (https://www.selenium.dev/documentation/ai_agents/). Follow them: no sleeps, no implicit
+  waits mixed with explicit ones, no driver managers or driver paths (Selenium Manager handles drivers), no
+  `DesiredCapabilities` or Selenium 3 APIs, Options classes with `--headless=new`, one fresh session per test, `quit()`
+  in teardown. `generator_write_test` rejects code that breaks them: fix the reported lines and save again.
+- **Robot Framework**: the same rules in SeleniumLibrary keywords — no `Sleep` or `Set Selenium Speed`; use the
+  `Wait Until ...` keywords; `Open Browser` with `options=` in the test setup and `Close Browser` in the teardown.
+- **WebdriverIO's Own Rules**: For WebdriverIO, `generator_setup_page` returns WebdriverIO's rules instead
+  (https://webdriver.io/docs/ai-agents): v10 APIs only; never `browser.pause()`; retrying `expect` matchers or
+  `waitForDisplayed` / `waitForEnabled` / `waitUntil`; user-facing selectors; `$()` must match exactly one element.
 - **Clear Assertions**: Every test should have explicit verifications
 - **Maintainability**: Write clean, readable code with good structure
 - **Framework Support**: Generate code compatible with pytest, unittest, Robot Framework, or user's preferred framework
@@ -153,8 +179,7 @@ class TestFeatureName:
     @pytest.fixture
     def driver(self):
         """Setup and teardown browser"""
-        driver = webdriver.Chrome()
-        driver.implicitly_wait(10)
+        driver = webdriver.Chrome()  # Selenium Manager finds the driver
         yield driver
         driver.quit()
 
@@ -331,7 +356,8 @@ When using `generator_write_test`:
 **All generated test code MUST include**:
 - Proper imports at the top
 - Clear docstrings/documentation
-- Explicit waits (not `time.sleep()`)
+- Explicit waits (not `time.sleep()`), and no implicit waits next to them
+- Code that follows Selenium's official rules for AI assistants (returned by `generator_setup_page`)
 - Descriptive variable names
 - Proper indentation (4 spaces for Python, 2 for JS/TS, 4 for Robot)
 - Error messages in assertions
@@ -353,8 +379,7 @@ class TestShoppingCart:
     @pytest.fixture
     def driver(self):
         """Setup and teardown browser instance."""
-        driver = webdriver.Chrome()
-        driver.implicitly_wait(10)
+        driver = webdriver.Chrome()  # Selenium Manager finds the driver
         yield driver
         driver.quit()
 
@@ -432,6 +457,7 @@ Before calling `generator_write_test`, you MUST:
 6. ✅ Add proper imports and structure
 7. ✅ Include docstrings/documentation
 8. ✅ Use explicit waits, not sleeps
+9. ✅ Follow Selenium's official rules (`generator_write_test` checks them)
 
 ### 6. MANDATORY: Ask User Before Saving
 

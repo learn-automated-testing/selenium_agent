@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir, platform } from 'os';
+import { writeProjectRules, RULES_TARGETS, type RulesTarget } from '../src/project-rules.js';
 
 interface TargetConfig {
   name: string;
@@ -86,23 +87,70 @@ function installToTarget(targetKey: string): void {
 
 function printInstallHelp(): void {
   console.log(`
-Usage: npx selenium-ai-agent install <target>
+Usage: npx selenium-ai-agent install <target> [--with-rules[=claude,cursor,copilot,windsurf,agents]] [--framework=<f>]
 
 Available targets:
   claude-desktop   Claude Desktop app
   cursor           Cursor editor
   windsurf         Windsurf editor
 
-Example:
+--with-rules also writes Selenium's rules for AI agents (https://www.selenium.dev/documentation/ai_agents/)
+into this project's instruction file: .cursor/rules/selenium.mdc for Cursor, .windsurf/rules/selenium.md for
+Windsurf, or the files you name (claude = CLAUDE.md, copilot = .github/copilot-instructions.md, agents = AGENTS.md).
+The framework (for the language notes) is detected from the project, or set with --framework=selenium-java-maven, ...
+
+Examples:
   npx selenium-ai-agent install claude-desktop
+  npx selenium-ai-agent install cursor --with-rules
 `);
+}
+
+/** Instruction file for each install target that has one in the project. */
+const RULES_FOR_TARGET: Record<string, RulesTarget | undefined> = {
+  'claude-desktop': undefined,
+  cursor: 'cursor',
+  windsurf: 'windsurf',
+};
+
+/** Parse "--with-rules" / "--with-rules=claude,agents" into rules targets (null when the flag is absent). */
+export function parseWithRules(args: string[], defaultTarget?: RulesTarget): RulesTarget[] | null {
+  const flag = args.find(a => a === '--with-rules' || a.startsWith('--with-rules='));
+  if (!flag) return null;
+  const listed = flag.includes('=') ? flag.split('=')[1].split(',').map(t => t.trim()).filter(Boolean) : [];
+  const unknown = listed.filter(t => !(t in RULES_TARGETS));
+  if (unknown.length) {
+    throw new Error(`Unknown --with-rules target: ${unknown.join(', ')}. Use: ${Object.keys(RULES_TARGETS).join(', ')}`);
+  }
+  if (listed.length) return listed as RulesTarget[];
+  return defaultTarget ? [defaultTarget] : [];
+}
+
+export function printRulesResult(result: ReturnType<typeof writeProjectRules>): void {
+  const version = result.version ? `, version ${result.version}` : '';
+  console.log(`\n  Rules for AI agents (${result.framework}${version}):`);
+  for (const w of result.written) console.log(`    ${w.action} ${w.file}`);
 }
 
 export function handleInstall(args: string[]): void {
   const target = args[0];
-  if (!target) {
+  if (!target || target.startsWith('--')) {
     printInstallHelp();
     return;
   }
   installToTarget(target);
+  let targets: RulesTarget[] | null;
+  try {
+    targets = parseWithRules(args.slice(1), RULES_FOR_TARGET[target]);
+  } catch (err) {
+    console.error(`\n  ${(err as Error).message}`);
+    process.exit(1);
+  }
+  if (targets === null) return;
+  if (targets.length === 0) {
+    console.log(`\n  ${TARGETS[target]?.name ?? target} has no project instruction file, so no rules file was written.` +
+      '\n  The server gives the rules to the generator itself; to add them for other tools use --with-rules=claude,agents.');
+    return;
+  }
+  const framework = args.find(a => a.startsWith('--framework='))?.slice('--framework='.length);
+  printRulesResult(writeProjectRules({ targets, framework }));
 }

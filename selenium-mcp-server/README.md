@@ -8,7 +8,7 @@
 > - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
 > - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
 
-**61 tools (75 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
+**62 tools (76 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
 
 ### Video Tutorials
 
@@ -336,12 +336,14 @@ Pass env vars in your MCP config:
 npx selenium-ai-agent [flags]
 npx selenium-ai-agent doctor   # run driver/proxy diagnostics and exit
 npx selenium-ai-agent init-agents --loop=claude   # install the planner/generator/healer agents
+npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Selenium's rules in CLAUDE.md
 ```
 
 | Flag | Description |
 |------|-------------|
 | `doctor` | Run preflight diagnostics (Chrome, driver, proxy, cache, output folder) and exit |
-| `init-agents --loop=claude\|vscode\|copilot\|cursor [--server=name]` | Install the test agents for your AI client (see [Test Agents](#test-agents)) and exit |
+| `init-agents --loop=claude\|vscode\|copilot\|cursor [--server=name] [--with-rules[=...]] [--framework=f]` | Install the test agents for your AI client (see [Test Agents](#test-agents)) and exit; `--with-rules` also writes the [rules for AI agents](#rules-for-ai-agents) into the project |
+| `install claude-desktop\|cursor\|windsurf [--with-rules[=...]]` | Add the server to the client's config; `--with-rules` also writes the rules into this project's instruction file |
 | `--stealth` | Enable stealth mode |
 | `--headless` | Run browser headless |
 | `--save-trace` | Save session trace JSON |
@@ -359,7 +361,7 @@ Every tool definition is sent to the model on each request, so loading fewer too
 
 | Group | Tools | Contents |
 |-------|-------|----------|
-| `core` | 37 | Navigation, page analysis, elements, input, mouse, tabs, verification, browser, session, batch. Always loaded. |
+| `core` | 38 | Navigation, page analysis, elements, input, mouse, tabs, verification, browser, session, batch, docs (`get_selenium_docs`). Always loaded. |
 | `recording` | 4 | Record actions for test generation |
 | `planner` | 3 | Explore an app and save a test plan |
 | `generator` | 6 | Generate tests (pytest, Java, C#, WebdriverIO, …). Also loads `recording`. |
@@ -373,7 +375,7 @@ The default is `all`. For example, browsing and self-healing only:
 "env": { "SELENIUM_MCP_TOOLSETS": "core,healer" }
 ```
 
-## Tools (75)
+## Tools (76)
 
 ### Navigation (5)
 
@@ -510,6 +512,12 @@ The default is `all`. For example, browsing and self-healing only:
 | Tool | Description |
 |------|-------------|
 | `batch_execute` | Execute up to 20 tool steps in a single round trip; step arguments can be any JSON (text, numbers, lists). Intermediate steps skip snapshots for speed. |
+
+### Docs (1)
+
+| Tool | Description |
+|------|-------------|
+| `get_selenium_docs` | Read the current Selenium (or WebdriverIO) docs as Markdown, from their `llms.txt`: the index, a page by URL or path, or the best page for a topic ("explicit waits"). Only selenium.dev and webdriver.io; cached for a day; falls back to the bundled rules offline. |
 
 ### Grid Management (4)
 
@@ -687,6 +695,23 @@ npx selenium-ai-agent init-agents --loop=cursor    # .cursor/rules/*.mdc (attach
 ```
 
 It reuses the server name from your project's MCP config (`.mcp.json`, `.vscode/mcp.json`, `.cursor/mcp.json`), or adds a `selenium-mcp` server when there is none; `--server=<name>` overrides it. Run it again after updating to pick up new tools and instructions.
+
+### Rules for AI agents
+
+The generator and healer follow the projects' own guides for AI coding agents, and check every test they write against them: [Selenium's](https://www.selenium.dev/documentation/ai_agents/) for Python, Java, C#, JavaScript, Ruby and Robot Framework, [WebdriverIO's](https://webdriver.io/docs/ai-agents) for WebdriverIO. `generator_write_test` and `healer_fix_test` refuse sleeps, driver managers and paths, `DesiredCapabilities`, Selenium 3 APIs, mixed implicit and explicit waits, `browser.pause()` and removed WebdriverIO APIs, and say which line breaks which rule.
+
+The same rules can go into your project, for every AI tool you use, not only these agents:
+
+```bash
+npx selenium-ai-agent init-agents --loop=claude --with-rules              # CLAUDE.md
+npx selenium-ai-agent init-agents --loop=cursor --with-rules              # .cursor/rules/selenium.mdc
+npx selenium-ai-agent init-agents --loop=copilot --with-rules             # .github/copilot-instructions.md
+npx selenium-ai-agent install cursor --with-rules=cursor,agents           # also AGENTS.md (Codex and others)
+```
+
+The section names the docs index, the examples, the pinned Selenium version (read from `requirements.txt`, `pom.xml`, `package.json`, ...), the required patterns and the language's own notes. It sits between `selenium-ai-agent:rules` markers, so running it again replaces only that section. `--framework=` overrides the detected language.
+
+**MCP resources.** Clients that read resources get the docs and rules without web access: `selenium://docs/llms.txt`, `webdriverio://docs/llms.txt`, `selenium://rules/selenium.md` (Selenium's rules file, unchanged) and `selenium://rules/<python|java|javascript|csharp|ruby|robot-framework|webdriverio>`.
 
 **Seed test and login.** Like Playwright's `seed.spec.ts`, the planner can start from a seed: `planner_setup_page` takes `seedTest` (a file whose fixtures, base URL and login the generated tests follow; default: the seed registered with `generator_write_seed`) and `setupSteps` (actions run in the browser before exploring, e.g. `fill` / `click` / `wait` for a login), so apps behind a login can be planned.
 

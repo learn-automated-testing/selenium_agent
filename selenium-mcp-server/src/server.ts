@@ -5,7 +5,10 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { listResources, readResource } from './resources.js';
 import { getAllTools } from './tools/index.js';
 import { Context } from './context.js';
 import { zodToJsonSchema } from './utils/schema.js';
@@ -26,7 +29,8 @@ export async function createServer(externalContext?: Context) {
     },
     {
       capabilities: {
-        tools: {}
+        tools: {},
+        resources: {}
       }
     }
   );
@@ -69,6 +73,12 @@ export async function createServer(externalContext?: Context) {
         annotations: t.getAnnotations(),
       };
     })
+  }));
+
+  // Resources: the Selenium and WebdriverIO docs indexes and the rules for AI assistants
+  server.setRequestHandler(ListResourcesRequestSchema, async () => ({ resources: listResources() }));
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => ({
+    contents: [await readResource(request.params.uri)],
   }));
 
   // Execute tool
@@ -116,8 +126,9 @@ export async function createServer(externalContext?: Context) {
         context.recordAction(name, cleanArgs);
       }
 
-      // Determine whether to include snapshot
-      const shouldSnapshot = expectation.includeSnapshot ?? result.captureSnapshot;
+      // Determine whether to include snapshot. Tools that don't need a browser (running tests, reading docs,
+      // writing files) may be called before one is open: then there is no page to snapshot, which is not an error.
+      const shouldSnapshot = (expectation.includeSnapshot ?? result.captureSnapshot) && context.hasBrowser();
 
       if (shouldSnapshot && !result.isError) {
         // Check if diff mode is requested

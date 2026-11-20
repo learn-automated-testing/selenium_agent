@@ -9,6 +9,9 @@ import {
 } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
+import {
+  seleniumRulesFor, checkSeleniumRules, formatRuleViolations, SELENIUM_AI_AGENTS_DOCS,
+} from './selenium-rules.js';
 
 /** The framework the generator uses when the user names none. */
 export const DEFAULT_FRAMEWORK = 'selenium-python-pytest';
@@ -80,7 +83,10 @@ selenium-java-maven (src/test/java/*Test.java), selenium-csharp-nunit, selenium-
 webdriverio-ts (test/specs/*.spec.ts), robot-framework (tests/*.robot), playwright-js (tests/*.spec.ts), or any other
 language or framework the user names (Page Object Model, BDD/Gherkin and data-driven patterns too).
 
-Pass the chosen framework to all subsequent generator and healer tool calls.`;
+Pass the chosen framework to all subsequent generator and healer tool calls.
+
+For Selenium frameworks the result includes Selenium's official rules for AI assistants for that language
+(${SELENIUM_AI_AGENTS_DOCS}): follow them. generator_write_test checks every test against them.`;
   readonly inputSchema = setupSchema;
   readonly category: ToolCategory = 'agent';
 
@@ -102,10 +108,18 @@ Pass the chosen framework to all subsequent generator and healer tool calls.`;
       url,
       framework,
       recording: true,
-      testPlanPreview: testPlan.slice(0, 200) + (testPlan.length > 200 ? '...' : '')
+      testPlanPreview: testPlan.slice(0, 200) + (testPlan.length > 200 ? '...' : ''),
+      seleniumRules: undefined as string | undefined,
     };
 
-    return this.success(JSON.stringify(result, null, 2), true);
+    // Selenium's official rules for the language the tests are written in, for the agent to follow.
+    const rules = seleniumRulesFor(framework);
+    result.seleniumRules = rules
+      ? 'Follow the rules below. generator_write_test rejects code that breaks them (sleeps, driver paths, ...).'
+      : undefined;
+
+    const text = JSON.stringify(result, null, 2) + (rules ? '\n\n' + rules : '');
+    return this.success(text, true);
   }
 }
 
@@ -166,6 +180,8 @@ const writeTestSchema = z.object({
   configFile: z.string().optional().describe('Path to framework config file (e.g. wdio.conf.ts, playwright.config.ts). Auto-detected if omitted.'),
   verify: z.boolean().optional().describe('Validate selectors against the live page before writing (default: true)'),
   specFile: z.string().optional().describe('Path to the spec file this test was generated from'),
+  allowRuleViolations: z.boolean().optional()
+    .describe('Write the file even if it breaks Selenium\'s official rules (sleeps, driver paths, ...). Only when the user explicitly asks for it.'),
 });
 
 export class GeneratorWriteTestTool extends BaseTool {
@@ -179,7 +195,11 @@ The manifest records everything the healer needs to run tests later:
 This means the healer can read the manifest and immediately know how to execute tests
 without the LLM having to re-analyze the project each time.
 
-The LLM can provide a custom runCommand, or let the tool suggest one based on the framework.`;
+The LLM can provide a custom runCommand, or let the tool suggest one based on the framework.
+
+Selenium tests are checked against Selenium's official rules for AI agents (${SELENIUM_AI_AGENTS_DOCS}).
+A test with an error (a sleep, a driver manager or driver path, DesiredCapabilities, Selenium 3 APIs, mixed
+implicit and explicit waits, ...) is not written: fix the reported lines and call again. Warnings are reported.`;
   readonly inputSchema = writeTestSchema;
   readonly category: ToolCategory = 'agent';
 
@@ -187,7 +207,7 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
     const {
       testCode, filename, framework: chosenFramework, outputDir,
       projectRoot: explicitProjectRoot, baseUrl, runCommand, configFile: explicitConfig,
-      verify, specFile,
+      verify, specFile, allowRuleViolations,
     } = this.parseParams(writeTestSchema, params);
     const framework = chosenFramework || context.generatorFramework || DEFAULT_FRAMEWORK;
 
@@ -196,6 +216,14 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
 
     // Find or create tests directory
     const testsDir = resolveOutputDir(outputDir, getTestsDir());
+
+    // Selenium's official rules: errors block the write, warnings are reported.
+    const violations = checkSeleniumRules(testCode, framework, filename);
+    const ruleReport = formatRuleViolations(violations, filename);
+    if (violations.some(v => v.severity === 'error') && !allowRuleViolations) {
+      return this.error(`Test not written: it breaks Selenium's official rules.\n${ruleReport}\n` +
+        'Fix these lines and call generator_write_test again.');
+    }
 
     try {
       // Selector verification (non-blocking — file still written even if some fail)
@@ -288,6 +316,7 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
       if (specFile) {
         result.specFile = specFile;
       }
+      result.seleniumRules = ruleReport ?? 'Follows Selenium\'s official rules for AI agents';
 
       return this.success(JSON.stringify(result, null, 2), false);
     } catch (err) {

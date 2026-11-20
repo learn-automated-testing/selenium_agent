@@ -24,6 +24,18 @@ if (args[0] === 'init-agents') {
   console.log(`Selenium AI Agent: test agents for ${loop} (MCP server "${result.server}")\n`);
   for (const file of result.written) console.log(`  wrote ${file}`);
   if (result.mcpConfig) console.log(`  added the "${result.server}" server to ${result.mcpConfig}`);
+  // --with-rules: Selenium's rules for AI agents in the loop's instruction file (or the files named)
+  const { parseWithRules, printRulesResult } = await import('./install.js');
+  const { writeProjectRules } = await import('../src/project-rules.js');
+  const loopRules = { claude: 'claude', vscode: 'copilot', copilot: 'copilot', cursor: 'cursor' } as const;
+  let targets;
+  try {
+    targets = parseWithRules(args, loopRules[loop as keyof typeof loopRules]);
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exit(1);
+  }
+  if (targets?.length) printRulesResult(writeProjectRules({ targets, framework: value('framework') }));
   console.log('\nAsk your AI assistant to use the selenium-test-planner, -generator or -healer agent.');
   console.log('Run this again after updating selenium-ai-agent to pick up new tools and instructions.');
   process.exit(0);

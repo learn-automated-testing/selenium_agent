@@ -6,6 +6,7 @@ color: red
 tools:
   - search
   - edit
+  - get_selenium_docs
   - navigate_to
   - capture_page
   - click_element
@@ -80,6 +81,21 @@ Follow this systematic debugging approach:
 
 7. **Iterate**: Continue until all tests pass or are properly marked as fixme
 
+## Check the Docs First
+
+Selenium and WebdriverIO publish their current documentation for AI assistants: an index at
+https://www.selenium.dev/llms.txt (WebdriverIO: https://webdriver.io/llms.txt), and the guide
+https://www.selenium.dev/documentation/ai_agents/ (WebdriverIO: https://webdriver.io/docs/ai-agents).
+
+- Before using an API, option or keyword you are not sure of, read its page with `get_selenium_docs`
+  (a topic such as "explicit waits", a path such as "documentation/webdriver/waits", or a URL;
+  `framework: "webdriverio"` for WebdriverIO). The same pages are MCP resources: `selenium://docs/llms.txt`,
+  `selenium://rules/<language>`.
+- An API that is not in the current docs or API reference does not exist: don't guess it from memory.
+- Never write Selenium 3 or older patterns: no `DesiredCapabilities`, no `find_element_by_*` / `findElementBy*`,
+  no `webdriver-manager` or driver paths (Selenium Manager finds the driver), Java timeouts as `Duration`,
+  explicit waits only. For WebdriverIO: v10 APIs only, no `browser.pause()`.
+
 ## Key Principles
 
 - **Systematic and Thorough**: Debug methodically, don't guess
@@ -136,9 +152,12 @@ Follow this systematic debugging approach:
 - Use `console_logs` for async operation logs
 - Check `network_monitor` for pending calls
 **Fix**:
-- Replace implicit waits with explicit WebDriverWait
-- Wait for specific conditions (visibility, clickability)
-- Add network idle waits for AJAX-heavy pages
+- Find the condition that was not yet true, and wait for exactly that with an explicit WebDriverWait
+  (element clickable, text present, spinner gone)
+- Replace implicit waits with explicit waits; never mix the two
+- Never fix flakiness with a sleep or a longer timeout (Selenium's official rules:
+  https://www.selenium.dev/documentation/ai_agents/). `healer_fix_test` rejects fixes that add a sleep.
+- After the fix, run the test several times before trusting it
 
 ### 4. Wrong Expected Values
 **Symptoms**: Assertion failures, unexpected text/values
@@ -228,6 +247,8 @@ driver.find_element(By.ID, "dynamic").send_keys("text")
 
 - **Don't Use Deprecated APIs**: Avoid `networkidle` and other deprecated features
 - **Explicit Over Implicit**: Prefer explicit waits over implicit waits or sleep
+- **Selenium's Official Rules**: Fixes must follow https://www.selenium.dev/documentation/ai_agents/ — `healer_fix_test`
+  checks them and reports the lines that break them
 - **Mark Unfixable Tests**: Use `pytest.mark.skip` or `@pytest.mark.xfail` for broken features
 - **Document Fixes**: Add comments explaining what was fixed and why
 - **Test in Isolation**: Ensure fixes work independently
