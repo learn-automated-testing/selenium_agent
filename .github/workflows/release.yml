@@ -101,7 +101,7 @@ jobs:
       - name: Update version
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
-          npm version $VERSION --no-git-tag-version
+          npm version $VERSION --no-git-tag-version --allow-same-version
           # Keep the MCP Registry metadata on the same version
           jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp
           mv server.tmp server.json

@@ -13,6 +13,8 @@ jobs:
   build-and-publish:
     name: Build and Publish to npm
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.check.outputs.published }}
     defaults:
       run:
         working-directory: selenium-mcp-server
@@ -33,13 +35,29 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check whether this version is already on npm
+        id: check
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "selenium-ai-agent@$VERSION" version >/dev/null 2>&1; then
+            echo "selenium-ai-agent@$VERSION is already on npm: skipping npm and the MCP Registry"
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
+        if: steps.check.outputs.published == 'true'
         run: npm publish --access public
 
       - name: Create deployment summary
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "## NPM Package Published" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.published }}" = "true" ]; then
+            echo "## NPM Package Published" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Already on npm (not published again)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Package:** \`selenium-ai-agent@$VERSION\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -47,11 +65,50 @@ jobs:
           echo "npm install selenium-ai-agent" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+  # Tag the published version and create its GitHub release (notes from the CHANGELOG).
+  # Only for a manual run: a run started by a published release already has one.
+  # A release created with GITHUB_TOKEN does not start this workflow again.
+  github-release:
+    name: Create GitHub release
+    needs: build-and-publish
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Release notes from the CHANGELOG
+        run: |
+          VERSION=$(node -p "require('./selenium-mcp-server/package.json').version")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { on = 1; next }
+            on && /^## / { exit }
+            on { print }
+          ' selenium-mcp-server/CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "Published selenium-ai-agent@$VERSION on npm." > notes.md
+          fi
+          printf '\n**npm:** [selenium-ai-agent@%s](https://www.npmjs.com/package/selenium-ai-agent/v/%s)\n' "$VERSION" "$VERSION" >> notes.md
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists"; exit 0
+          fi
+          gh release create "v$VERSION" --target "${{ github.sha }}" --title "v$VERSION" --notes-file notes.md --latest
+          echo "## GitHub release v$VERSION created" >> "$GITHUB_STEP_SUMMARY"
+
   # Publish the server metadata to the official MCP Registry
   # (https://registry.modelcontextprotocol.io) once the npm package is live.
   publish-mcp-registry:
     name: Publish to MCP Registry
     needs: build-and-publish
+    if: needs.build-and-publish.outputs.published == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write # OIDC login for the io.github.learn-automated-testing namespace
