@@ -1,21 +1,38 @@
-# Selenium MCP Server
+# Selenium AI Agent
 
 [![npm version](https://img.shields.io/npm/v/selenium-ai-agent.svg)](https://www.npmjs.com/package/selenium-ai-agent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![YouTube tutorials](https://img.shields.io/badge/YouTube-Video%20tutorials-red?logo=youtube)](https://www.youtube.com/@ralphvanderhorst5193/videos)
 [![Selenium Grid](https://img.shields.io/badge/Selenium%20Grid-Parallel-blue.svg)](https://www.selenium.dev/documentation/grid/)
 
-> **Selenium AI Agent** (`selenium-ai-agent` on npm) is a Selenium MCP server for AI-driven test automation.
->
-> - **Built in Node.js:** run it with `npx -y selenium-ai-agent`, no install needed.
-> - **Generates tests in Python with pytest by default**, and in any other language or framework on request: Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework.
-> - **Test agents like Playwright's:** a planner explores your app and writes a structured test plan, a generator turns it into tests checked live in the browser, and a healer runs and repairs them.
-> - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
-> - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
+**AI test agents for Selenium, like Playwright's: plan, generate and heal tests from a prompt.**
 
-### One-Click Install
+Selenium AI Agent (`selenium-ai-agent` on npm) is an MCP server that lets your AI assistant drive a real browser through Selenium WebDriver and build a test suite for you.
+
+- **Test agents:** a planner explores your app and writes a structured test plan, a generator turns it into tests checked live in the browser, and a healer runs and repairs them.
+- **Python + pytest by default**, and any other language on request: Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework.
+- **Works in your AI client:** Claude Code, Claude Desktop, VS Code (GitHub Copilot) and Cursor.
+- **Built in Node.js:** run it with `npx -y selenium-ai-agent`; the matching browser driver is downloaded for you.
+- **Scales with Selenium Grid:** parallel sessions on Chrome, Firefox and Edge.
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
+
+<p align="center">
+  <img src="docs/selenium-agent-workflow.png" alt="Selenium Agent Workflow" width="700"/>
+</p>
+
+## Contents
+
+- [Video tutorials](#video-tutorials)
+- [Quick start](#quick-start)
+- [How the test agents work](#how-the-test-agents-work)
+- [Example prompts](#example-prompts)
+- [Languages and frameworks](#languages-and-frameworks)
+- [Parallel testing with Selenium Grid](#parallel-testing-with-selenium-grid)
+- [Configuration](#configuration)
+- [Tools](#tools)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
 
 ## Video Tutorials
 
@@ -28,437 +45,85 @@ Short demos with a voice-over, [on YouTube](https://www.youtube.com/@ralphvander
 
 More tutorials: [youtube.com/@ralphvanderhorst5193](https://www.youtube.com/@ralphvanderhorst5193/videos) · Practice site used in the demos: [practiceautomatedtesting.com](https://practiceautomatedtesting.com)
 
-**The first MCP server with true parallel browser automation using Selenium Grid.**
-
-While other browser MCP servers run a single browser instance, Selenium MCP Server connects to Selenium Grid for **massive parallel exploration** — spin up 10, 20, or 100 browser sessions and explore your entire application simultaneously.
-
-<p align="center">
-  <img src="docs/selenium-agent-workflow.png" alt="Selenium Agent Workflow" width="700"/>
-</p>
-
-## Why This Over Playwright MCP?
-
-| Feature | Playwright MCP | Selenium MCP Server |
-|---------|---------------|---------------------|
-| **Parallelism** | Single browser, shared context | True parallel: Grid with unlimited nodes |
-| **Scaling** | Limited by single browser | Horizontally scalable — add nodes as needed |
-| **Isolation** | Shared state between clients | Full isolation per session |
-| **Multi-browser** | One at a time | Chrome + Firefox + Edge simultaneously |
-| **Infrastructure** | Simple | Docker Compose ready |
-| **AI Agent workflows** | Basic | Planner → Generator → Healer pipeline |
-
-**Perfect for:** AI agents that need to explore large applications fast, cross-browser testing, and enterprise automation at scale.
-
 ## Quick Start
 
-### 1. Install
+You need **Node.js 18+** and a browser (Chrome, Firefox or Edge).
 
-```bash
-# Install globally
-npm install -g selenium-ai-agent
-
-# Or run directly with npx (no install needed)
-npx selenium-ai-agent
-```
-
-### 2. Configure Your MCP Client
-
-**Auto-install** (Claude Desktop, Cursor, or Windsurf):
-```bash
-npx selenium-ai-agent install claude-desktop
-npx selenium-ai-agent install cursor
-npx selenium-ai-agent install windsurf
-```
+### 1. Add the server to your AI client
 
 **Claude Code:**
+
 ```bash
-claude mcp add selenium-mcp -- npx selenium-ai-agent
+claude mcp add selenium-mcp -- npx -y selenium-ai-agent
+```
+
+**Claude Desktop, Cursor or Windsurf** (writes the config for you):
+
+```bash
+npx selenium-ai-agent install claude-desktop   # or: cursor, windsurf
 ```
 
 <details>
-<summary>Manual config (click to expand)</summary>
+<summary>Manual configuration</summary>
 
-**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`) and **Cursor** (`.cursor/mcp.json`):
+
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["selenium-ai-agent"]
+      "args": ["-y", "selenium-ai-agent"]
     }
   }
 }
 ```
 
-**Cursor** (`.cursor/mcp.json`):
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "npx",
-      "args": ["selenium-ai-agent"]
-    }
-  }
-}
-```
-</details>
+**VS Code / GitHub Copilot** (`.vscode/mcp.json`):
 
-**GitHub Copilot** (`.vscode/mcp.json`):
 ```json
 {
   "servers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["selenium-ai-agent"],
+      "args": ["-y", "selenium-ai-agent"],
       "type": "stdio"
     }
   }
 }
 ```
 
-> See [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) for all 6 clients (Claude Code, Claude Desktop, Cursor, Copilot, Cline, Windsurf).
+See [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) for all clients, including Cline and Windsurf.
 
-### 3. Try It!
+</details>
 
-```
-"Navigate to https://example.com and take a screenshot"
-```
-
-## Example Chats
-
-Copy-paste these prompts into your AI assistant after configuring the MCP server.
-
-### Navigate & Screenshot
-
-**You say:**
-> Go to https://practiceautomatedtesting.com and take a screenshot
-
-**What happens:**
-1. `navigate_to` — opens the URL in a local Chrome browser
-2. `take_screenshot` — captures the full page
-
-**AI responds:**
-> I navigated to practiceautomatedtesting.com and took a screenshot. The page shows an e-commerce storefront with a navigation bar, featured products section, and a footer.
-
----
-
-### Explore & Create Test Plan
-
-**You say:**
-> Explore the checkout flow at https://practiceautomatedtesting.com and create a test plan
-
-**What happens:**
-1. `planner_setup_page` — navigates to the site, captures the initial page snapshot
-2. `planner_explore_page` — explores the homepage, discovers links to products
-3. `planner_explore_page` — follows the product → add-to-cart → cart page flow
-4. `planner_explore_page` — continues through checkout, captures form fields and validation
-5. `planner_save_plan` — writes the test plan to `specs/`, structured as in Playwright (suites → tests → steps with `expect`), plus the elements found and the gaps
-
-**AI responds:**
-> I explored the checkout flow across 4 pages and saved a test plan to `test-plans/checkout-flow.md`. The plan covers 6 test scenarios including add to cart, checkout form validation, and successful order. Please review the plan before I generate test code.
-
----
-
-### Generate WebdriverIO Tests
-
-**You say:**
-> Generate WebdriverIO tests for the login flow at https://practiceautomatedtesting.com
-
-**What happens:**
-1. Initializes the project if needed — `npm init`, installs `@wdio/cli`, creates `wdio.conf.ts`
-2. `generator_setup_page` — opens the site with `framework: "webdriverio-ts"`, starts recording
-3. `navigate_to` → `input_text` → `click_element` → `verify_text_visible` — interacts with the login form
-4. `stop_recording` — ends the recording session
-5. `generator_write_test` — generates a `.test.ts` file from the recorded steps
-
-**AI responds:**
-> I set up a WebdriverIO project, recorded the login flow, and generated `tests/login.test.ts`:
->
-> ```typescript
-> describe('Login Flow', () => {
->   it('should log in with valid credentials', async () => {
->     await browser.url('https://practiceautomatedtesting.com/login');
->     await $('[data-testid="email"]').setValue('user@example.com');
->     await $('[data-testid="password"]').setValue('password123');
->     await $('[data-testid="login-button"]').click();
->     await expect($('[data-testid="welcome-message"]')).toBeDisplayed();
->   });
-> });
-> ```
->
-> Run with: `npx wdio run wdio.conf.ts`
-
----
-
-### Generate Playwright Tests
-
-**You say:**
-> Create Playwright tests for the product search feature at https://practiceautomatedtesting.com
-
-**What happens:**
-1. Initializes the project if needed — `npm init`, installs `@playwright/test`, runs `npx playwright install`
-2. `generator_setup_page` — opens the site with `framework: "playwright-js"`, starts recording
-3. Navigates and interacts with the search feature
-4. `stop_recording` → `generator_write_test` — generates a Playwright test file
-
-**AI responds:**
-> I set up a Playwright project, recorded the search flow, and generated `tests/product-search.spec.js`:
->
-> ```javascript
-> const { test, expect } = require('@playwright/test');
->
-> test('should search for products and display results', async ({ page }) => {
->   await page.goto('https://practiceautomatedtesting.com/products');
->   await page.locator('[data-testid="search-input"]').fill('laptop');
->   await page.locator('[data-testid="search-button"]').click();
->   await expect(page.locator('[data-testid="results-count"]')).toBeVisible();
-> });
-> ```
->
-> Run with: `npx playwright test`
-
----
-
-### Generate Selenium Python (pytest) Tests
-
-**You say:**
-> Generate pytest Selenium tests for the registration form at https://practiceautomatedtesting.com
-
-**What happens:**
-1. Sets up the project if needed — creates `venv`, installs `selenium` and `pytest` via pip
-2. `generator_setup_page` — opens the site with `framework: "selenium-python-pytest"`, starts recording
-3. Navigates and fills in the registration form
-4. `stop_recording` → `generator_write_test` — generates a pytest file
-
-**AI responds:**
-> I set up a Python virtual environment with selenium and pytest, recorded the registration flow, and generated `tests/test_registration.py`:
->
-> ```python
-> class TestRegistration:
->     def test_register_new_user(self, driver):
->         driver.get("https://practiceautomatedtesting.com/register")
->         driver.find_element(By.CSS_SELECTOR, '[data-testid="name"]').send_keys("Jane Doe")
->         driver.find_element(By.CSS_SELECTOR, '[data-testid="email"]').send_keys("jane@example.com")
->         driver.find_element(By.CSS_SELECTOR, '[data-testid="password"]').send_keys("SecurePass123!")
->         driver.find_element(By.CSS_SELECTOR, '[data-testid="register-button"]').click()
->         assert "Welcome" in WebDriverWait(driver, 10).until(
->             EC.visibility_of_element_located((By.CSS_SELECTOR, '[data-testid="success-message"]'))
->         ).text
-> ```
->
-> Run with: `pytest tests/test_registration.py -v`
-
----
-
-### Generate Robot Framework Tests
-
-**You say:**
-> Generate Robot Framework tests for the contact form at https://practiceautomatedtesting.com
-
-**What happens:**
-1. Sets up the project if needed — creates `venv`, installs `robotframework` and `robotframework-seleniumlibrary` via pip
-2. `generator_setup_page` — opens the site with `framework: "robot-framework"`, starts recording
-3. Navigates to the contact page and fills in the form
-4. `stop_recording` → `generator_write_test` — generates a `.robot` file
-
-**AI responds:**
-> I set up a Robot Framework environment, recorded the contact form flow, and generated `tests/contact_form.robot`:
->
-> ```robot
-> *** Settings ***
-> Library    SeleniumLibrary
->
-> *** Variables ***
-> ${URL}    https://practiceautomatedtesting.com/contact
->
-> *** Test Cases ***
-> Submit Contact Form With Valid Data
->     Open Browser    ${URL}    chrome
->     Input Text    css=[data-testid="name"]    Jane Doe
->     Input Text    css=[data-testid="email"]    jane@example.com
->     Input Text    css=[data-testid="message"]    Hello, I have a question about your products.
->     Click Element    css=[data-testid="submit-button"]
->     Wait Until Element Is Visible    css=[data-testid="success-message"]
->     Element Should Contain    css=[data-testid="success-message"]    Thank you
->     [Teardown]    Close Browser
-> ```
->
-> Run with: `robot tests/contact_form.robot`
-
----
-
-### Run Tests & Heal Failures
-
-**You say:**
-> Run my tests and fix any failures
-
-**What happens:**
-1. `healer_run_tests` — executes the test suite; 1 of 3 tests fails
-2. `healer_debug_test` — analyzes the failure (stale selector `#old-login-btn` not found)
-3. `healer_inspect_page` — opens the page to find the correct selector
-4. `healer_fix_test` — updates the selector to `[data-testid="login-button"]`
-5. `healer_run_tests` — re-runs the suite; all 3 tests pass
-
-**AI responds:**
-> I ran your test suite and found 1 failure: selector `#old-login-btn` not found. I inspected the page, updated it to `[data-testid="login-button"]`, and re-ran — **3 passed, 0 failed**.
-
----
-
-### Parallel Grid Exploration
-
-Requires [Grid setup](#parallel-exploration-with-selenium-grid).
-
-**You say:**
-> Explore the entire site at https://practiceautomatedtesting.com in parallel using 4 browsers
-
-**What happens:**
-1. `parallel_explore` — spins up 4 Grid sessions exploring Homepage, Products, Cart, and Account simultaneously
-2. `exploration_merge` — combines all 4 results into a single site map
-3. `planner_generate_plan` — produces a comprehensive test plan from the merged data
-
-**AI responds:**
-> I explored the site in parallel using 4 browsers on your Selenium Grid:
->
-> | Session | Section | Pages | Elements |
-> |---------|---------|-------|----------|
-> | 1 | Homepage | 3 | 42 |
-> | 2 | Products | 8 | 156 |
-> | 3 | Cart & Checkout | 4 | 67 |
-> | 4 | Account & Auth | 3 | 38 |
->
-> **18 unique pages, 303 elements** discovered in ~12 seconds. Test plan saved to `test-plans/full-site-plan.md`.
-
----
-
-> The Generator supports 14 frameworks: `webdriverio-ts`, `playwright-js`, `selenium-python-pytest`, `robot-framework`, `selenium-java-maven`, and [more](docs/FRAMEWORK_STANDARDS.md). Examples 1–6 work with a local browser. Only parallel exploration requires Selenium Grid.
-
-## Parallel Exploration with Selenium Grid
-
-Explore your entire application in seconds, not minutes:
-
-### Start the Grid
+### 2. Install the test agents in your project (optional)
 
 ```bash
-git clone https://github.com/learn-automated-testing/selenium_agent.git
-cd selenium_agent/selenium-grid
-docker-compose up -d
-
-# Verify Grid is running
-open http://localhost:4444  # Grid console
+npx selenium-ai-agent init-agents --loop=claude    # Claude Code subagents
+npx selenium-ai-agent init-agents --loop=vscode    # VS Code chat modes
+npx selenium-ai-agent init-agents --loop=copilot   # GitHub Copilot coding agent
+npx selenium-ai-agent init-agents --loop=cursor    # Cursor rules
 ```
 
-### Configure with Grid
+### 3. Ask for tests
 
-```json
-{
-  "mcpServers": {
-    "selenium-mcp": {
-      "command": "npx",
-      "args": ["selenium-ai-agent"],
-      "env": {
-        "SELENIUM_GRID_URL": "http://localhost:4444"
-      }
-    }
-  }
-}
+```text
+Explore the shopping section of https://practiceautomatedtesting.com and create a test plan
+for the shopping cart and checkout.
 ```
 
-### Explore in Parallel
+Then:
 
-```
-"Explore the e-commerce site at https://practiceautomatedtesting.com in parallel —
-check the homepage, products, cart, and checkout sections simultaneously"
-```
-
-The agent will spin up 4 browser sessions on your Grid and explore all sections at once.
-
-```typescript
-// What happens behind the scenes:
-parallel_explore({
-  baseUrl: "https://myshop.com",
-  targets: [
-    { url: "/", label: "Homepage", maxPages: 10 },
-    { url: "/products", label: "Catalog", maxPages: 20 },
-    { url: "/cart", label: "Cart Flow", maxPages: 5 },
-    { url: "/account", label: "User Account", maxPages: 10 }
-  ]
-})
-// → 4 browsers explore simultaneously
-// → Results merged and deduplicated
-// → Complete site map in one call
+```text
+Generate Selenium tests from specs/shopping-cart-and-checkout.md, run them, and show me the test report.
 ```
 
-**Scale up anytime:**
-```bash
-docker-compose up -d --scale chrome-node=10
-```
+Something not starting? Run `npx selenium-ai-agent doctor`.
 
-## 75 Tools (61 without Grid)
+## How the Test Agents Work
 
-### Grid & Parallel Execution
-| Tool | Description |
-|------|-------------|
-| `grid_status` | Check Grid health, nodes, and capacity |
-| `grid_start` | Start Docker Compose Grid |
-| `grid_stop` | Stop Docker Compose Grid |
-| `grid_scale` | Scale Grid nodes up/down |
-| `session_create` | Create browser session on Grid |
-| `session_select` | Switch active session |
-| `session_list` | List all Grid sessions |
-| `session_destroy` | Clean up a session |
-| `session_destroy_all` | Clean up all sessions |
-| `parallel_explore` | Explore multiple URLs simultaneously |
-| `parallel_execute` | Run tasks in parallel across sessions |
-| `exploration_merge` | Combine exploration results |
-| `exploration_diff` | Compare explorations |
-| `planner_generate_plan` | Generate test plan from exploration |
-
-### Navigation
-`navigate_to` · `go_back` · `go_forward` · `refresh_page`
-
-### Page Analysis
-`capture_page` · `take_screenshot`
-
-### Element Interactions
-`click_element` · `hover_element` · `select_option` · `drag_drop`
-
-### Input
-`input_text` · `key_press` · `file_upload`
-
-### Mouse
-`mouse_move` · `mouse_click` · `mouse_drag`
-
-### Verification
-`verify_element_visible` · `verify_text_visible` · `verify_value` · `verify_list_visible`
-
-### Browser Management
-`wait_for` · `execute_javascript` · `dialog_handle` · `console_logs` · `network_monitor` · `resize_window` · `pdf_generate`
-
-### Tabs
-`tab_list` · `tab_select` · `tab_new` · `tab_close`
-
-### Session
-`close_browser` · `reset_session` · `set_stealth_mode`
-
-### Recording
-`start_recording` · `stop_recording` · `recording_status` · `clear_recording`
-
-### Batch
-`batch_execute`
-
-### AI Agent Tools
-| Agent | Tools |
-|-------|-------|
-| **Planner** | `planner_setup_page`, `planner_explore_page`, `planner_save_plan` |
-| **Generator** | `generator_setup_page`, `generator_read_log`, `generator_write_test`, `generator_write_seed`, `generator_save_spec`, `generator_read_spec` |
-| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `healer_inspect_page`, `browser_generate_locator` |
-| **Analyzer** | `analyzer_setup`, `analyzer_import_context`, `analyzer_scan_product`, `analyzer_build_risk_profile`, `analyzer_save_profile`, `analyzer_generate_documentation` |
-
-## AI Test Agents
-
-A complete testing pipeline with human review gates:
-
-```
+```text
 ┌─────────────────┐    ┌─────────────┐    ┌─────────────┐    ┌────────────┐
 │    Analyzer     │───▶│   Planner   │───▶│  Generator  │───▶│   Healer   │
 │  (risk profile) │    │ (test plan) │    │ (test code) │    │(fix tests) │
@@ -467,109 +132,195 @@ A complete testing pipeline with human review gates:
                         human review       human review
 ```
 
-See [Example Chats](#example-chats) above for full copy-paste prompts covering each stage, and the [Video Tutorials](#video-tutorials) to watch the planner and generator at work.
+| Agent | What it does | Output |
+|-------|--------------|--------|
+| **Analyzer** (optional) | Scans the product and builds a risk profile, so testing starts where it matters most. | Risk profile |
+| **Planner** | Explores the app in a real browser, takes an inventory of every page and pop-up, and writes a plan in the same structure as Playwright's planner: suites → tests → steps with `expect`. It adds the elements found (with stable locators) and the gaps. | `specs/<feature>.md` |
+| **Generator** | Writes one test file per plan test, with an assertion for every `expect`, after checking each value live in the browser. Sets up the project (for Python: a virtual environment with Selenium and pytest) if needed. | Test files, a run command |
+| **Healer** | Runs the tests, debugs failures, inspects the page and fixes broken locators or waits, then runs them again. | Passing tests, or a clear bug report |
 
-## Configuration
+You review the plan before code is generated, and the code before it is committed. The [Agent Workflow](docs/AGENT_WORKFLOW.md) guide covers each stage in detail.
 
-### Environment Variables
+## Example Prompts
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SELENIUM_GRID_URL` | — | Grid hub URL (enables parallel features) |
-| `SELENIUM_HEADLESS` | `false` | Run browser in headless mode |
-| `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated tool groups to load, e.g. `core,generator,healer` (see the package README) |
-| `SELENIUM_STEALTH` | `false` | Mask basic automation flags (does not get past advanced bot protection) |
-| `SE_AVOID_STATS` | — | Set to `true` to disable Selenium usage statistics |
+| Goal | Prompt |
+|------|--------|
+| Try it | `Go to https://practiceautomatedtesting.com and take a screenshot` |
+| Test plan | `Explore the checkout flow at https://practiceautomatedtesting.com and create a test plan` |
+| Python tests (default) | `Generate tests from specs/checkout-flow.md` |
+| Another language | `Generate WebdriverIO tests for the login flow at https://practiceautomatedtesting.com` |
+| Fix failures | `Run my tests and fix any failures` |
+| Parallel (Grid) | `Explore https://practiceautomatedtesting.com in parallel using 4 browsers` |
 
-### Local Browser (No Grid)
+[Example Chats](docs/EXAMPLE_CHATS.md) shows each prompt with the tools it calls and the result, including generated code for pytest, WebdriverIO, Playwright and Robot Framework.
 
-Works without Grid — just don't set `SELENIUM_GRID_URL`:
+## Languages and Frameworks
+
+If you don't name one, tests are generated in **Python with pytest**.
+
+| Language | Frameworks (`framework` value) |
+|----------|-------------------------------|
+| Python | pytest (`selenium-python-pytest`, default), Playwright (`playwright-python`), Robot Framework (`robot-framework`) |
+| Java | Maven (`selenium-java-maven`), Gradle (`selenium-java-gradle`) |
+| C# | NUnit (`selenium-csharp-nunit`), MSTest (`selenium-csharp-mstest`), xUnit (`selenium-csharp-xunit`) |
+| JavaScript / TypeScript | WebdriverIO (`webdriverio-ts`, `webdriverio-js`), Mocha (`selenium-js-mocha`), Jest (`selenium-js-jest`), Playwright (`playwright-js`) |
+
+Conventions per framework are in [Framework Standards](docs/FRAMEWORK_STANDARDS.md).
+
+## Parallel Testing with Selenium Grid
+
+Everything above works with a local browser. Selenium Grid adds parallel sessions: explore or test many parts of an application at once, across Chrome, Firefox and Edge.
+
+| | Playwright MCP | Selenium AI Agent |
+|---|---|---|
+| **Parallelism** | Single browser, shared context | Many sessions on Grid nodes |
+| **Scaling** | Limited by one browser | Add nodes as needed |
+| **Isolation** | Shared state between clients | Full isolation per session |
+| **Multi-browser** | One at a time | Chrome, Firefox and Edge at the same time |
+
+### 1. Start the Grid
+
+```bash
+git clone https://github.com/learn-automated-testing/selenium_agent.git
+cd selenium_agent/selenium-grid
+docker-compose up -d          # Grid console: http://localhost:4444
+
+docker-compose up -d --scale chrome-node=10   # scale up any time
+```
+
+The included `docker-compose.yml` starts a hub, 4 Chrome nodes and 1 Firefox node.
+
+### 2. Point the server at it
 
 ```json
 {
   "mcpServers": {
     "selenium-mcp": {
       "command": "npx",
-      "args": ["selenium-ai-agent"]
+      "args": ["-y", "selenium-ai-agent"],
+      "env": { "SELENIUM_GRID_URL": "http://localhost:4444" }
     }
   }
 }
 ```
 
-## Docker Compose
+### 3. Explore in parallel
 
-The included `docker-compose.yml` gives you a production-ready Grid:
-
-```yaml
-services:
-  selenium-hub:
-    image: selenium/hub:4.40.0
-    ports:
-      - "4444:4444"
-
-  chrome-node:
-    image: selenium/node-chrome:4.40.0
-    deploy:
-      replicas: 4  # 4 Chrome browsers
-
-  firefox-node:
-    image: selenium/node-firefox:4.40.0
-    deploy:
-      replicas: 1  # 1 Firefox browser
+```text
+Explore https://practiceautomatedtesting.com in parallel: the homepage, products, cart and checkout at the same time.
 ```
 
-## Project Structure
+`parallel_explore` starts one session per section, `exploration_merge` combines the results into one site map, and `planner_generate_plan` writes the test plan.
 
-```
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SELENIUM_GRID_URL` | — | Grid hub URL; enables the parallel tools |
+| `SELENIUM_HEADLESS` | `false` | Run the browser headless |
+| `SELENIUM_MCP_TOOLSETS` | `all` | Tool groups to load, e.g. `core,generator,healer` |
+| `SELENIUM_STEALTH` | `false` | Mask basic automation flags (does not get past advanced bot protection) |
+| `SE_AVOID_STATS` | — | `true` disables Selenium usage statistics |
+
+All variables, CLI flags, driver and proxy setup, and troubleshooting are in the [package README](selenium-mcp-server/README.md).
+
+## Tools
+
+75 tools, 61 without Grid.
+
+<details>
+<summary>Show all tools</summary>
+
+**Test agents**
+
+| Agent | Tools |
+|-------|-------|
+| **Planner** | `planner_setup_page`, `planner_explore_page`, `planner_save_plan` |
+| **Generator** | `generator_setup_page`, `generator_read_log`, `generator_write_test`, `generator_write_seed`, `generator_save_spec`, `generator_read_spec` |
+| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `healer_inspect_page`, `browser_generate_locator` |
+| **Analyzer** | `analyzer_setup`, `analyzer_import_context`, `analyzer_scan_product`, `analyzer_build_risk_profile`, `analyzer_save_profile`, `analyzer_generate_documentation` |
+
+**Browser**
+
+| Group | Tools |
+|-------|-------|
+| Navigation | `navigate_to` · `go_back` · `go_forward` · `refresh_page` |
+| Page analysis | `capture_page` · `take_screenshot` |
+| Elements | `click_element` · `hover_element` · `select_option` · `drag_drop` |
+| Input | `input_text` · `key_press` · `file_upload` |
+| Mouse | `mouse_move` · `mouse_click` · `mouse_drag` |
+| Verification | `verify_element_visible` · `verify_text_visible` · `verify_value` · `verify_list_visible` |
+| Browser | `wait_for` · `execute_javascript` · `dialog_handle` · `console_logs` · `network_monitor` · `resize_window` · `pdf_generate` |
+| Tabs | `tab_list` · `tab_select` · `tab_new` · `tab_close` |
+| Session | `close_browser` · `reset_session` · `set_stealth_mode` |
+| Recording | `start_recording` · `stop_recording` · `recording_status` · `clear_recording` |
+| Batch | `batch_execute` |
+
+**Grid and parallel execution**
+
+| Tool | Description |
+|------|-------------|
+| `grid_status` | Check Grid health, nodes and capacity |
+| `grid_start` / `grid_stop` | Start or stop the Docker Compose Grid |
+| `grid_scale` | Scale Grid nodes up or down |
+| `session_create` / `session_select` / `session_list` | Create, switch and list browser sessions on the Grid |
+| `session_destroy` / `session_destroy_all` | Clean up one or all sessions |
+| `parallel_explore` | Explore several URLs at the same time |
+| `parallel_execute` | Run tasks in parallel across sessions |
+| `exploration_merge` / `exploration_diff` | Combine or compare exploration results |
+| `planner_generate_plan` | Generate a test plan from an exploration |
+
+</details>
+
+## Documentation
+
+- [Video tutorials](https://www.youtube.com/@ralphvanderhorst5193/videos): planner and generator demos on YouTube
+- [MCP Client Setup](docs/MCP_CLIENT_SETUP.md): Claude Code, Claude Desktop, Cursor, Copilot, Cline, Windsurf
+- [Example Chats](docs/EXAMPLE_CHATS.md): prompts with the tools they call and the results
+- [Agent Workflow](docs/AGENT_WORKFLOW.md): the end-to-end testing pipeline
+- [Framework Standards](docs/FRAMEWORK_STANDARDS.md): code generation conventions
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md): production deployment
+- [Package README](selenium-mcp-server/README.md): all tools, options and troubleshooting
+
+<details>
+<summary>Project structure</summary>
+
+```text
 selenium_agent/
 ├── selenium-mcp-server/     # TypeScript MCP server (npm: selenium-ai-agent)
 │   └── src/
 │       ├── server.ts        # MCP protocol handler
 │       ├── context.ts       # Browser session management
 │       ├── grid/            # Selenium Grid integration
-│       │   ├── grid-client.ts
-│       │   ├── session-pool.ts
-│       │   └── exploration-coordinator.ts
-│       └── tools/           # 75 tools
-│           ├── navigation/
-│           ├── elements/
-│           ├── grid/        # Parallel execution tools
-│           ├── agents/      # AI agent tools
-│           └── analyzer/    # Risk analysis
-│
+│       └── tools/           # navigation, elements, grid, agents, analyzer
 ├── selenium-grid/
 │   └── docker-compose.yml   # Selenium Grid setup
 ├── agents/                  # Agent prompt definitions
 └── docs/                    # Guides and diagrams
 ```
 
-## Documentation
-
-- [Video Tutorials](https://www.youtube.com/@ralphvanderhorst5193/videos) — Planner and generator demos on YouTube
-- [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) — Claude Code, Claude Desktop, Cursor, Copilot, Cline, Windsurf
-- [Agent Workflow](docs/AGENT_WORKFLOW.md) — End-to-end testing pipeline
-- [Framework Standards](docs/FRAMEWORK_STANDARDS.md) — Code generation conventions
-- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) — Production deployment
+</details>
 
 ## Contributing
 
-Contributions welcome! Please read our contributing guidelines and submit PRs.
+Contributions are welcome:
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+4. Push the branch (`git push origin feature/amazing-feature`)
+5. Open a pull request
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-- [Selenium](https://www.selenium.dev/) — The browser automation framework
-- [Model Context Protocol](https://modelcontextprotocol.io/) — The AI agent communication standard
-- [Anthropic](https://www.anthropic.com/) — For Claude and the MCP specification
+- [Selenium](https://www.selenium.dev/): the browser automation framework
+- [Model Context Protocol](https://modelcontextprotocol.io/): the AI agent communication standard
+- [Anthropic](https://www.anthropic.com/): for Claude and the MCP specification
+- [Playwright](https://playwright.dev/): whose test agents inspired the planner, generator and healer
 
 ---
 
