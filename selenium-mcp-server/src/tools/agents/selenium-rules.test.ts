@@ -42,9 +42,16 @@ describe('Selenium official rules', () => {
       expect(md).to.include('new ChromeDriver()');
       expect(md).not.to.include('webdriver.Chrome()');
     });
-    it('returns null for Playwright and WebdriverIO', () => {
+    it('returns null for Playwright', () => {
       expect(seleniumRulesFor('playwright-js')).to.equal(null);
-      expect(seleniumRulesFor('webdriverio-ts')).to.equal(null);
+    });
+    it("gives WebdriverIO its own rules, from WebdriverIO's docs", () => {
+      const md = seleniumRulesFor('webdriverio-ts')!;
+      expect(md).to.include('# WebdriverIO rules for AI assistants');
+      expect(md).to.include('https://webdriver.io/docs/bestpractices');
+      expect(md).to.include('waitForDisplayed');
+      expect(md).to.include("not Selenium's");
+      expect(md).not.to.include('selenium.dev');
     });
   });
 
@@ -114,8 +121,42 @@ describe('Selenium official rules', () => {
       expect(ids('driver.execute_cdp_cmd("Network.enable", {})')).to.include('warning:no-cdp');
     });
 
-    it('does not check Playwright or WebdriverIO code', () => {
+    it('does not check Playwright code', () => {
       expect(rules('await page.waitForTimeout(1000)', 'playwright-js', 'a.spec.ts')).to.deep.equal([]);
+    });
+
+    describe('WebdriverIO', () => {
+      const wdio = (code: string) => ids(code, 'webdriverio-ts', 'cart.ts');
+      it('accepts WebdriverIO waits and retrying matchers', () => {
+        const code = [
+          "await $('#start button').click();",
+          "await $('#loading').waitForDisplayed({ reverse: true });",
+          "await $('#field').waitForEnabled();",
+          "await browser.waitUntil(async () => (await $$('.row').length) === 3);",
+          "await expect($('#finish h4')).toHaveText('Hello World!');",
+          '// never browser.pause(5000) here: a comment does not count',
+        ].join('\n');
+        expect(wdio(code)).to.deep.equal([]);
+      });
+      it('rejects browser.pause and promise sleeps', () => {
+        expect(wdio('await browser.pause(5000);')).to.deep.equal(['error:wdio-no-pause']);
+        expect(wdio('await driver.pause(200)')).to.deep.equal(['error:wdio-no-pause']);
+        expect(wdio('await new Promise(r => setTimeout(r, 500));')).to.deep.equal(['error:wdio-no-pause']);
+      });
+      it('rejects sync mode and v4 APIs, warns about implicit timeouts and absolute XPath', () => {
+        expect(wdio("services: ['@wdio/sync'],")).to.include('error:wdio-sync-mode');
+        expect(wdio("browser.element('#q').click()")).to.include('error:wdio-sync-mode');
+        expect(wdio('await browser.setTimeout({ implicit: 5000 })')).to.deep.equal(['warning:wdio-no-implicit-timeout']);
+        expect(wdio("await $('/html/body/div[2]').click()")).to.deep.equal(['warning:no-absolute-xpath']);
+      });
+      it('does not apply Selenium-only rules such as driver.sleep wording or DesiredCapabilities', () => {
+        expect(wdio('const caps = { browserName: "chrome" };')).to.deep.equal([]);
+      });
+      it("reports with WebdriverIO's docs link", () => {
+        const report = formatRuleViolations(rules('await browser.pause(1000)', 'webdriverio-ts', 'a.ts'), 'a.ts')!;
+        expect(report).to.include('WebdriverIO rules (https://webdriver.io/docs/bestpractices)');
+        expect(report).to.include('line 1 [wdio-no-pause]');
+      });
     });
 
     it('formats a report with line numbers and the docs link', () => {

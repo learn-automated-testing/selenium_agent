@@ -40,7 +40,9 @@ describe("generator and healer follow Selenium's official rules", () => {
     const java = await new GeneratorSetupTool().execute(ctx(), { url: 'https://example.com', testPlan: 'p', framework: 'selenium-java-maven' });
     expect(java.content).to.include('(Java)');
     const pw = await new GeneratorSetupTool().execute(ctx(), { url: 'https://example.com', testPlan: 'p', framework: 'playwright-js' });
-    expect(pw.content).not.to.include('official rules for AI assistants');
+    expect(pw.content).not.to.include('rules for AI assistants');
+    const wdio = await new GeneratorSetupTool().execute(ctx(), { url: 'https://example.com', testPlan: 'p', framework: 'webdriverio-ts' });
+    expect(wdio.content).to.include('# WebdriverIO rules for AI assistants');
   });
 
   it('generator_write_test refuses a test with a sleep and says which line', async () => {
@@ -70,6 +72,14 @@ describe("generator and healer follow Selenium's official rules", () => {
     const r = await new GeneratorWriteTestTool().execute(ctx(), { ...base(), testCode: code, filename: 'test_x.py' });
     expect(r.isError).to.not.equal(true);
     expect(JSON.parse(r.content).seleniumRules).to.include('warn  line 2 [no-js-click]');
+  });
+
+  it('generator_write_test refuses a WebdriverIO test with browser.pause', async () => {
+    const code = "describe('x', () => { it('y', async () => {\n  await $('#start button').click();\n  await browser.pause(5000);\n}); });\n";
+    const r = await new GeneratorWriteTestTool().execute(ctx('webdriverio-ts'), { ...base(), testCode: code, filename: 'loading.ts' });
+    expect(r.isError).to.equal(true);
+    expect(r.content).to.include('WebdriverIO rules');
+    expect(r.content).to.include('line 3 [wdio-no-pause]');
   });
 
   it('healer_fix_test refuses a fix that adds a sleep, and keeps the file unchanged', async () => {

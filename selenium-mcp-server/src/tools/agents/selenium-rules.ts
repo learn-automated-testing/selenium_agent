@@ -8,6 +8,9 @@
  * - rust/src/resources/rules.md in SeleniumHQ/selenium — "Selenium Rules for AI Assistants", with
  *   code per language binding. Bundled unchanged in selenium-rules.data.ts (Apache-2.0); the
  *   generator hands the agent the sections for the language it writes.
+ *
+ * WebdriverIO is not a Selenium binding, so it gets its own, smaller set from the WebdriverIO docs:
+ * https://webdriver.io/docs/bestpractices and https://webdriver.io/docs/autowait.
  */
 import { SELENIUM_RULES_MARKDOWN, SELENIUM_RULES_SOURCE } from './selenium-rules.data.js';
 
@@ -15,6 +18,14 @@ export { SELENIUM_RULES_SOURCE };
 
 export const SELENIUM_AI_AGENTS_DOCS = 'https://www.selenium.dev/documentation/ai_agents/';
 export const SELENIUM_LLMS_TXT = 'https://www.selenium.dev/llms.txt';
+export const WEBDRIVERIO_BEST_PRACTICES = 'https://webdriver.io/docs/bestpractices';
+export const WEBDRIVERIO_AUTOWAIT = 'https://webdriver.io/docs/autowait';
+
+/** Whether a framework is WebdriverIO (its own rules, not Selenium's). */
+export function isWebdriverIO(framework: string, filename = ''): boolean {
+  const f = framework.toLowerCase();
+  return f.startsWith('webdriverio') || f.startsWith('wdio') || /\bwdio\.conf\.[jt]s$/.test(filename);
+}
 
 /** A Selenium language binding, as rules.md names its subsections. */
 export type SeleniumLanguage = 'Python' | 'Java' | 'JavaScript' | 'Ruby' | '.NET';
@@ -74,6 +85,7 @@ const PER_LANGUAGE_SECTIONS = ['Starting a Browser', 'Always Quit the Driver', '
  * Returns null for frameworks that don't use Selenium WebDriver.
  */
 export function seleniumRulesFor(framework: string, filename = ''): string | null {
+  if (isWebdriverIO(framework, filename)) return WEBDRIVERIO_RULES;
   const language = seleniumLanguage(framework, filename);
   if (!language) return null;
   const strip = (s: string) => s.replace(/\n---\s*\n?$/m, '').trim();
@@ -105,6 +117,27 @@ export function seleniumRulesFor(framework: string, filename = ''): string | nul
   return out.join('\n') + '\n';
 }
 
+/** WebdriverIO guidance, summarised from its own docs (WebdriverIO is not part of the Selenium project). */
+const WEBDRIVERIO_RULES = `# WebdriverIO rules for AI assistants
+
+From the WebdriverIO docs: ${WEBDRIVERIO_BEST_PRACTICES} and ${WEBDRIVERIO_AUTOWAIT}.
+These are WebdriverIO's own rules, not Selenium's.
+
+## Waiting
+- Never use \`browser.pause()\` to wait for the page: it is not resilient and makes tests flaky.
+  Wait for the condition instead: \`waitForDisplayed\`, \`waitForExist\`, \`waitForEnabled\`, \`waitForClickable\`
+  (\`{ reverse: true }\` to wait for the opposite), or \`browser.waitUntil()\` for anything else.
+- Commands that act on an element (\`click\`, \`setValue\`, ...) already wait for it to be interactable.
+- \`expect\` matchers from expect-webdriverio (\`toBeDisplayed\`, \`toHaveText\`, \`toHaveValue\`, ...) retry until
+  \`waitforTimeout\`; don't add a \`waitFor...\` right before the same check.
+- Don't set implicit timeouts (\`browser.setTimeout({ implicit })\`); set \`waitforTimeout\` in wdio.conf instead.
+
+## Code
+- Async only: \`await\` every command. The synchronous mode (\`@wdio/sync\`) and WebdriverIO v4 APIs
+  (\`browser.element()\`, \`browser.elements()\`) no longer exist.
+- Prefer ids and stable test attributes (\`[data-testid="..."]\`); avoid absolute XPath.
+`;
+
 // ============================================================================
 // Rule check
 // ============================================================================
@@ -128,6 +161,38 @@ interface Rule {
   /** For Robot Framework files the keyword patterns differ. */
   robotPatterns?: RegExp[];
 }
+
+interface WdioRule {
+  id: string;
+  severity: RuleSeverity;
+  patterns: RegExp[];
+  message: string;
+}
+
+/** WebdriverIO's own rules (https://webdriver.io/docs/bestpractices, https://webdriver.io/docs/autowait). */
+const WDIO_RULES: WdioRule[] = [
+  {
+    id: 'wdio-no-pause', severity: 'error',
+    patterns: [/\b(browser|driver)\.pause\s*\(/, /new Promise\(\s*\(?\s*\w+\s*\)?\s*=>\s*setTimeout\b/],
+    message: 'Don\'t pause: wait for the condition with waitForDisplayed / waitForExist / waitForEnabled / waitForClickable, ' +
+      'browser.waitUntil(), or a retrying expect matcher.',
+  },
+  {
+    id: 'wdio-no-implicit-timeout', severity: 'warning',
+    patterns: [/\bsetTimeout\(\s*\{[^}]*\bimplicit\s*:/],
+    message: 'Implicit timeouts are not recommended in WebdriverIO: rely on auto-waiting and waitforTimeout.',
+  },
+  {
+    id: 'wdio-sync-mode', severity: 'error',
+    patterns: [/['"]@wdio\/sync['"]/, /['"]wdio-sync['"]/, /\bbrowser\.elements?\s*\(/],
+    message: 'Synchronous mode and WebdriverIO v4 APIs no longer exist: use async $ / $$ and await every command.',
+  },
+  {
+    id: 'no-absolute-xpath', severity: 'warning',
+    patterns: [/["'`]\/html\b/, /["'`]\/body\//],
+    message: 'Absolute XPath is fragile. Prefer ids and stable test attributes such as [data-testid="..."].',
+  },
+];
 
 const ALL: SeleniumLanguage[] = ['Python', 'Java', 'JavaScript', 'Ruby', '.NET'];
 
@@ -232,6 +297,7 @@ function isComment(line: string, language: SeleniumLanguage, robot: boolean): bo
  * Errors are patterns the docs say never to use; warnings are patterns to avoid where possible.
  */
 export function checkSeleniumRules(code: string, framework: string, filename = ''): RuleViolation[] {
+  if (isWebdriverIO(framework, filename)) return checkWebdriverIORules(code);
   const language = seleniumLanguage(framework, filename);
   if (!language) return [];
   const robot = framework.toLowerCase().startsWith('robot') || filename.toLowerCase().endsWith('.robot');
@@ -261,12 +327,27 @@ export function checkSeleniumRules(code: string, framework: string, filename = '
   return violations.sort((a, b) => a.line - b.line);
 }
 
+function checkWebdriverIORules(code: string): RuleViolation[] {
+  const violations: RuleViolation[] = [];
+  code.split('\n').forEach((line, i) => {
+    if (isComment(line, 'JavaScript', false)) return;
+    for (const rule of WDIO_RULES) {
+      if (rule.patterns.some(p => p.test(line))) {
+        violations.push({ rule: rule.id, severity: rule.severity, line: i + 1, code: line.trim().slice(0, 160), message: rule.message });
+      }
+    }
+  });
+  return violations;
+}
+
 /** One readable report for the agent, or null when the code follows the rules. */
 export function formatRuleViolations(violations: RuleViolation[], file: string): string | null {
   if (violations.length === 0) return null;
   const errors = violations.filter(v => v.severity === 'error').length;
   const warnings = violations.length - errors;
-  const head = `Selenium rules (${SELENIUM_AI_AGENTS_DOCS}): ${errors} error(s), ${warnings} warning(s) in ${file}`;
+  const wdio = violations.some(v => v.rule.startsWith('wdio-'));
+  const source = wdio ? `WebdriverIO rules (${WEBDRIVERIO_BEST_PRACTICES})` : `Selenium rules (${SELENIUM_AI_AGENTS_DOCS})`;
+  const head = `${source}: ${errors} error(s), ${warnings} warning(s) in ${file}`;
   const body = violations.map(v => `  ${v.severity === 'error' ? 'ERROR' : 'warn '} line ${v.line} [${v.rule}] ${v.code}\n        → ${v.message}`);
   return [head, ...body].join('\n');
 }

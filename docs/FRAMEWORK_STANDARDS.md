@@ -13,6 +13,11 @@ from the Selenium repository (`rust/src/resources/rules.md`).
   `DesiredCapabilities`, Selenium 3 APIs (`find_element_by_*`), the old headless API, Java `TimeUnit` timeouts or
   implicit waits mixed with explicit waits, and warn about absolute XPath, JavaScript clicks and CDP.
 
+WebdriverIO is not a Selenium binding, so it follows WebdriverIO's own guidance
+([best practices](https://webdriver.io/docs/bestpractices), [auto-waiting](https://webdriver.io/docs/autowait)):
+no `browser.pause()`, waits with `waitForDisplayed` / `waitForEnabled` / `waitUntil` or retrying `expect` matchers,
+async only. Playwright tests are not checked.
+
 The conventions below build on those rules.
 
 ## Overview
