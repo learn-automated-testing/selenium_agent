@@ -2,20 +2,20 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.learn-automated-testing/selenium-ai-agent",
   "title": "Selenium AI Agent",
-  "description": "Selenium MCP: AI test generation and self-healing for pytest, Java, C# and WebdriverIO, plus Grid",
+  "description": "Selenium MCP: plan, generate and heal tests; pytest by default, any language; Selenium Grid",
   "repository": {
     "url": "https://github.com/learn-automated-testing/selenium_agent",
     "source": "github",
     "subfolder": "selenium-mcp-server"
   },
   "websiteUrl": "https://github.com/learn-automated-testing/selenium_agent#readme",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "selenium-ai-agent",
-      "version": "3.4.1",
+      "version": "3.4.2",
       "transport": {
         "type": "stdio"
       },

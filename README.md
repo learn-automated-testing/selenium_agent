@@ -4,6 +4,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium Grid](https://img.shields.io/badge/Selenium%20Grid-Parallel-blue.svg)](https://www.selenium.dev/documentation/grid/)
 
+> **Selenium AI Agent** (`selenium-ai-agent` on npm) is a Selenium MCP server for AI-driven test automation.
+>
+> - **Built in Node.js:** run it with `npx -y selenium-ai-agent`, no install needed.
+> - **Generates tests in Python with pytest by default**, and in any other language or framework on request: Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework.
+> - **Test agents like Playwright's:** a planner explores your app and writes a structured test plan, a generator turns it into tests checked live in the browser, and a healer runs and repairs them.
+> - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
+> - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
+
 ### One-Click Install
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)

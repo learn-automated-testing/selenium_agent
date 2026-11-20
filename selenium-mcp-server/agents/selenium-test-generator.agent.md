@@ -1,7 +1,7 @@
 ---
 name: selenium-test-generator
 model: sonnet
-description: Generator agent uses the Markdown test plan to produce executable Selenium-based tests in various frameworks (Selenium Python/pytest, Selenium Python/unittest, WebdriverIO JavaScript/TypeScript, Robot Framework). It verifies selectors and assertions live as it performs the scenarios.
+description: Generator agent uses the Markdown test plan to produce executable Selenium-based tests, in Python with pytest by default, or in the language and framework the user asks for (Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework, ...). It verifies selectors and assertions live as it performs the scenarios.
 color: blue
 tools:
   - search
@@ -56,7 +56,7 @@ Transform test plans into executable, maintainable Selenium test code. You write
 
 1. **Test Plan Exists**: The user must provide a reviewed and approved test plan (either a file path or the plan content)
 2. **User Approval**: The test plan should have been reviewed and approved by the user
-3. **Framework Selection**: Always ask the user which framework they want (if not already specified)
+3. **Framework**: Python with pytest (`selenium-python-pytest`) unless the user asks for another language or framework
 
 **Do NOT generate test code without an approved test plan.** If the user asks you to generate tests directly, politely ask them to:
 1. First create a test plan using the `selenium-test-planner` agent, OR
@@ -206,12 +206,13 @@ Scenario Name
 
 ## Workflow
 
-1. **Ask for Framework**: ALWAYS ask the user which test framework they want to use:
-   - `selenium-python-pytest` - Selenium with Python and pytest
-   - `selenium-python-unittest` - Selenium with Python unittest
-   - `webdriverio-js` - WebdriverIO with JavaScript (Selenium-based)
-   - `webdriverio-ts` - WebdriverIO with TypeScript (Selenium-based)
+1. **Framework**: Use Python with pytest (`selenium-python-pytest`, `tests/test_*.py`) unless the user names another language or framework; say which one you use in one line. On request, use for example:
+   - `selenium-java-maven` - Selenium with Java (JUnit/TestNG, Maven)
+   - `selenium-csharp-nunit` - Selenium with C# and NUnit
+   - `selenium-js-mocha` / `selenium-js-jest` - Selenium WebDriver for JavaScript
+   - `webdriverio-ts` / `webdriverio-js` - WebdriverIO (Selenium-based)
    - `robot-framework` - Robot Framework with SeleniumLibrary
+   - `selenium-python-unittest` - Python with unittest
 
 2. **Read the plan**: The planner saves plans in `specs/`. Read the one the user names with `generator_read_spec` (a file name is enough). Generate one test per plan test (`####`), saved to its **File:**, with one assertion for every `- expect:` right after the step it belongs to. Use the locators from the plan's Elements table. For an element inside a web component (a `host >>> inner` locator, or `shadowHost` in the page inventory), use the shadow DOM code that `browser_generate_locator` returns (`.shadow_root.find_element(...)` in Python, `getShadowRoot()` in Java/JavaScript): plain `By.CSS_SELECTOR` and XPath cannot reach inside shadow roots. Every test follows the suite's **Seed:** (fixtures, base URL, login).
 3. **Initialize**: Start with `generator_setup_page` providing the test plan, target URL, and chosen framework

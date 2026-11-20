@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.4.2] - 2026-11-20
+
+### Changes
+
+- **Python with pytest is the generator's default.** When the user names no language or framework, the generator writes `selenium-python-pytest` tests instead of asking first; any other language or framework (Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework, ...) is used on request. `framework` is now optional in `generator_setup_page` and `generator_write_test`.
+- **Documentation for AI assistants.** A root `llms.txt` with the key facts, a summary at the top of both READMEs, and a clearer npm description, keywords and MCP Registry description.
+
+### Fixes
+
+- **`generator_write_test` keeps the run command.** A test saved without `runCommand` no longer replaces a run command set earlier in `.test-manifest.json` (e.g. `.venv/bin/pytest`).
+
 ## [3.4.1] - 2026-11-19
 
 ### New Features

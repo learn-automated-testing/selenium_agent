@@ -1,6 +1,14 @@
 # selenium-ai-agent
 
-AI-powered Selenium MCP server for browser automation — **61 tools (75 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, test generation & self-healing pipeline, and session tracing.
+> **Selenium AI Agent** (`selenium-ai-agent` on npm) is a Selenium MCP server for AI-driven test automation.
+>
+> - **Built in Node.js:** run it with `npx -y selenium-ai-agent`, no install needed.
+> - **Generates tests in Python with pytest by default**, and in any other language or framework on request: Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework.
+> - **Test agents like Playwright's:** a planner explores your app and writes a structured test plan, a generator turns it into tests checked live in the browser, and a healer runs and repairs them.
+> - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
+> - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
+
+**61 tools (75 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
 
 ### One-Click Install
 
