@@ -126,8 +126,9 @@ export async function createServer(externalContext?: Context) {
         context.recordAction(name, cleanArgs);
       }
 
-      // Determine whether to include snapshot
-      const shouldSnapshot = expectation.includeSnapshot ?? result.captureSnapshot;
+      // Determine whether to include snapshot. Tools that don't need a browser (running tests, reading docs,
+      // writing files) may be called before one is open: then there is no page to snapshot, which is not an error.
+      const shouldSnapshot = (expectation.includeSnapshot ?? result.captureSnapshot) && context.hasBrowser();
 
       if (shouldSnapshot && !result.isError) {
         // Check if diff mode is requested

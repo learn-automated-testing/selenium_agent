@@ -24,7 +24,8 @@ reference does not exist (Selenium's guidance for AI agents). Without "page" it 
 (https://www.selenium.dev/llms.txt); with a URL, path or topic it returns that page, with the code examples for every
 language. Only selenium.dev and webdriver.io are fetched; pages are cached for a day.`;
   readonly inputSchema = schema;
-  readonly category: ToolCategory = 'agent';
+  // No page snapshot after reading docs: it doesn't touch the browser.
+  readonly category: ToolCategory = 'generator';
 
   async execute(_context: Context, params: unknown): Promise<ToolResult> {
     const { page, framework } = this.parseParams(schema, params);

@@ -447,6 +447,11 @@ export class Context {
     await this.discardLocalSession();
   }
 
+  /** Whether a browser session is open (local or on the Grid), without opening one. */
+  hasBrowser(): boolean {
+    return Boolean(this.activeGridSession || this.driver);
+  }
+
   async getDriver(): Promise<WebDriver> {
     if (this.activeGridSession) {
       return this.activeGridSession.getDriver();
