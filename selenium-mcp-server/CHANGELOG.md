@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### New Features
+
+- **The generator and healer follow Selenium's official rules for AI agents.** The Selenium project publishes guidance for AI coding assistants ([selenium.dev/documentation/ai_agents](https://www.selenium.dev/documentation/ai_agents/)) and a rules file with examples per language binding (`rust/src/resources/rules.md` in SeleniumHQ/selenium, bundled unchanged, Apache-2.0).
+  - `generator_setup_page` returns the rules for the language the tests are written in: the core principles, that language's examples for starting and quitting a browser, locating elements and explicit waits, common expected conditions, common errors and the anti-patterns.
+  - `generator_write_test` and `healer_fix_test` check the code against the guidance and do not write a file that breaks it: sleeps (`time.sleep`, `Thread.sleep`, `driver.sleep`, Robot `Sleep`, ...), third-party driver managers and hard-coded driver paths, `DesiredCapabilities`, removed Selenium 3 APIs (`find_element_by_*`, `switch_to_alert`, `findElementBy*`), the old headless API, Java `TimeUnit` timeouts, Grid 3 invocations, and implicit waits mixed with explicit waits. The error lists each line with the rule and how to fix it. Absolute XPath, JavaScript clicks, CDP, `BrowserType` and a lone implicit wait are reported as warnings. `allowRuleViolations` writes the file anyway, only when the user explicitly asks.
+  - The generator and healer agents follow the rules; the healer no longer fixes flaky tests with sleeps or longer timeouts, but waits for the condition that was not yet true.
+  - Playwright and WebdriverIO tests are not checked: the rules are for Selenium WebDriver.
+  - `scripts/update-selenium-rules.mjs` refreshes the bundled rules from the Selenium repository.
+
+### Fixes
+
+- **No implicit waits in the examples.** The generator agent and `docs/FRAMEWORK_STANDARDS.md` showed `driver.implicitly_wait(10)` next to explicit waits, which Selenium's guidance says never to mix.
+
 ## [3.4.2] - 2026-11-20
 
 ### Changes

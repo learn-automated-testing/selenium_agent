@@ -136,9 +136,12 @@ Follow this systematic debugging approach:
 - Use `console_logs` for async operation logs
 - Check `network_monitor` for pending calls
 **Fix**:
-- Replace implicit waits with explicit WebDriverWait
-- Wait for specific conditions (visibility, clickability)
-- Add network idle waits for AJAX-heavy pages
+- Find the condition that was not yet true, and wait for exactly that with an explicit WebDriverWait
+  (element clickable, text present, spinner gone)
+- Replace implicit waits with explicit waits; never mix the two
+- Never fix flakiness with a sleep or a longer timeout (Selenium's official rules:
+  https://www.selenium.dev/documentation/ai_agents/). `healer_fix_test` rejects fixes that add a sleep.
+- After the fix, run the test several times before trusting it
 
 ### 4. Wrong Expected Values
 **Symptoms**: Assertion failures, unexpected text/values
@@ -228,6 +231,8 @@ driver.find_element(By.ID, "dynamic").send_keys("text")
 
 - **Don't Use Deprecated APIs**: Avoid `networkidle` and other deprecated features
 - **Explicit Over Implicit**: Prefer explicit waits over implicit waits or sleep
+- **Selenium's Official Rules**: Fixes must follow https://www.selenium.dev/documentation/ai_agents/ — `healer_fix_test`
+  checks them and reports the lines that break them
 - **Mark Unfixable Tests**: Use `pytest.mark.skip` or `@pytest.mark.xfail` for broken features
 - **Document Fixes**: Add comments explaining what was fixed and why
 - **Test in Isolation**: Ensure fixes work independently

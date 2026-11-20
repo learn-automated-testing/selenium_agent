@@ -6,6 +6,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 import { TestManifest, findManifest } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { collectLocatorCandidates, locatorSnippets, rankCandidates, type LocatorCandidate } from '../../utils/locator-match.js';
+import { checkSeleniumRules, formatRuleViolations } from './selenium-rules.js';
 import { countDeep } from '../../utils/shadow-dom.js';
 
 // ============================================================================
@@ -243,16 +244,30 @@ const fixTestSchema = z.object({
   fixedCode: z.string().describe('The corrected test code'),
   fixDescription: z.string().describe('Description of what was fixed'),
   verify: z.boolean().optional().describe('Validate selectors in fixed code before writing (default: false)'),
+  framework: z.string().optional().describe('Test framework (default: from generator_setup_page, else detected from the file extension)'),
+  allowRuleViolations: z.boolean().optional()
+    .describe('Write the fix even if it breaks Selenium\'s official rules. Only when the user explicitly asks for it.'),
 });
 
 export class HealerFixTestTool extends BaseTool {
   readonly name = 'healer_fix_test';
-  readonly description = 'Apply a fix to a test file. Creates a .bak backup before overwriting. The LLM provides the corrected code.';
+  readonly description = `Apply a fix to a test file. Creates a .bak backup before overwriting. The LLM provides the corrected code.
+
+The fix is checked against Selenium's official rules for AI agents (https://www.selenium.dev/documentation/ai_agents/).
+Don't fix a flaky test with a sleep or a longer timeout: find the condition that was not yet true and wait for it.
+A fix with an error (a sleep, a driver path, Selenium 3 APIs, ...) is not written.`;
   readonly inputSchema = fixTestSchema;
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { testPath, fixedCode, fixDescription, verify } = this.parseParams(fixTestSchema, params);
+    const { testPath, fixedCode, fixDescription, verify, framework, allowRuleViolations } = this.parseParams(fixTestSchema, params);
+
+    const violations = checkSeleniumRules(fixedCode, framework || context.generatorFramework || '', testPath);
+    const ruleReport = formatRuleViolations(violations, testPath);
+    if (violations.some(v => v.severity === 'error') && !allowRuleViolations) {
+      return this.error(`Fix not written: it breaks Selenium's official rules.\n${ruleReport}\n` +
+        'Find the condition the test waits for instead, fix these lines and call healer_fix_test again.');
+    }
 
     const fs = await import('fs/promises');
 
@@ -296,6 +311,9 @@ export class HealerFixTestTool extends BaseTool {
       };
       if (validationReport) {
         result.selectorValidation = validationReport;
+      }
+      if (ruleReport) {
+        result.seleniumRules = ruleReport;
       }
 
       return this.success(JSON.stringify(result, null, 2), false);
