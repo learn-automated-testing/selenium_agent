@@ -5,7 +5,10 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { listResources, readResource } from './resources.js';
 import { getAllTools } from './tools/index.js';
 import { Context } from './context.js';
 import { zodToJsonSchema } from './utils/schema.js';
@@ -26,7 +29,8 @@ export async function createServer(externalContext?: Context) {
     },
     {
       capabilities: {
-        tools: {}
+        tools: {},
+        resources: {}
       }
     }
   );
@@ -69,6 +73,12 @@ export async function createServer(externalContext?: Context) {
         annotations: t.getAnnotations(),
       };
     })
+  }));
+
+  // Resources: the Selenium and WebdriverIO docs indexes and the rules for AI assistants
+  server.setRequestHandler(ListResourcesRequestSchema, async () => ({ resources: listResources() }));
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => ({
+    contents: [await readResource(request.params.uri)],
   }));
 
   // Execute tool

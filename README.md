@@ -106,6 +106,8 @@ npx selenium-ai-agent init-agents --loop=copilot   # GitHub Copilot coding agent
 npx selenium-ai-agent init-agents --loop=cursor    # Cursor rules
 ```
 
+Add `--with-rules` to also put Selenium's [rules for AI agents](https://www.selenium.dev/documentation/ai_agents/) in your project's `CLAUDE.md`, `.cursor/rules/selenium.mdc` or `.github/copilot-instructions.md`, so every AI tool you use writes modern Selenium code.
+
 ### 3. Ask for tests
 
 ```text
@@ -138,6 +140,8 @@ Something not starting? Run `npx selenium-ai-agent doctor`.
 | **Planner** | Explores the app in a real browser, takes an inventory of every page and pop-up, and writes a plan in the same structure as Playwright's planner: suites → tests → steps with `expect`. It adds the elements found (with stable locators) and the gaps. | `specs/<feature>.md` |
 | **Generator** | Writes one test file per plan test, with an assertion for every `expect`, after checking each value live in the browser. Sets up the project (for Python: a virtual environment with Selenium and pytest) if needed. | Test files, a run command |
 | **Healer** | Runs the tests, debugs failures, inspects the page and fixes broken locators or waits, then runs them again. | Passing tests, or a clear bug report |
+
+The generator and healer follow [Selenium's guide for AI agents](https://www.selenium.dev/documentation/ai_agents/) (and [WebdriverIO's](https://webdriver.io/docs/ai-agents) for WebdriverIO): they read the current docs from `llms.txt` with `get_selenium_docs`, and refuse to write a test with a sleep, a driver path, `DesiredCapabilities` or a Selenium 3 API.
 
 You review the plan before code is generated, and the code before it is committed. The [Agent Workflow](docs/AGENT_WORKFLOW.md) guide covers each stage in detail.
 
@@ -226,7 +230,7 @@ All variables, CLI flags, driver and proxy setup, and troubleshooting are in the
 
 ## Tools
 
-75 tools, 61 without Grid.
+76 tools, 62 without Grid.
 
 <details>
 <summary>Show all tools</summary>
@@ -255,6 +259,7 @@ All variables, CLI flags, driver and proxy setup, and troubleshooting are in the
 | Session | `close_browser` · `reset_session` · `set_stealth_mode` |
 | Recording | `start_recording` · `stop_recording` · `recording_status` · `clear_recording` |
 | Batch | `batch_execute` |
+| Docs | `get_selenium_docs` (current Selenium / WebdriverIO docs from their `llms.txt`) |
 
 **Grid and parallel execution**
 

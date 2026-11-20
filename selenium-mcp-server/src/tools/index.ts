@@ -61,6 +61,7 @@ import {
 
 // Batch
 import { BatchExecuteTool } from './batch/index.js';
+import { GetSeleniumDocsTool } from './agents/docs.js';
 
 // Grid
 import {
@@ -153,6 +154,9 @@ export async function getAllTools(): Promise<BaseTool[]> {
 
       // Batch (1)
       batchTool,
+
+      // Docs (1): current Selenium / WebdriverIO documentation from their llms.txt
+      new GetSeleniumDocsTool(),
     ],
 
     // Recording (4)

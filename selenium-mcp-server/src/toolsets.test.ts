@@ -36,17 +36,18 @@ describe('toolsets', () => {
   describe('getAllTools', () => {
     const names = async () => (await getAllTools()).map(t => t.name);
 
-    it('exposes all 61 non-grid tools by default', async () => {
+    it('exposes all 62 non-grid tools by default', async () => {
       delete process.env.SELENIUM_GRID_URL;
       delete process.env.SELENIUM_MCP_TOOLSETS;
-      expect(await names()).to.have.length(61);
+      expect(await names()).to.have.length(62);
     });
 
-    it('exposes only the 37 core tools for "core"', async () => {
+    it('exposes only the 38 core tools (with get_selenium_docs) for "core"', async () => {
       delete process.env.SELENIUM_GRID_URL;
       process.env.SELENIUM_MCP_TOOLSETS = 'core';
       const result = await names();
-      expect(result).to.have.length(37);
+      expect(result).to.have.length(38);
+      expect(result).to.include('get_selenium_docs');
       expect(result).to.include('navigate_to');
       expect(result).to.include('batch_execute');
       expect(result).to.not.include('generator_write_test');

@@ -6,6 +6,7 @@ color: red
 tools:
   - search
   - edit
+  - get_selenium_docs
   - navigate_to
   - capture_page
   - click_element
@@ -79,6 +80,21 @@ Follow this systematic debugging approach:
    - Solution is maintainable
 
 7. **Iterate**: Continue until all tests pass or are properly marked as fixme
+
+## Check the Docs First
+
+Selenium and WebdriverIO publish their current documentation for AI assistants: an index at
+https://www.selenium.dev/llms.txt (WebdriverIO: https://webdriver.io/llms.txt), and the guide
+https://www.selenium.dev/documentation/ai_agents/ (WebdriverIO: https://webdriver.io/docs/ai-agents).
+
+- Before using an API, option or keyword you are not sure of, read its page with `get_selenium_docs`
+  (a topic such as "explicit waits", a path such as "documentation/webdriver/waits", or a URL;
+  `framework: "webdriverio"` for WebdriverIO). The same pages are MCP resources: `selenium://docs/llms.txt`,
+  `selenium://rules/<language>`.
+- An API that is not in the current docs or API reference does not exist: don't guess it from memory.
+- Never write Selenium 3 or older patterns: no `DesiredCapabilities`, no `find_element_by_*` / `findElementBy*`,
+  no `webdriver-manager` or driver paths (Selenium Manager finds the driver), Java timeouts as `Duration`,
+  explicit waits only. For WebdriverIO: v10 APIs only, no `browser.pause()`.
 
 ## Key Principles
 
