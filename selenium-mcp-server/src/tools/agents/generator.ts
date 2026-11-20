@@ -10,6 +10,9 @@ import {
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
 
+/** The framework the generator uses when the user names none. */
+export const DEFAULT_FRAMEWORK = 'selenium-python-pytest';
+
 /**
  * Detect the run command for a framework based on common conventions.
  * Returns a suggestion that the LLM can override.
@@ -63,25 +66,27 @@ async function detectConfigFile(projectRoot: string): Promise<string | null> {
 const setupSchema = z.object({
   url: z.string().describe('URL of the web application to test'),
   testPlan: z.string().describe('Test plan content or path to test plan file'),
-  framework: z.string().describe('Test framework (e.g. selenium-python-pytest, playwright-js, webdriverio-ts)')
+  framework: z.string().optional()
+    .describe('Test framework. Default: selenium-python-pytest. Others: selenium-java-maven, selenium-csharp-nunit, selenium-js-mocha, webdriverio-ts, robot-framework, playwright-js, ...')
 });
 
 export class GeneratorSetupTool extends BaseTool {
   readonly name = 'generator_setup_page';
   readonly description = `Initialize the test generation session and navigate to the application.
 
-When a framework is provided (e.g., from a skill), use it and apply its standard folder conventions. When no framework is specified, ask the user:
-
-1. Which test framework? (selenium-python-pytest, playwright-js, webdriverio-ts, robot-framework, selenium-js-jest, selenium-js-mocha, selenium-java-maven, etc.)
-2. Use the default structure for that framework? Defaults: pytest: tests/test_*.py, playwright: tests/*.spec.ts, webdriverio: test/specs/*.spec.ts, robot-framework: tests/*.robot, jest/mocha: test/*.test.js, java-maven: src/test/java/*Test.java
-3. If not default, which pattern? (Page Object Model, BDD/Gherkin, Data-driven, Custom)
+Default: Python with pytest (selenium-python-pytest, tests/test_*.py). Use it when the user names no language or
+framework, and say so in one line. When the user asks for another one, use it and its standard folder conventions:
+selenium-java-maven (src/test/java/*Test.java), selenium-csharp-nunit, selenium-js-mocha / selenium-js-jest (test/*.test.js),
+webdriverio-ts (test/specs/*.spec.ts), robot-framework (tests/*.robot), playwright-js (tests/*.spec.ts), or any other
+language or framework the user names (Page Object Model, BDD/Gherkin and data-driven patterns too).
 
 Pass the chosen framework to all subsequent generator and healer tool calls.`;
   readonly inputSchema = setupSchema;
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { url, testPlan, framework } = this.parseParams(setupSchema, params);
+    const { url, testPlan, framework: chosen } = this.parseParams(setupSchema, params);
+    const framework = chosen || DEFAULT_FRAMEWORK;
 
     const driver = await context.ensureBrowser();
     await driver.get(url);
@@ -150,7 +155,7 @@ export class GeneratorReadLogTool extends BaseTool {
 const writeTestSchema = z.object({
   testCode: z.string().describe('Generated test code'),
   filename: z.string().describe('Filename for the test file'),
-  framework: z.string().describe('Test framework'),
+  framework: z.string().optional().describe('Test framework (default: the one from generator_setup_page, else selenium-python-pytest)'),
   outputDir: z.string().optional().describe('Output directory for test files (default: framework-conventional directory)'),
   projectRoot: z.string().optional().describe('Project root directory (for manifest). If omitted, uses outputDir parent.'),
   baseUrl: z.string().optional().describe('Base URL of the application under test'),
@@ -180,10 +185,11 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const {
-      testCode, filename, framework, outputDir,
+      testCode, filename, framework: chosenFramework, outputDir,
       projectRoot: explicitProjectRoot, baseUrl, runCommand, configFile: explicitConfig,
       verify, specFile,
     } = this.parseParams(writeTestSchema, params);
+    const framework = chosenFramework || context.generatorFramework || DEFAULT_FRAMEWORK;
 
     const fs = await import('fs/promises');
     const path = await import('path');
@@ -233,7 +239,8 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
         // Update existing manifest
         manifest.framework = framework;
         manifest.baseUrl = baseUrl || manifest.baseUrl;
-        manifest.runCommand = suggestedRun || manifest.runCommand;
+        // A run command set earlier (e.g. ".venv/bin/pytest") stays unless this call gives a new one.
+        manifest.runCommand = runCommand || manifest.runCommand || suggestedRun;
         manifest.configFile = detectedConfig || manifest.configFile;
         manifest.updatedAt = new Date().toISOString();
 
