@@ -57,10 +57,10 @@ You need **Node.js 18+** and a browser (Chrome, Firefox or Edge).
 claude mcp add selenium-mcp -- npx -y selenium-ai-agent
 ```
 
-**Claude Desktop, Cursor or Windsurf** (writes the config for you):
+**Claude Desktop, Cursor, Windsurf or Junie in IntelliJ IDEA / PyCharm** (writes the config for you):
 
 ```bash
-npx selenium-ai-agent install claude-desktop   # or: cursor, windsurf
+npx selenium-ai-agent install claude-desktop   # or: cursor, windsurf, junie
 ```
 
 <details>
@@ -93,7 +93,9 @@ npx selenium-ai-agent install claude-desktop   # or: cursor, windsurf
 }
 ```
 
-See [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) for all clients, including Cline and Windsurf.
+**IntelliJ IDEA / PyCharm with AI Assistant**: *Settings → Tools → AI Assistant → Model Context Protocol (MCP) → Add → As JSON*, and paste the `mcpServers` JSON above. With GitHub Copilot in a JetBrains IDE: *Settings → Tools → GitHub Copilot → Model Context Protocol (MCP) → Configure*, and add the `servers` JSON above.
+
+See [MCP Client Setup](docs/MCP_CLIENT_SETUP.md) and the [package README](selenium-mcp-server/README.md#jetbrains-ides-intellij-idea-pycharm-webstorm-) for all clients, including Cline and Windsurf.
 
 </details>
 
@@ -140,6 +142,7 @@ Something not starting? Run `npx selenium-ai-agent doctor`.
 | **Planner** | Explores the app in a real browser, takes an inventory of every page and pop-up, and writes a plan in the same structure as Playwright's planner: suites → tests → steps with `expect`. It adds the elements found (with stable locators) and the gaps. | `specs/<feature>.md` |
 | **Generator** | Writes one test file per plan test, with an assertion for every `expect`, after checking each value live in the browser. Sets up the project (for Python: a virtual environment with Selenium and pytest) if needed. | Test files, a run command |
 | **Healer** | Runs the tests, debugs failures, inspects the page and fixes broken locators or waits, then runs them again. | Passing tests, or a clear bug report |
+| **Migrator** | Upgrades an existing suite to current Selenium 4: scans it for Selenium 3 patterns, sleeps and mixed waits (`selenium_rules_check`), runs it as a baseline, rewrites one file at a time and proves each still passes. | Migrated tests, before/after results per file |
 
 The generator and healer follow [Selenium's guide for AI agents](https://www.selenium.dev/documentation/ai_agents/) (and [WebdriverIO's](https://webdriver.io/docs/ai-agents) for WebdriverIO): they read the current docs from `llms.txt` with `get_selenium_docs`, and refuse to write a test with a sleep, a driver path, `DesiredCapabilities` or a Selenium 3 API.
 
@@ -160,11 +163,11 @@ You review the plan before code is generated, and the code before it is committe
 
 ## Languages and Frameworks
 
-If you don't name one, tests are generated in **Python with pytest**.
+If you don't name one, the generator uses **your project's own stack**: Java with JUnit 5 or TestNG (from `pom.xml` or `build.gradle`), Python with pytest or unittest (`requirements.txt`, `pyproject.toml`, `pytest.ini`), C# with NUnit, xUnit or MSTest (`*.csproj`), JavaScript/TypeScript (`package.json`) or Robot Framework (`*.robot`). In an empty project it uses **Python with pytest**.
 
 | Language | Frameworks (`framework` value) |
 |----------|-------------------------------|
-| Python | pytest (`selenium-python-pytest`, default), Playwright (`playwright-python`), Robot Framework (`robot-framework`) |
+| Python | pytest (`selenium-python-pytest`, default), unittest (`selenium-python-unittest`), Playwright (`playwright-python`), Robot Framework (`robot-framework`) |
 | Java | Maven (`selenium-java-maven`), Gradle (`selenium-java-gradle`) |
 | C# | NUnit (`selenium-csharp-nunit`), MSTest (`selenium-csharp-mstest`), xUnit (`selenium-csharp-xunit`) |
 | JavaScript / TypeScript | WebdriverIO (`webdriverio-ts`, `webdriverio-js`), Mocha (`selenium-js-mocha`), Jest (`selenium-js-jest`), Playwright (`playwright-js`) |
@@ -230,7 +233,7 @@ All variables, CLI flags, driver and proxy setup, and troubleshooting are in the
 
 ## Tools
 
-76 tools, 62 without Grid.
+77 tools, 63 without Grid.
 
 <details>
 <summary>Show all tools</summary>
@@ -241,7 +244,7 @@ All variables, CLI flags, driver and proxy setup, and troubleshooting are in the
 |-------|-------|
 | **Planner** | `planner_setup_page`, `planner_explore_page`, `planner_save_plan` |
 | **Generator** | `generator_setup_page`, `generator_read_log`, `generator_write_test`, `generator_write_seed`, `generator_save_spec`, `generator_read_spec` |
-| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `healer_inspect_page`, `browser_generate_locator` |
+| **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `healer_inspect_page`, `browser_generate_locator`, `selenium_rules_check` |
 | **Analyzer** | `analyzer_setup`, `analyzer_import_context`, `analyzer_scan_product`, `analyzer_build_risk_profile`, `analyzer_save_profile`, `analyzer_generate_documentation` |
 
 **Browser**

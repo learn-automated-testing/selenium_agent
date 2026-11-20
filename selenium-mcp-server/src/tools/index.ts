@@ -62,6 +62,7 @@ import {
 // Batch
 import { BatchExecuteTool } from './batch/index.js';
 import { GetSeleniumDocsTool } from './agents/docs.js';
+import { SeleniumRulesCheckTool } from './agents/rules-check.js';
 
 // Grid
 import {
@@ -184,8 +185,9 @@ export async function getAllTools(): Promise<BaseTool[]> {
       new GeneratorReadSpecTool(),
     ],
 
-    // Healer Agent (5)
+    // Healer Agent (6), also used by the migrator
     healer: [
+      new SeleniumRulesCheckTool(),
       new HealerRunTestsTool(),
       new HealerDebugTestTool(),
       new HealerFixTestTool(),
