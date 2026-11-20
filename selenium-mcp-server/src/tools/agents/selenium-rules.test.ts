@@ -48,7 +48,9 @@ describe('Selenium official rules', () => {
     it("gives WebdriverIO its own rules, from WebdriverIO's docs", () => {
       const md = seleniumRulesFor('webdriverio-ts')!;
       expect(md).to.include('# WebdriverIO rules for AI assistants');
-      expect(md).to.include('https://webdriver.io/docs/bestpractices');
+      expect(md).to.include('https://webdriver.io/docs/ai-agents');
+      expect(md).to.include('https://webdriver.io/llms.txt');
+      expect(md).to.include('strict in v10');
       expect(md).to.include('waitForDisplayed');
       expect(md).to.include("not Selenium's");
       expect(md).not.to.include('selenium.dev');
@@ -125,6 +127,56 @@ describe('Selenium official rules', () => {
       expect(rules('await page.waitForTimeout(1000)', 'playwright-js', 'a.spec.ts')).to.deep.equal([]);
     });
 
+    describe('Robot Framework (SeleniumLibrary)', () => {
+      const robot = (code: string) => ids(code, 'robot-framework', 'loading.robot');
+      it('accepts Wait Until keywords, a zero implicit wait and options with --headless=new', () => {
+        const code = [
+          '*** Settings ***',
+          'Library    SeleniumLibrary    timeout=10s    implicit_wait=0',
+          '*** Test Cases ***',
+          'Hidden Element Appears',
+          '    [Documentation]    Waits for the result, never sleeps.',
+          '    Open Browser    ${URL}    chrome    options=add_argument("--headless=new")',
+          '    Click Button    css:#start button',
+          '    Wait Until Element Is Not Visible    id:loading',
+          '    Wait Until Element Contains    css:#finish h4    Hello World!',
+          '    Set Selenium Implicit Wait    0',
+          '    # Sleep    5s   <- a comment does not count',
+          '    [Teardown]    Close Browser',
+        ].join('\n');
+        expect(robot(code)).to.deep.equal([]);
+      });
+      it('rejects Sleep and Set Selenium Speed', () => {
+        expect(robot('    Sleep    5s')).to.deep.equal(['error:no-sleep']);
+        expect(robot('    BuiltIn.Sleep    2')).to.deep.equal(['error:no-sleep']);
+        expect(robot('    Set Selenium Speed    0.5s')).to.deep.equal(['error:robot-selenium-speed']);
+        expect(robot('    Set Selenium Speed    0')).to.deep.equal([]);
+      });
+      it('makes an implicit wait an error when Wait Until keywords are used too', () => {
+        expect(robot('    Set Selenium Implicit Wait    10s')).to.deep.equal(['warning:no-implicit-wait']);
+        expect(robot('    Set Selenium Implicit Wait    10s\n    Wait Until Page Contains    Done'))
+          .to.deep.equal(['error:no-implicit-wait']);
+        expect(robot('Library    SeleniumLibrary    implicit_wait=5\n    Wait Until Page Contains    Done'))
+          .to.deep.equal(['error:no-implicit-wait']);
+      });
+      it('rejects deprecated Open Browser arguments and webdrivermanager', () => {
+        expect(robot('    Open Browser    ${URL}    chrome    desired_capabilities=${caps}')).to.include('error:no-desired-capabilities');
+        expect(robot('    Open Browser    ${URL}    chrome    executable_path=/usr/bin/chromedriver')).to.include('error:no-driver-path');
+        expect(robot('    Run Process    webdrivermanager    chrome')).to.include('error:no-driver-manager');
+      });
+      it('warns about absolute XPath and the sizzle strategy', () => {
+        expect(robot('    Click Element    xpath:/html/body/div[2]/button')).to.deep.equal(['warning:no-absolute-xpath']);
+        expect(robot('    Click Element    sizzle:div.example')).to.deep.equal(['warning:robot-sizzle']);
+      });
+      it('gives the Robot section with SeleniumLibrary keywords and the docs link', () => {
+        const md = seleniumRulesFor('robot-framework')!;
+        expect(md).to.include('## Robot Framework (SeleniumLibrary)');
+        expect(md).to.include('Wait Until Element Is Visible');
+        expect(md).to.include('Set Selenium Speed');
+        expect(md).to.include('robotframework.org/SeleniumLibrary');
+      });
+    });
+
     describe('WebdriverIO', () => {
       const wdio = (code: string) => ids(code, 'webdriverio-ts', 'cart.ts');
       it('accepts WebdriverIO waits and retrying matchers', () => {
@@ -147,14 +199,26 @@ describe('Selenium official rules', () => {
         expect(wdio("services: ['@wdio/sync'],")).to.include('error:wdio-sync-mode');
         expect(wdio("browser.element('#q').click()")).to.include('error:wdio-sync-mode');
         expect(wdio('await browser.setTimeout({ implicit: 5000 })')).to.deep.equal(['warning:wdio-no-implicit-timeout']);
-        expect(wdio("await $('/html/body/div[2]').click()")).to.deep.equal(['warning:no-absolute-xpath']);
+        expect(wdio("await $('/html/body/div[2]').click()")).to.deep.equal(['warning:wdio-xpath']);
+        expect(wdio("await $('//button[@id=\"go\"]').click()")).to.deep.equal(['warning:wdio-xpath']);
       });
+      it('refuses APIs that WebdriverIO v10 removed or renamed', () => {
+        for (const line of [
+          'await browser.executeAsync((done) => done(1))', 'await browser.switchToFrame(frame)',
+          "await expect($('a')).toHaveAttr('href')", "await expect($('a')).toHaveClass('active')",
+          "await browser.setTimeout({ 'page load': 10000 })", "await browser.throttle('Regular3G')",
+          "await browser.getCookies('session')", "browser.addCommand('myFn', fn, true)",
+        ]) expect(wdio(line), line).to.include('error:wdio-v10-removed');
+        expect(wdio("await browser.execute(async () => 1)")).to.deep.equal([]);
+        expect(wdio("await expect($('a')).toHaveAttribute('href')")).to.deep.equal([]);
+      });
+
       it('does not apply Selenium-only rules such as driver.sleep wording or DesiredCapabilities', () => {
         expect(wdio('const caps = { browserName: "chrome" };')).to.deep.equal([]);
       });
       it("reports with WebdriverIO's docs link", () => {
         const report = formatRuleViolations(rules('await browser.pause(1000)', 'webdriverio-ts', 'a.ts'), 'a.ts')!;
-        expect(report).to.include('WebdriverIO rules (https://webdriver.io/docs/bestpractices)');
+        expect(report).to.include('WebdriverIO rules (https://webdriver.io/docs/ai-agents)');
         expect(report).to.include('line 1 [wdio-no-pause]');
       });
     });

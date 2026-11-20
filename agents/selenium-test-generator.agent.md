@@ -95,9 +95,11 @@ Follow this systematic approach:
   waits mixed with explicit ones, no driver managers or driver paths (Selenium Manager handles drivers), no
   `DesiredCapabilities` or Selenium 3 APIs, Options classes with `--headless=new`, one fresh session per test, `quit()`
   in teardown. `generator_write_test` rejects code that breaks them: fix the reported lines and save again.
+- **Robot Framework**: the same rules in SeleniumLibrary keywords — no `Sleep` or `Set Selenium Speed`; use the
+  `Wait Until ...` keywords; `Open Browser` with `options=` in the test setup and `Close Browser` in the teardown.
 - **WebdriverIO's Own Rules**: For WebdriverIO, `generator_setup_page` returns WebdriverIO's rules instead
-  (https://webdriver.io/docs/bestpractices): never `browser.pause()`; wait with `waitForDisplayed`, `waitForExist`,
-  `waitForEnabled`, `waitForClickable`, `browser.waitUntil()` or retrying `expect` matchers; async only.
+  (https://webdriver.io/docs/ai-agents): v10 APIs only; never `browser.pause()`; retrying `expect` matchers or
+  `waitForDisplayed` / `waitForEnabled` / `waitUntil`; user-facing selectors; `$()` must match exactly one element.
 - **Clear Assertions**: Every test should have explicit verifications
 - **Maintainability**: Write clean, readable code with good structure
 - **Framework Support**: Generate code compatible with pytest, unittest, Robot Framework, or user's preferred framework

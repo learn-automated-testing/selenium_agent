@@ -9,8 +9,8 @@
  *   code per language binding. Bundled unchanged in selenium-rules.data.ts (Apache-2.0); the
  *   generator hands the agent the sections for the language it writes.
  *
- * WebdriverIO is not a Selenium binding, so it gets its own, smaller set from the WebdriverIO docs:
- * https://webdriver.io/docs/bestpractices and https://webdriver.io/docs/autowait.
+ * WebdriverIO is not a Selenium binding, so it gets its own set from the WebdriverIO docs (indexed at
+ * https://webdriver.io/llms.txt): the AI agents page, best practices, auto-waiting and the v9 → v10 migration guide.
  */
 import { SELENIUM_RULES_MARKDOWN, SELENIUM_RULES_SOURCE } from './selenium-rules.data.js';
 
@@ -18,8 +18,11 @@ export { SELENIUM_RULES_SOURCE };
 
 export const SELENIUM_AI_AGENTS_DOCS = 'https://www.selenium.dev/documentation/ai_agents/';
 export const SELENIUM_LLMS_TXT = 'https://www.selenium.dev/llms.txt';
+export const WEBDRIVERIO_LLMS_TXT = 'https://webdriver.io/llms.txt';
+export const WEBDRIVERIO_AI_AGENTS = 'https://webdriver.io/docs/ai-agents';
 export const WEBDRIVERIO_BEST_PRACTICES = 'https://webdriver.io/docs/bestpractices';
 export const WEBDRIVERIO_AUTOWAIT = 'https://webdriver.io/docs/autowait';
+export const WEBDRIVERIO_V10_MIGRATION = 'https://webdriver.io/docs/v10-migration';
 
 /** Whether a framework is WebdriverIO (its own rules, not Selenium's). */
 export function isWebdriverIO(framework: string, filename = ''): boolean {
@@ -109,33 +112,60 @@ export function seleniumRulesFor(framework: string, filename = ''): string | nul
       out.push('', strip(match.body));
     }
   }
-  if (framework.toLowerCase().startsWith('robot')) {
-    out.push('', '## Robot Framework (SeleniumLibrary)', '',
-      'The same rules apply to keywords: no `Sleep`; use `Wait Until ...` keywords. ' +
-      'Keep `Set Selenium Implicit Wait` at 0 when using explicit waits, and close the browser in teardown.');
+  if (framework.toLowerCase().startsWith('robot') || filename.toLowerCase().endsWith('.robot')) {
+    out.push('', ROBOT_SELENIUMLIBRARY_RULES);
   }
   return out.join('\n') + '\n';
 }
 
+export const SELENIUMLIBRARY_DOCS = 'https://robotframework.org/SeleniumLibrary/SeleniumLibrary.html';
+
+/** Robot Framework with SeleniumLibrary: Selenium's rules, said in keywords (from the SeleniumLibrary keyword docs). */
+const ROBOT_SELENIUMLIBRARY_RULES = `## Robot Framework (SeleniumLibrary)
+
+The rules above, in SeleniumLibrary keywords (${SELENIUMLIBRARY_DOCS}):
+- No \`Sleep\`. Wait for the state the next step needs: \`Wait Until Element Is Visible\`,
+  \`Wait Until Element Is Not Visible\`, \`Wait Until Element Is Enabled\`, \`Wait Until Element Contains\`,
+  \`Wait Until Page Contains\`, \`Wait Until Page Contains Element\`, \`Wait Until Page Does Not Contain Element\`,
+  \`Wait Until Location Contains\`, or \`Wait For Expected Condition\`; \`Wait Until Keyword Succeeds\` to retry a check.
+- No \`Set Selenium Speed\`: SeleniumLibrary says it is for demos and debugging, not for waiting for elements.
+- No implicit wait next to the \`Wait Until\` keywords: keep \`Set Selenium Implicit Wait\` and the library's
+  \`implicit_wait\` at 0, and set \`timeout=\` on the library import or per keyword instead.
+- \`Open Browser\` with \`options=\` (e.g. \`add_argument("--headless=new")\`); no \`desired_capabilities\` or
+  \`executable_path\` (deprecated) and no \`webdrivermanager\`: Selenium Manager finds the driver.
+- \`Open Browser\` in the test setup and \`Close Browser\` in the teardown, so every test has a fresh session.
+- Locators: \`id:\` and \`name:\` first, then \`css:\` on a stable attribute; no absolute XPath, no \`sizzle:\`.`;
+
 /** WebdriverIO guidance, summarised from its own docs (WebdriverIO is not part of the Selenium project). */
 const WEBDRIVERIO_RULES = `# WebdriverIO rules for AI assistants
 
-From the WebdriverIO docs: ${WEBDRIVERIO_BEST_PRACTICES} and ${WEBDRIVERIO_AUTOWAIT}.
-These are WebdriverIO's own rules, not Selenium's.
+From the WebdriverIO docs (WebdriverIO v10): ${WEBDRIVERIO_AI_AGENTS}, ${WEBDRIVERIO_BEST_PRACTICES},
+${WEBDRIVERIO_AUTOWAIT} and ${WEBDRIVERIO_V10_MIGRATION}. Docs index: ${WEBDRIVERIO_LLMS_TXT}
+(append \`.md\` to any docs URL for Markdown). These are WebdriverIO's own rules, not Selenium's.
+Check the docs page before using an API you are not sure of. Use v10 APIs only, nothing from v8 or older.
 
 ## Waiting
-- Never use \`browser.pause()\` to wait for the page: it is not resilient and makes tests flaky.
-  Wait for the condition instead: \`waitForDisplayed\`, \`waitForExist\`, \`waitForEnabled\`, \`waitForClickable\`
-  (\`{ reverse: true }\` to wait for the opposite), or \`browser.waitUntil()\` for anything else.
+- Never use \`browser.pause()\`: it is not resilient and makes tests flaky.
 - Commands that act on an element (\`click\`, \`setValue\`, ...) already wait for it to be interactable.
-- \`expect\` matchers from expect-webdriverio (\`toBeDisplayed\`, \`toHaveText\`, \`toHaveValue\`, ...) retry until
-  \`waitforTimeout\`; don't add a \`waitFor...\` right before the same check.
-- Don't set implicit timeouts (\`browser.setTimeout({ implicit })\`); set \`waitforTimeout\` in wdio.conf instead.
+- Assert with \`expect-webdriverio\` matchers (\`toBeDisplayed\`, \`toHaveText\`, \`toHaveValue\`, ...): they retry until
+  \`waitforTimeout\`. For other conditions: \`waitForDisplayed\`, \`waitForExist\`, \`waitForEnabled\`,
+  \`waitForClickable\` (\`{ reverse: true }\` for the opposite) or \`browser.waitUntil()\`.
+- Don't set implicit timeouts (\`browser.setTimeout({ implicit })\`); set \`waitforTimeout\` in wdio.conf.
+
+## Selectors
+- What the user sees first: accessibility name or text (\`$('aria/Submit')\`, \`$('button=Submit')\`,
+  \`$('h4*=Example 1')\`), then \`[data-testid="..."]\`, then ids. Avoid XPath and generated CSS classes.
+- \`$()\` is strict in v10: it throws when more than one element matches. Make the selector match one element,
+  or take one from a list: \`$$('button')[0]\`.
 
 ## Code
-- Async only: \`await\` every command. The synchronous mode (\`@wdio/sync\`) and WebdriverIO v4 APIs
-  (\`browser.element()\`, \`browser.elements()\`) no longer exist.
-- Prefer ids and stable test attributes (\`[data-testid="..."]\`); avoid absolute XPath.
+- Async only: \`await\` every command. Sync mode (\`@wdio/sync\`) and v4 APIs (\`browser.element()\`) are gone.
+- v10 renames: \`browser.execute(async () => ...)\` instead of \`executeAsync\`, \`switchFrame\` instead of
+  \`switchToFrame\`, \`toHaveAttribute\` / \`toHaveElementClass\` instead of \`toHaveAttr\` / \`toHaveClass\`,
+  \`setFiles\` instead of \`uploadFile\` + \`setValue\`, \`throttleNetwork\` instead of \`throttle\`,
+  \`setTimeout({ pageLoad })\` instead of \`'page load'\`; \`touchAction\` and \`isW3C\` are removed.
+- Specs in \`test/specs/**/*.e2e.ts\`, page objects in \`test/pageobjects/\`; run one spec while iterating
+  (\`npx wdio run wdio.conf.ts --spec <file>\`).
 `;
 
 // ============================================================================
@@ -188,9 +218,19 @@ const WDIO_RULES: WdioRule[] = [
     message: 'Synchronous mode and WebdriverIO v4 APIs no longer exist: use async $ / $$ and await every command.',
   },
   {
-    id: 'no-absolute-xpath', severity: 'warning',
-    patterns: [/["'`]\/html\b/, /["'`]\/body\//],
-    message: 'Absolute XPath is fragile. Prefer ids and stable test attributes such as [data-testid="..."].',
+    id: 'wdio-v10-removed', severity: 'error',
+    patterns: [
+      /\.executeAsync\s*\(/, /\.switchToFrame\s*\(/, /\.touchAction\s*\(/, /\.isW3C\b/, /\.uploadFile\s*\(/,
+      /\btoHaveAttr\s*\(/, /\btoHaveClass\s*\(/, /\bbrowser\.throttle\s*\(/, /['"]page load['"]\s*:/,
+      /\.getHTML\(\s*(true|false)\s*\)/, /\.getCookies\(\s*['"[]/, /\b(add|overwrite)Command\([^)]*,\s*(true|false)\s*\)/,
+      /\bjasmineNodeOpts\b/, /\btagExpression\s*:/, /\bmultiremotebrowser\b/,
+    ],
+    message: 'Removed or renamed in WebdriverIO v10: see https://webdriver.io/docs/v10-migration for the new form.',
+  },
+  {
+    id: 'wdio-xpath', severity: 'warning',
+    patterns: [/\$\$?\(\s*["'`]\(?\.?\//],
+    message: 'Avoid XPath: prefer what the user sees (aria/..., button=..., h4*=...), then [data-testid="..."], then ids.',
   },
 ];
 
@@ -204,13 +244,13 @@ const RULES: Rule[] = [
       /\bThread\.Sleep\s*\(/, /\bTask\.Delay\s*\(/, /\bdriver\.sleep\s*\(/, /new Promise\(\s*\(?\s*\w+\s*\)?\s*=>\s*setTimeout\b/,
       /^\s*sleep\s*\(?\s*\d/,
     ],
-    robotPatterns: [/^\s+Sleep\s{2,}/i, /^\s+BuiltIn\.Sleep\s{2,}/i],
+    robotPatterns: [/^\s+(BuiltIn\.)?Sleep(\s{2,}|\t|$)/i],
     message: 'No sleeping in tests. Wait explicitly for the condition the next line depends on (clickable, text present, spinner gone).',
   },
   {
     id: 'no-implicit-wait', severity: 'warning', languages: 'all',
-    patterns: [/\bimplicitly_wait\s*\(/, /\bimplicitlyWait\s*\(/, /\.ImplicitWait\s*=/, /\bimplicit\s*:\s*\d/, /\bimplicit_wait\s*=/],
-    robotPatterns: [/^\s+Set Selenium Implicit Wait\s{2,}(?!0\b)/i],
+    patterns: [/\bimplicitly_wait\s*\(/, /\bimplicitlyWait\s*\(/, /\.ImplicitWait\s*=/, /\bimplicit\s*:\s*\d/, /\bimplicit_wait\s*=\s*(?!0\b)/],
+    robotPatterns: [/^\s+Set Selenium Implicit Wait(\s{2,}|\t)(?!\s)(?!0(\s*s(ec(onds?)?)?)?\s*$)/i, /\bimplicit_wait=(?!0\b)/],
     message: 'Prefer explicit waits. Never mix implicit and explicit waits in the same session.',
   },
   {
@@ -219,6 +259,7 @@ const RULES: Rule[] = [
       /\bwebdriver_manager\b/, /\bChromeDriverManager\b/, /\bGeckoDriverManager\b/, /\bEdgeChromiumDriverManager\b/,
       /\bchromedriver_(binary|autoinstaller)\b/, /\bWebDriverManager\./, /require\(['"]chromedriver['"]\)/,
       /from ['"]chromedriver['"]/, /require ['"]webdrivers['"]/, /\bWebDriverManager\.Net\b|new DriverManager\(\)/,
+      /\bwebdrivermanager\b/,
     ],
     message: 'No third-party driver managers. Selenium Manager (built into Selenium 4.6+) finds, downloads and caches the driver.',
   },
@@ -265,8 +306,21 @@ const RULES: Rule[] = [
     message: 'Use WebDriver BiDi, not the Chrome DevTools Protocol, for console logs, JavaScript errors and network.',
   },
   {
+    id: 'robot-selenium-speed', severity: 'error', languages: ['Python'],
+    patterns: [],
+    robotPatterns: [/^\s+Set Selenium Speed(\s{2,}|\t)(?!\s)(?!0(\s*s(ec(onds?)?)?)?\s*$)/i],
+    message: 'Set Selenium Speed is for demos and debugging, not for waiting: use the Wait Until keywords.',
+  },
+  {
+    id: 'robot-sizzle', severity: 'warning', languages: ['Python'],
+    patterns: [],
+    robotPatterns: [/\b(sizzle|jquery):/i],
+    message: 'The sizzle/jquery locator strategy is deprecated in SeleniumLibrary: use css: or id:.',
+  },
+  {
     id: 'no-absolute-xpath', severity: 'warning', languages: 'all',
     patterns: [/["'`]\/html\b/, /["'`]\/body\//],
+    robotPatterns: [/\bxpath[=:]\/html\b/i, /(\s{2,}|\t)\/html\//],
     message: 'Absolute XPath is fragile. Prefer id or name, then CSS on a stable attribute such as data-testid.',
   },
   {
@@ -346,7 +400,7 @@ export function formatRuleViolations(violations: RuleViolation[], file: string):
   const errors = violations.filter(v => v.severity === 'error').length;
   const warnings = violations.length - errors;
   const wdio = violations.some(v => v.rule.startsWith('wdio-'));
-  const source = wdio ? `WebdriverIO rules (${WEBDRIVERIO_BEST_PRACTICES})` : `Selenium rules (${SELENIUM_AI_AGENTS_DOCS})`;
+  const source = wdio ? `WebdriverIO rules (${WEBDRIVERIO_AI_AGENTS})` : `Selenium rules (${SELENIUM_AI_AGENTS_DOCS})`;
   const head = `${source}: ${errors} error(s), ${warnings} warning(s) in ${file}`;
   const body = violations.map(v => `  ${v.severity === 'error' ? 'ERROR' : 'warn '} line ${v.line} [${v.rule}] ${v.code}\n        → ${v.message}`);
   return [head, ...body].join('\n');

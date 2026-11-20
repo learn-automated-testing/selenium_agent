@@ -13,10 +13,14 @@ from the Selenium repository (`rust/src/resources/rules.md`).
   `DesiredCapabilities`, Selenium 3 APIs (`find_element_by_*`), the old headless API, Java `TimeUnit` timeouts or
   implicit waits mixed with explicit waits, and warn about absolute XPath, JavaScript clicks and CDP.
 
+Robot Framework tests follow the same rules in SeleniumLibrary keywords: no `Sleep` or `Set Selenium Speed`, the
+`Wait Until ...` keywords instead, no implicit wait next to them, `Open Browser` with `options=` and no deprecated
+`desired_capabilities` / `executable_path`.
+
 WebdriverIO is not a Selenium binding, so it follows WebdriverIO's own guidance
-([best practices](https://webdriver.io/docs/bestpractices), [auto-waiting](https://webdriver.io/docs/autowait)):
-no `browser.pause()`, waits with `waitForDisplayed` / `waitForEnabled` / `waitUntil` or retrying `expect` matchers,
-async only. Playwright tests are not checked.
+([AI agents](https://webdriver.io/docs/ai-agents), [best practices](https://webdriver.io/docs/bestpractices),
+[v10 migration](https://webdriver.io/docs/v10-migration)): v10 APIs only, no `browser.pause()`, retrying `expect`
+matchers, user-facing selectors, and `$()` matching exactly one element. Playwright tests are not checked.
 
 The conventions below build on those rules.
 
