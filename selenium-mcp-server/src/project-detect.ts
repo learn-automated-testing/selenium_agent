@@ -19,7 +19,10 @@ export interface DetectedProject {
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.venv', 'venv', 'target', 'build', 'dist', 'bin', 'obj', '.idea']);
 
-/** Files in the project root and one level down (where C# test projects and Maven modules often sit). */
+/**
+ * Files in the project root and one level down (where C# test projects and Maven modules often sit), as paths
+ * relative to the root with "/" on every OS, so "Tests/Tests.csproj" looks the same on Windows.
+ */
 function listFiles(root: string): string[] {
   const out: string[] = [];
   let top: fs.Dirent[] = [];
@@ -29,7 +32,7 @@ function listFiles(root: string): string[] {
     else if (e.isDirectory() && !SKIP_DIRS.has(e.name) && !e.name.startsWith('.')) {
       try {
         for (const f of fs.readdirSync(path.join(root, e.name), { withFileTypes: true })) {
-          if (f.isFile()) out.push(path.join(e.name, f.name));
+          if (f.isFile()) out.push(`${e.name}/${f.name}`);
         }
       } catch { /* unreadable folder */ }
     }
