@@ -119,6 +119,22 @@ jobs:
             --output semgrep-results.sarif \
             .
 
+      # Semgrep keeps findings silenced with a `nosemgrep` comment in the SARIF (marked as suppressed),
+      # and code scanning would still report them, so drop those before the upload.
+      - name: Drop suppressed findings
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          path = 'semgrep-results.sarif'
+          with open(path) as f:
+              sarif = json.load(f)
+          for run in sarif.get('runs', []):
+              run['results'] = [r for r in run.get('results', []) if not r.get('suppressions')]
+          with open(path, 'w') as f:
+              json.dump(sarif, f)
+          PY
+
       - name: Upload Semgrep results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
