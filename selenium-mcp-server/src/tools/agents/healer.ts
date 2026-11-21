@@ -13,14 +13,31 @@ import { countDeep } from '../../utils/shadow-dom.js';
 // Shared command runner
 // ============================================================================
 
-function runCommand(
+/**
+ * Quote one argument for the shell that runs the command, so arguments with spaces, quotes, `&&` or `|`
+ * arrive as one argument (sh -c "cd tests && pytest" stays two arguments). Plain arguments stay as they are.
+ */
+export function quoteShellArg(arg: string, platform: NodeJS.Platform = process.platform): string {
+  if (arg !== '' && /^[A-Za-z0-9_\/.,:=@%+\-]+$/.test(arg)) return arg;
+  if (platform === 'win32') return `"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`;
+  return `'${arg.replace(/'/g, `'\\''`)}'`;
+}
+
+/** The command line as the shell runs it: the command as given, each argument quoted. */
+export function commandLine(command: string, args: string[], platform: NodeJS.Platform = process.platform): string {
+  return [command, ...args.map(a => quoteShellArg(a, platform))].join(' ');
+}
+
+export function runCommand(
   command: string,
   args: string[],
   cwd?: string,
   timeoutMs = 120000
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(command, args, {
+    // A shell finds npx/npm/mvn wrappers on every OS (Windows needs it for .cmd files); the arguments are quoted
+    // for it, so they arrive exactly as given. A command given as one string ("pytest -v tests") still works.
+    const proc = spawn(commandLine(command, args), {
       shell: true,
       cwd: cwd || process.cwd(),
       env: { ...process.env, FORCE_COLOR: '0' },
@@ -147,7 +164,7 @@ Explicit mode examples:
 
       return this.success(JSON.stringify({
         message: 'Tests executed',
-        command: `${finalCmd} ${finalArgs.join(' ')}`,
+        command: commandLine(finalCmd, finalArgs),
         cwd: finalCwd,
         exitCode: result.exitCode,
         passed: result.exitCode === 0,
@@ -218,7 +235,7 @@ See healer_run_tests for details on both modes.`;
 
       return this.success(JSON.stringify({
         message: 'Debug run complete',
-        command: `${finalCmd} ${finalArgs.join(' ')}`,
+        command: commandLine(finalCmd, finalArgs),
         cwd: finalCwd,
         exitCode: result.exitCode,
         passed: result.exitCode === 0,
