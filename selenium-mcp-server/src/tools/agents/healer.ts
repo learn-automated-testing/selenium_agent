@@ -37,6 +37,9 @@ export function runCommand(
   return new Promise((resolve, reject) => {
     // A shell finds npx/npm/mvn wrappers on every OS (Windows needs it for .cmd files); the arguments are quoted
     // for it, so they arrive exactly as given. A command given as one string ("pytest -v tests") still works.
+    // Running the test command the MCP client asks for, on the user's own machine, is what healer_run_tests is for;
+    // quoting each argument keeps an argument from starting a second command.
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
     const proc = spawn(commandLine(command, args), {
       shell: true,
       cwd: cwd || process.cwd(),
