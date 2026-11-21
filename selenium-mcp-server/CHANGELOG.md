@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### New Features
+
+- **The generator uses your project's own stack.** When no framework is named, `generator_setup_page` reads the project's build files (or `projectRoot`) and writes tests in the language and test runner the team already uses: `pom.xml` / `build.gradle` → Java with JUnit 5 or TestNG, `requirements.txt` / `pyproject.toml` / `pytest.ini` → Python with pytest or unittest (new: `selenium-python-unittest`), `*.csproj` → C# with NUnit, xUnit or MSTest, `package.json` → selenium-webdriver with Mocha or Jest, or WebdriverIO, `*.robot` → Robot Framework. It reports what it found (`frameworkSource`, `testRunner`, e.g. "Java with TestNG (pom.xml)"). Python with pytest stays the default for an empty project. `--with-rules` uses the same detection.
+- **Selenium 3 → 4 migration.** A new `selenium_rules_check` tool scans existing tests (a folder or one file) in Python, Java, C#, JavaScript/TypeScript, Ruby, Robot Framework and WebdriverIO for outdated or flaky patterns, and lists them per rule and per file with line numbers. A new `selenium-test-migrator` agent (installed by `init-agents`) scans the suite, runs it first as a baseline, rewrites one file at a time (reading the current docs with `get_selenium_docs`; `healer_fix_test` refuses anything still outdated) and proves every file still passes, without changing what the tests check.
+- **JetBrains IDEs.** `npx selenium-ai-agent install junie` configures Junie in IntelliJ IDEA, PyCharm and the other JetBrains IDEs (`~/.junie/mcp/mcp.json`), and `--with-rules=junie` adds the rules to Junie's guidelines without hiding existing ones (`.junie/AGENTS.md`, else `.junie/guidelines.md` or `.junie/guidelines/`). The READMEs show the setup for AI Assistant, Junie and GitHub Copilot in JetBrains IDEs.
+
+### Fixes
+
+- **`healer_run_tests` passes arguments exactly as given.** The arguments were handed to the shell joined with plain spaces, so `sh -c "cd tests && pytest"` ran only `cd`, and an argument with a space was split in two. Each argument is now quoted for the shell (POSIX quoting on macOS and Linux, double quotes on Windows); plain arguments and a command given as one string work as before.
+
 ## [3.5.0] - 2026-11-20
 
 ### New Features

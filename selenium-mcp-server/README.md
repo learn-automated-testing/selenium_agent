@@ -8,7 +8,7 @@
 > - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
 > - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
 
-**62 tools (76 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
+**63 tools (77 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
 
 ### Video Tutorials
 
@@ -260,6 +260,45 @@ Add to `~/.codeium/windsurf/mcp_config.json` (global) or `.windsurf/mcp_config.j
 }
 ```
 
+### JetBrains IDEs (IntelliJ IDEA, PyCharm, WebStorm, ...)
+
+Three ways, depending on the assistant you use in the IDE. All three start the server with `npx`, so Node.js 18+ must be installed.
+
+**Junie** (writes `~/.junie/mcp/mcp.json` for you; or put the same JSON in `.junie/mcp/mcp.json` in the project to share it with your team):
+
+```bash
+npx selenium-ai-agent install junie
+npx selenium-ai-agent install junie --with-rules   # also Selenium's rules in Junie's guidelines
+```
+
+**AI Assistant**: *Settings → Tools → AI Assistant → Model Context Protocol (MCP) → Add*, choose *As JSON* and paste:
+
+```json
+{
+  "mcpServers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["-y", "selenium-ai-agent"]
+    }
+  }
+}
+```
+
+**GitHub Copilot**: *Settings → Tools → GitHub Copilot → Model Context Protocol (MCP) → Configure* opens `mcp.json`; add:
+
+```json
+{
+  "servers": {
+    "selenium-mcp": {
+      "command": "npx",
+      "args": ["-y", "selenium-ai-agent"]
+    }
+  }
+}
+```
+
+Claude Code also works in the IDE's terminal (`claude mcp add selenium-mcp -- npx -y selenium-ai-agent`). In a Java project the generator writes Java with JUnit 5 or TestNG, as found in your `pom.xml` or `build.gradle`; in PyCharm, Python with pytest or unittest.
+
 ---
 
 ## Tool Auto-Approval (Reducing "Yes" Prompts)
@@ -343,7 +382,7 @@ npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Seleni
 |------|-------------|
 | `doctor` | Run preflight diagnostics (Chrome, driver, proxy, cache, output folder) and exit |
 | `init-agents --loop=claude\|vscode\|copilot\|cursor [--server=name] [--with-rules[=...]] [--framework=f]` | Install the test agents for your AI client (see [Test Agents](#test-agents)) and exit; `--with-rules` also writes the [rules for AI agents](#rules-for-ai-agents) into the project |
-| `install claude-desktop\|cursor\|windsurf [--with-rules[=...]]` | Add the server to the client's config; `--with-rules` also writes the rules into this project's instruction file |
+| `install claude-desktop\|cursor\|windsurf\|junie [--with-rules[=...]]` | Add the server to the client's config; `--with-rules` also writes the rules into this project's instruction file |
 | `--stealth` | Enable stealth mode |
 | `--headless` | Run browser headless |
 | `--save-trace` | Save session trace JSON |
@@ -365,7 +404,7 @@ Every tool definition is sent to the model on each request, so loading fewer too
 | `recording` | 4 | Record actions for test generation |
 | `planner` | 3 | Explore an app and save a test plan |
 | `generator` | 6 | Generate tests (pytest, Java, C#, WebdriverIO, …). Also loads `recording`. |
-| `healer` | 5 | Run, debug and fix failing tests |
+| `healer` | 6 | Run, debug and fix failing tests; scan existing tests for outdated patterns |
 | `analyzer` | 6 | Regression risk analysis |
 | `grid` | 14 | Selenium Grid management and parallel execution (needs `SELENIUM_GRID_URL`) |
 
@@ -375,7 +414,7 @@ The default is `all`. For example, browsing and self-healing only:
 "env": { "SELENIUM_MCP_TOOLSETS": "core,healer" }
 ```
 
-## Tools (76)
+## Tools (77)
 
 ### Navigation (5)
 
@@ -486,10 +525,11 @@ The default is `all`. For example, browsing and self-healing only:
 | `generator_save_spec` | Save a structured markdown spec to `<output>/specs/`. |
 | `generator_read_spec` | Read a spec or test plan, by path or by name in `specs/`. Read-only. |
 
-### Test Healer (5)
+### Test Healer (6)
 
 | Tool | Description |
 |------|-------------|
+| `selenium_rules_check` | Scan existing tests (a folder or a file) for Selenium 3 APIs, sleeps, mixed waits, driver managers and paths, the old headless API, absolute XPath, Robot `Sleep`, WebdriverIO `browser.pause()` and removed v10 APIs; lists findings per rule and per file with line numbers. Changes nothing. Used by the migrator. |
 | `healer_run_tests` | Execute tests and return output. Supports manifest mode (reads `.test-manifest.json`) or explicit mode (provide command + args). Runs seed tests first when present. |
 | `healer_debug_test` | Run a single test in verbose mode with detailed output (15KB stdout, 8KB stderr). |
 | `healer_fix_test` | Apply a fix to a test file with `.bak` backup. Supports `verify` (validates selectors in fixed code). |
@@ -683,6 +723,7 @@ Like Playwright's test agents, Selenium AI Agent ships three agents (plus a regr
 - **selenium-test-planner** explores the app and writes a Markdown test plan to `specs/`
 - **selenium-test-generator** turns a plan from `specs/` into tests (pytest, unittest, WebdriverIO, Robot Framework, …), verifying selectors live
 - **selenium-test-healer** runs the tests and repairs failing ones
+- **selenium-test-migrator** upgrades existing tests to current Selenium 4 (or WebdriverIO v10): it scans the suite with `selenium_rules_check`, runs it first as a baseline, rewrites one file at a time and proves each file still passes
 - **selenium-regression-analyzer** builds a risk profile to decide what to test first
 
 Install them into your project for your AI client, with the tool names that client expects:

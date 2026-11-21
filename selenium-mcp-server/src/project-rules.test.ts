@@ -4,7 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {
-  writeProjectRules, projectRulesSection, detectFramework, detectVersion, upsertSection, RULES_START, RULES_END,
+  junieRulesFile, writeProjectRules, projectRulesSection, detectFramework, detectVersion, upsertSection, RULES_START, RULES_END,
 } from './project-rules.js';
 import { parseWithRules } from '../bin/install.js';
 
@@ -42,7 +42,7 @@ describe('project rules files (--with-rules)', () => {
     fs.writeFileSync(path.join(dir, 'pom.xml'), '<properties><selenium.version>4.49.0</selenium.version></properties>');
     expect(detectFramework(dir)).to.equal('selenium-java-maven');
     expect(detectVersion(dir, 'selenium-java-maven')).to.equal('4.49.0');
-    fs.writeFileSync(path.join(dir, 'package.json'), '{"devDependencies":{"@wdio/cli":"^9.20.0"}}');
+    fs.writeFileSync(path.join(dir, 'package.json'), '{"devDependencies":{"@wdio/cli":"^9.20.0","typescript":"^5.9.0"}}');
     expect(detectFramework(dir)).to.equal('webdriverio-ts');
     expect(detectVersion(dir, 'webdriverio-ts')).to.equal('9.20.0');
   });
@@ -70,6 +70,20 @@ describe('project rules files (--with-rules)', () => {
     expect(read('AGENTS.md')).to.include(RULES_END);
   });
 
+  it("writes Junie's rules where Junie already reads guidelines, so existing ones stay in use", () => {
+    expect(junieRulesFile(dir)).to.equal('.junie/AGENTS.md');                  // nothing yet: the preferred file
+    fs.mkdirSync(path.join(dir, '.junie/guidelines'), { recursive: true });
+    expect(junieRulesFile(dir)).to.equal('.junie/guidelines/selenium.md');     // a guidelines folder: add a file to it
+    fs.writeFileSync(path.join(dir, '.junie/guidelines.md'), '# Team rules\n');
+    expect(junieRulesFile(dir)).to.equal('.junie/guidelines.md');             // a guidelines file: append to it
+    const r = writeProjectRules({ cwd: dir, targets: ['junie'], framework: 'selenium-java-maven' });
+    expect(r.written).to.deep.equal([{ file: '.junie/guidelines.md', action: 'updated' }]);
+    expect(read('.junie/guidelines.md').startsWith('# Team rules')).to.equal(true);
+    expect(fs.existsSync(path.join(dir, '.junie/AGENTS.md'))).to.equal(false); // would hide guidelines.md
+    fs.writeFileSync(path.join(dir, '.junie/AGENTS.md'), '# Agents\n');
+    expect(junieRulesFile(dir)).to.equal('.junie/AGENTS.md');                  // AGENTS.md wins when it exists
+  });
+
   it('upsertSection appends to text, fills an empty file and replaces an old section', () => {
     expect(upsertSection('', 'A')).to.equal(`${RULES_START}\nA\n${RULES_END}\n`);
     const once = upsertSection('intro\n', 'A');
@@ -82,6 +96,7 @@ describe('project rules files (--with-rules)', () => {
     expect(parseWithRules(['--with-rules'], 'cursor')).to.deep.equal(['cursor']);
     expect(parseWithRules(['--with-rules'])).to.deep.equal([]);
     expect(parseWithRules(['--with-rules=claude,agents'], 'cursor')).to.deep.equal(['claude', 'agents']);
+    expect(parseWithRules(['--with-rules'], 'junie')).to.deep.equal(['junie']);
     expect(() => parseWithRules(['--with-rules=emacs'])).to.throw('Unknown --with-rules target: emacs');
   });
 });

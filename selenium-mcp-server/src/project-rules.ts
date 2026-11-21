@@ -9,6 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { seleniumLanguage, isWebdriverIO } from './tools/agents/selenium-rules.js';
+import { detectProject } from './project-detect.js';
 
 export const RULES_TARGETS = {
   claude: 'CLAUDE.md',
@@ -16,6 +17,7 @@ export const RULES_TARGETS = {
   copilot: '.github/copilot-instructions.md',
   windsurf: '.windsurf/rules/selenium.md',
   agents: 'AGENTS.md',
+  junie: '.junie/AGENTS.md',
 } as const;
 export type RulesTarget = keyof typeof RULES_TARGETS;
 
@@ -24,19 +26,7 @@ export const RULES_END = '<!-- selenium-ai-agent:rules:end -->';
 
 /** The framework of the tests in a project, from its files (default: Python with pytest). */
 export function detectFramework(cwd: string): string {
-  const read = (f: string) => { try { return fs.readFileSync(path.join(cwd, f), 'utf8'); } catch { return ''; } };
-  const pkg = read('package.json');
-  if (/"webdriverio"|"@wdio\/cli"/.test(pkg)) return 'webdriverio-ts';
-  if (/"selenium-webdriver"/.test(pkg)) return 'selenium-js-mocha';
-  if (fs.existsSync(path.join(cwd, 'pom.xml'))) return 'selenium-java-maven';
-  if (fs.existsSync(path.join(cwd, 'build.gradle')) || fs.existsSync(path.join(cwd, 'build.gradle.kts'))) return 'selenium-java-gradle';
-  let entries: string[] = [];
-  try { entries = fs.readdirSync(cwd); } catch { /* empty */ }
-  if (entries.some(f => f.endsWith('.csproj') || f.endsWith('.sln'))) return 'selenium-csharp-nunit';
-  const py = read('requirements.txt') + read('pyproject.toml') + read('requirements-dev.txt');
-  if (/robotframework/i.test(py) || entries.some(f => f.endsWith('.robot'))) return 'robot-framework';
-  if (fs.existsSync(path.join(cwd, 'Gemfile'))) return 'selenium-ruby';
-  return 'selenium-python-pytest';
+  return detectProject(cwd)?.framework ?? 'selenium-python-pytest';
 }
 
 /** The Selenium (or WebdriverIO) version a project pins, if it does. */
@@ -131,6 +121,18 @@ export function projectRulesSection(framework: string, version: string | null): 
   return lines.join('\n');
 }
 
+/**
+ * Junie (JetBrains) reads .junie/AGENTS.md if it exists, and then nothing else; otherwise .junie/guidelines.md or
+ * the .md files in .junie/guidelines/. Write into the file Junie already reads, so existing guidelines stay in use.
+ */
+export function junieRulesFile(cwd: string): string {
+  const exists = (f: string) => fs.existsSync(path.join(cwd, f));
+  if (exists('.junie/AGENTS.md')) return '.junie/AGENTS.md';
+  if (exists('.junie/guidelines.md')) return '.junie/guidelines.md';
+  if (exists('.junie/guidelines')) return '.junie/guidelines/selenium.md';
+  return '.junie/AGENTS.md';
+}
+
 const CURSOR_FRONT_MATTER = [
   '---',
   'description: Browser automation rules (Selenium / WebdriverIO) from the projects\' guides for AI agents',
@@ -171,7 +173,7 @@ export function writeProjectRules(opts: WriteRulesOptions): WriteRulesResult {
   const section = projectRulesSection(framework, version);
   const written: WriteRulesResult['written'] = [];
   for (const target of [...new Set(opts.targets)]) {
-    const file = RULES_TARGETS[target];
+    const file = target === 'junie' ? junieRulesFile(cwd) : RULES_TARGETS[target];
     const full = path.join(cwd, file);
     const exists = fs.existsSync(full);
     let existing = exists ? fs.readFileSync(full, 'utf8') : '';

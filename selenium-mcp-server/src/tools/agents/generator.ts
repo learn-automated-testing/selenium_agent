@@ -9,6 +9,8 @@ import {
 } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
+import { getOutputDir } from '../../utils/paths.js';
+import { detectProject } from '../../project-detect.js';
 import {
   seleniumRulesFor, checkSeleniumRules, formatRuleViolations, SELENIUM_AI_AGENTS_DOCS,
 } from './selenium-rules.js';
@@ -28,6 +30,7 @@ function suggestRunCommand(framework: string, configFile: string | null): RunCom
     'playwright-python': { command: 'pytest', args: ['-v', '--tb=short'] },
     'pytest': { command: 'pytest', args: ['-v', '--tb=short'] },
     'selenium-python-pytest': { command: 'pytest', args: ['-v', '--tb=short'] },
+    'selenium-python-unittest': { command: 'python', args: ['-m', 'unittest', '-v'] },
     'robot-framework': { command: 'robot', args: ['--outputdir', 'results'] },
     'selenium-js-jest': { command: 'npx', args: ['jest', '--verbose'] },
     'selenium-js-mocha': { command: 'npx', args: ['mocha', '--reporter', 'spec'] },
@@ -70,15 +73,20 @@ const setupSchema = z.object({
   url: z.string().describe('URL of the web application to test'),
   testPlan: z.string().describe('Test plan content or path to test plan file'),
   framework: z.string().optional()
-    .describe('Test framework. Default: selenium-python-pytest. Others: selenium-java-maven, selenium-csharp-nunit, selenium-js-mocha, webdriverio-ts, robot-framework, playwright-js, ...')
+    .describe('Test framework. Default: the one the project already uses (detected from pom.xml, build.gradle, requirements.txt, pyproject.toml, *.csproj, package.json, *.robot), else selenium-python-pytest. Others: selenium-java-maven, selenium-csharp-nunit, selenium-js-mocha, webdriverio-ts, robot-framework, playwright-js, ...'),
+  projectRoot: z.string().optional()
+    .describe('Folder of the project the tests go into, to detect its language and test runner (default: the output folder)'),
 });
 
 export class GeneratorSetupTool extends BaseTool {
   readonly name = 'generator_setup_page';
   readonly description = `Initialize the test generation session and navigate to the application.
 
-Default: Python with pytest (selenium-python-pytest, tests/test_*.py). Use it when the user names no language or
-framework, and say so in one line. When the user asks for another one, use it and its standard folder conventions:
+When the user names no language or framework, it uses the project's own: it looks at the build files
+(pom.xml / build.gradle → Java with JUnit 5 or TestNG; requirements.txt / pyproject.toml → Python with pytest or
+unittest; *.csproj → C# with NUnit, xUnit or MSTest; package.json → JavaScript/TypeScript; *.robot → Robot
+Framework) and reports what it found. Only in an empty project does it use the default, Python with pytest
+(selenium-python-pytest, tests/test_*.py); say so in one line. When the user asks for another one, use it and its standard folder conventions:
 selenium-java-maven (src/test/java/*Test.java), selenium-csharp-nunit, selenium-js-mocha / selenium-js-jest (test/*.test.js),
 webdriverio-ts (test/specs/*.spec.ts), robot-framework (tests/*.robot), playwright-js (tests/*.spec.ts), or any other
 language or framework the user names (Page Object Model, BDD/Gherkin and data-driven patterns too).
@@ -91,8 +99,10 @@ For Selenium frameworks the result includes Selenium's official rules for AI ass
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { url, testPlan, framework: chosen } = this.parseParams(setupSchema, params);
-    const framework = chosen || DEFAULT_FRAMEWORK;
+    const { url, testPlan, framework: chosen, projectRoot } = this.parseParams(setupSchema, params);
+    // No framework named: use the project's own language and test runner, else the default.
+    const detected = chosen ? null : detectProject(projectRoot || getOutputDir());
+    const framework = chosen || detected?.framework || DEFAULT_FRAMEWORK;
 
     const driver = await context.ensureBrowser();
     await driver.get(url);
@@ -107,6 +117,12 @@ For Selenium frameworks the result includes Selenium's official rules for AI ass
       message: 'Test generation session initialized',
       url,
       framework,
+      frameworkSource: chosen
+        ? 'named by the user'
+        : detected
+          ? `detected: ${detected.language} with ${detected.testRunner} (${detected.evidence})`
+          : 'default: no build files found, so Python with pytest',
+      ...(detected ? { testRunner: detected.testRunner } : {}),
       recording: true,
       testPlanPreview: testPlan.slice(0, 200) + (testPlan.length > 200 ? '...' : ''),
       seleniumRules: undefined as string | undefined,

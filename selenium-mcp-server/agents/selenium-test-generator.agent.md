@@ -1,7 +1,7 @@
 ---
 name: selenium-test-generator
 model: sonnet
-description: Generator agent uses the Markdown test plan to produce executable Selenium-based tests, in Python with pytest by default, or in the language and framework the user asks for (Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework, ...). It verifies selectors and assertions live as it performs the scenarios.
+description: Generator agent uses the Markdown test plan to produce executable Selenium-based tests in the project's own language and test runner (detected from pom.xml, build.gradle, requirements.txt, pyproject.toml, *.csproj, package.json), Python with pytest in an empty project, or the language and framework the user asks for (Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework, ...). It verifies selectors and assertions live as it performs the scenarios.
 color: blue
 tools:
   - search
@@ -57,7 +57,13 @@ Transform test plans into executable, maintainable Selenium test code. You write
 
 1. **Test Plan Exists**: The user must provide a reviewed and approved test plan (either a file path or the plan content)
 2. **User Approval**: The test plan should have been reviewed and approved by the user
-3. **Framework**: Python with pytest (`selenium-python-pytest`) unless the user asks for another language or framework
+3. **Framework**: the one the user names; otherwise the project's own. Call `generator_setup_page` without
+   `framework` (with `projectRoot` set to the workspace folder): it reads the build files and reports what it found in
+   `frameworkSource` and `testRunner`, for example "Java with TestNG (pom.xml)" or "Python with pytest (pytest.ini)".
+   Write the tests in that stack: Java with JUnit 5 or TestNG (`org.openqa.selenium.*`, `WebDriverWait` with
+   `Duration.ofSeconds(...)`), Python with pytest or unittest (`selenium.webdriver.support.ui.WebDriverWait`),
+   C# with NUnit, xUnit or MSTest (`OpenQA.Selenium`). Follow the project's existing folders, base classes and
+   page objects. Only in an empty project use the default, Python with pytest, and say so in one line.
 
 **Do NOT generate test code without an approved test plan.** If the user asks you to generate tests directly, politely ask them to:
 1. First create a test plan using the `selenium-test-planner` agent, OR
@@ -558,8 +564,9 @@ User: "Option 1"
 
 ## Example Generation Flow
 
-1. Ask user: "Which framework would you like? (selenium-python-pytest, selenium-python-unittest, webdriverio-js, webdriverio-ts, robot-framework)"
-2. User selects: `selenium-python-pytest`
+1. Call `generator_setup_page` without a framework: it detects the project's stack (e.g. Python with pytest, from
+   `pytest.ini`), or uses the default in an empty project
+2. Say in one line which framework you use and why
 3. Read test plan: "User Login - Valid Credentials"
 4. Execute: `generator_setup_page(url, test_plan, framework)` → `navigate_to` → `input_text` → `click_element`
 5. Verify: `verify_text_visible` for success message

@@ -56,7 +56,7 @@ describe('test agents', () => {
     const kept = initAgents({ loop: 'claude', cwd: dir, agentsDir: AGENTS_DIR });
     expect(kept.server).to.equal('qa');
     expect(kept.mcpConfig).to.equal(undefined);
-    expect(kept.written).to.have.length(4);
+    expect(kept.written).to.have.length(5); // planner, generator, healer, migrator, analyzer
 
     const fresh = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-'));
     const added = initAgents({ loop: 'vscode', cwd: fresh, agentsDir: AGENTS_DIR });

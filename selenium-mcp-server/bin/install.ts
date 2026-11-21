@@ -26,6 +26,10 @@ const TARGETS: Record<string, TargetConfig> = {
     name: 'Windsurf',
     getConfigPath: () => join(homedir(), '.codeium', 'windsurf', 'mcp_config.json'),
   },
+  junie: {
+    name: 'Junie (IntelliJ IDEA, PyCharm and other JetBrains IDEs)',
+    getConfigPath: () => join(homedir(), '.junie', 'mcp', 'mcp.json'),
+  },
 };
 
 const SERVER_ENTRY = {
@@ -93,10 +97,12 @@ Available targets:
   claude-desktop   Claude Desktop app
   cursor           Cursor editor
   windsurf         Windsurf editor
+  junie            Junie in IntelliJ IDEA, PyCharm and other JetBrains IDEs (~/.junie/mcp/mcp.json)
 
 --with-rules also writes Selenium's rules for AI agents (https://www.selenium.dev/documentation/ai_agents/)
 into this project's instruction file: .cursor/rules/selenium.mdc for Cursor, .windsurf/rules/selenium.md for
-Windsurf, or the files you name (claude = CLAUDE.md, copilot = .github/copilot-instructions.md, agents = AGENTS.md).
+Windsurf, Junie's guidelines for Junie, or the files you name (claude = CLAUDE.md, copilot =
+.github/copilot-instructions.md, agents = AGENTS.md, junie = .junie/AGENTS.md or the guidelines Junie already reads).
 The framework (for the language notes) is detected from the project, or set with --framework=selenium-java-maven, ...
 
 Examples:
@@ -110,6 +116,7 @@ const RULES_FOR_TARGET: Record<string, RulesTarget | undefined> = {
   'claude-desktop': undefined,
   cursor: 'cursor',
   windsurf: 'windsurf',
+  junie: 'junie',
 };
 
 /** Parse "--with-rules" / "--with-rules=claude,agents" into rules targets (null when the flag is absent). */
