@@ -151,7 +151,8 @@ export function withReportArgs(args: string[], framework: string, format: Report
  * most runners take the file itself; Maven and Gradle take a test class name.
  */
 export function singleFileArgs(framework: string, testPath: string, projectRoot: string): string[] {
-  const rel = path.relative(projectRoot, testPath) || testPath;
+  // Forward slashes: every runner takes them, also on Windows.
+  const rel = (path.relative(projectRoot, testPath) || testPath).split(path.sep).join('/');
   if (framework.startsWith('webdriverio')) return ['--spec', rel];
   if (framework === 'selenium-java-maven') return [`-Dtest=${path.basename(testPath).replace(/\.\w+$/, '')}`];
   if (framework === 'selenium-java-gradle') return ['--tests', path.basename(testPath).replace(/\.\w+$/, '')];
