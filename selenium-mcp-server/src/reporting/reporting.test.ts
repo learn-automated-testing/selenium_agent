@@ -4,7 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { parseJUnitXml, summarize } from './junit.js';
-import { chooseReportFormat, singleFileArgs, withReportArgs } from './frameworks.js';
+import { chooseReportFormat, sameRunner, singleFileArgs, withReportArgs } from './frameworks.js';
 import { caseMatchesFile, collectRunReport, JUNIT_PLANS_FILE } from './results.js';
 import { runCommandWithReport } from '../tools/agents/generator.js';
 import { readTestRuns, recordTestRun } from '../utils/test-runs.js';
@@ -105,6 +105,14 @@ describe('reporting', () => {
       expect(withReportArgs(['--outputdir', 'results'], 'robot-framework', 'junit')).to.deep.equal(['--outputdir', 'results', '--xunit', 'junit.xml']);
       const mocha = withReportArgs(['--reporter', 'spec'], 'selenium-js-mocha', 'junit');
       expect(mocha.filter(a => a === '--reporter')).to.have.length(1);
+    });
+
+    it('recognises the project runner in a command the AI chose', () => {
+      expect(sameRunner('.venv/bin/pytest', ['tests'], 'pytest')).to.equal(true);
+      expect(sameRunner('python3', ['-m', 'pytest', 'tests'], 'pytest')).to.equal(true);
+      expect(sameRunner('./mvnw', ['test'], 'mvn')).to.equal(true);
+      expect(sameRunner('npx', ['wdio'], 'npx')).to.equal(true);
+      expect(sameRunner('robot', ['tests'], 'pytest')).to.equal(false);
     });
 
     it('runs unittest tests under pytest, which writes JUnit XML', () => {

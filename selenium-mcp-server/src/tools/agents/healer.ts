@@ -4,7 +4,7 @@ import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
 import { TestManifest, findManifest, readManifest } from '../../types/manifest.js';
-import { chooseReportFormat, reportingFor, singleFileArgs, withReportArgs } from '../../reporting/frameworks.js';
+import { chooseReportFormat, reportingFor, sameRunner, singleFileArgs, withReportArgs } from '../../reporting/frameworks.js';
 import { collectRunReport } from '../../reporting/results.js';
 import { getSpecsDir } from '../../utils/paths.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
@@ -124,7 +124,7 @@ Explicit mode examples:
       finalCwd = explicitCwd || process.cwd();
       // The project's own runner: add the test report (JUnit XML, Allure) the generated suite is set up for.
       const projectManifest = await readManifest(finalCwd);
-      if (projectManifest?.runCommand && projectManifest.runCommand.command === explicitCmd) {
+      if (projectManifest?.runCommand && sameRunner(explicitCmd, explicitArgs, projectManifest.runCommand.command)) {
         finalArgs = withReportArgs(explicitArgs, projectManifest.framework, projectManifest.reporting ?? chooseReportFormat(undefined, projectManifest.projectRoot).format);
       }
     } else if (testPath) {

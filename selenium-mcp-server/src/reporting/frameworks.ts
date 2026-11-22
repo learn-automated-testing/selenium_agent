@@ -156,3 +156,13 @@ export function singleFileArgs(framework: string, testPath: string, projectRoot:
   if (framework.startsWith('selenium-csharp')) return ['--filter', `FullyQualifiedName~${path.basename(testPath).replace(/\.\w+$/, '')}`];
   return [rel];
 }
+
+/**
+ * Is this the project's own test runner? ".venv/bin/pytest" and "python -m pytest" are pytest; "./mvnw" is mvn,
+ * "gradlew" is gradle. Used to add the report arguments to a command the AI chose itself.
+ */
+export function sameRunner(command: string, args: string[], projectCommand: string): boolean {
+  const name = (c: string) => path.basename(c).replace(/\.(exe|cmd|bat)$/i, '').replace(/^mvnw$/, 'mvn').replace(/^gradlew$/, 'gradle');
+  const runner = (c: string, a: string[]) => /^python[\d.]*$|^py$/.test(name(c)) && a[0] === '-m' && a[1] ? a[1] : name(c);
+  return runner(command, args) === runner(projectCommand, []);
+}
