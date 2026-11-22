@@ -6,7 +6,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 import { TestManifest, findManifest } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { collectLocatorCandidates, locatorSnippets, rankCandidates, type LocatorCandidate } from '../../utils/locator-match.js';
-import { checkSeleniumRules, formatRuleViolations } from './selenium-rules.js';
+import { checkSeleniumRules, findLongerTimeouts, formatRuleViolations } from './selenium-rules.js';
 import { countDeep } from '../../utils/shadow-dom.js';
 
 // ============================================================================
@@ -275,21 +275,24 @@ export class HealerFixTestTool extends BaseTool {
 
 The fix is checked against Selenium's official rules for AI agents (https://www.selenium.dev/documentation/ai_agents/).
 Don't fix a flaky test with a sleep or a longer timeout: find the condition that was not yet true and wait for it.
-A fix with an error (a sleep, a driver path, Selenium 3 APIs, ...) is not written.`;
+A fix with an error (a sleep, a wait timeout raised above the test's old maximum, a driver path, Selenium 3 APIs, ...)
+is not written.`;
   readonly inputSchema = fixTestSchema;
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { testPath, fixedCode, fixDescription, verify, framework, allowRuleViolations } = this.parseParams(fixTestSchema, params);
 
-    const violations = checkSeleniumRules(fixedCode, framework || context.generatorFramework || '', testPath);
+    const fs = await import('fs/promises');
+    const fw = framework || context.generatorFramework || '';
+    const current = await fs.readFile(testPath, 'utf-8').catch(() => '');
+    const violations = [...checkSeleniumRules(fixedCode, fw, testPath), ...findLongerTimeouts(current, fixedCode, fw, testPath)]
+      .sort((a, b) => a.line - b.line);
     const ruleReport = formatRuleViolations(violations, testPath);
     if (violations.some(v => v.severity === 'error') && !allowRuleViolations) {
       return this.error(`Fix not written: it breaks Selenium's official rules.\n${ruleReport}\n` +
         'Find the condition the test waits for instead, fix these lines and call healer_fix_test again.');
     }
-
-    const fs = await import('fs/promises');
 
     try {
       // Selector verification (non-blocking)
