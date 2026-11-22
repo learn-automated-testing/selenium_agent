@@ -3,7 +3,7 @@
 > **Status:** done (2026-05-13)
 > **Owner:** dev-team
 > **Reviewers:** —
-> **Source material:** `docs/DEPLOYMENT_GUIDE.md`, `lambda/handler.js`, `lambda/Dockerfile`
+> **Source material:** `lambda/handler.js`, `lambda/Dockerfile`
 
 ## Problem statement
 

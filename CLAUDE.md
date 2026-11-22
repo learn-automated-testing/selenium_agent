@@ -1,4 +1,4 @@
-# Selenium MCP Server
+# Selenium AI Agent
 
 Node.js MCP (Model Context Protocol) server for AI-driven browser automation.
 TypeScript, ESM, strict mode. No UI framework.

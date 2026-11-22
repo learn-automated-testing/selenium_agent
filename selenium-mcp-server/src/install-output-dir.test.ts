@@ -29,7 +29,7 @@ describe('output folder: the project for project-level clients, generic for Clau
   describe('install', () => {
     const saved = { cwd: process.cwd() };
     let home: string;
-    const config = () => JSON.parse(fs.readFileSync(path.join(home, '.junie', 'mcp', 'mcp.json'), 'utf8')).mcpServers['selenium-mcp'];
+    const config = () => JSON.parse(fs.readFileSync(path.join(home, '.junie', 'mcp', 'mcp.json'), 'utf8')).mcpServers['selenium-ai-agent'];
     const quiet = (fn: () => void) => { const log = console.log; console.log = () => undefined; try { fn(); } finally { console.log = log; } };
     beforeEach(() => {
       home = path.join(tmp, 'home');
@@ -61,6 +61,18 @@ describe('output folder: the project for project-level clients, generic for Clau
       const b = path.join(tmp, 'b');
       quiet(() => handleInstall(['junie', `--output-dir=${b}`]));
       expect(config().env.SELENIUM_MCP_OUTPUT_DIR).to.equal(b);
+    });
+
+    it('an existing setup under the old key "selenium-mcp" is updated in place, not added twice', () => {
+      process.chdir(home);
+      const file = path.join(home, '.junie', 'mcp', 'mcp.json');
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, JSON.stringify({ mcpServers: { 'selenium-mcp': { command: 'npx', args: ['selenium-ai-agent'] } } }));
+      const b = path.join(tmp, 'b');
+      quiet(() => handleInstall(['junie', `--output-dir=${b}`]));
+      const servers = JSON.parse(fs.readFileSync(file, 'utf8')).mcpServers;
+      expect(Object.keys(servers)).to.deep.equal(['selenium-mcp']);
+      expect(servers['selenium-mcp'].env.SELENIUM_MCP_OUTPUT_DIR).to.equal(b);
     });
 
     it('outside a project it writes no output folder (the server then uses ~/selenium-ai-agent)', () => {

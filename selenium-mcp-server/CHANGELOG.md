@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changes
+
+- **One name: Selenium AI Agent.** New setups use the config key `selenium-ai-agent` (`install`, `init-agents`, the docs and the VS Code / Cursor install buttons); an existing `selenium-mcp` entry keeps working and is updated in place. The server reports itself as `selenium-ai-agent` with its real version (it said `selenium-mcp` 2.0.0). Docs no longer say "Selenium MCP Server".
+- Removed leftovers of the first, Python-based version: `npm-wrapper/` and the installation and deployment guides for the `ai-agent-selenium` package.
+
 ## [3.8.1] - 2026-11-22
 
 ### Changes

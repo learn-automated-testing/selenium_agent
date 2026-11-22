@@ -1,6 +1,6 @@
 # selenium-ai-agent
 
-> **Selenium AI Agent** (`selenium-ai-agent` on npm) is a Selenium MCP server for AI-driven test automation.
+> **Selenium AI Agent** (`selenium-ai-agent` on npm) is an open-source MCP server that brings Playwright-style AI test agents (planner, generator, healer) to Selenium: you approve the test plan before any test is written, tests are generated and self-healed in a real browser (also in parallel on Selenium Grid), and every JUnit or Allure result links back to its plan scenario. It works in Claude Code, Claude Desktop, VS Code (GitHub Copilot), Cursor, JetBrains IDEs and other MCP clients.
 >
 > - **Built in Node.js:** run it with `npx -y selenium-ai-agent`, no install needed.
 > - **Generates tests in Python with pytest by default**, and in any other language or framework on request: Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework.
@@ -25,7 +25,7 @@ More tutorials: [youtube.com/@ralphvanderhorst5193](https://www.youtube.com/@ral
 
 ### One-Click Install
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-ai-agent%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-ai-agent%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-ai-agent&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
 
 ## Install
 
@@ -148,7 +148,7 @@ Add to your MCP client config:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -163,7 +163,7 @@ Then ask your AI assistant: *"Navigate to https://example.com and take a screens
 ### Claude Code
 
 ```bash
-claude mcp add selenium-mcp -- npx selenium-ai-agent
+claude mcp add selenium-ai-agent -- npx selenium-ai-agent
 ```
 
 Or add to your project `.mcp.json`:
@@ -171,7 +171,7 @@ Or add to your project `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -186,7 +186,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -206,7 +206,7 @@ Add to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -221,7 +221,7 @@ Add to `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "type": "stdio"
@@ -239,7 +239,7 @@ Open the MCP Servers panel in Cline, click Configure, then Advanced MCP Settings
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -254,7 +254,7 @@ Add to `~/.codeium/windsurf/mcp_config.json` (global) or `.windsurf/mcp_config.j
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -278,7 +278,7 @@ npx selenium-ai-agent install junie --with-rules   # also Selenium's rules in Ju
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["-y", "selenium-ai-agent"]
     }
@@ -291,7 +291,7 @@ npx selenium-ai-agent install junie --with-rules   # also Selenium's rules in Ju
 ```json
 {
   "servers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["-y", "selenium-ai-agent"]
     }
@@ -299,7 +299,7 @@ npx selenium-ai-agent install junie --with-rules   # also Selenium's rules in Ju
 }
 ```
 
-Claude Code also works in the IDE's terminal (`claude mcp add selenium-mcp -- npx -y selenium-ai-agent`). In a Java project the generator writes Java with JUnit 5 or TestNG, as found in your `pom.xml` or `build.gradle`; in PyCharm, Python with pytest or unittest.
+Claude Code also works in the IDE's terminal (`claude mcp add selenium-ai-agent -- npx -y selenium-ai-agent`). In a Java project the generator writes Java with JUnit 5 or TestNG, as found in your `pom.xml` or `build.gradle`; in PyCharm, Python with pytest or unittest.
 
 ---
 
@@ -360,7 +360,7 @@ Pass env vars in your MCP config:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "env": {
@@ -860,7 +860,7 @@ For parallel browser automation across multiple browsers, set `SELENIUM_GRID_URL
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "env": {

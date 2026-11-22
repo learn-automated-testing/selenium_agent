@@ -3,7 +3,7 @@
 > **Status:** done (2026-05-13)
 > **Owner:** dev-team
 > **Reviewers:** —
-> **Source material:** `README.md`, `docs/INSTALLATION_GUIDE.md`, `qlonie-requirements.md`
+> **Source material:** `README.md`, `docs/MCP_CLIENT_SETUP.md`, `qlonie-requirements.md`
 
 ## Problem statement
 

@@ -60,8 +60,8 @@ describe('test agents', () => {
 
     const fresh = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-'));
     const added = initAgents({ loop: 'vscode', cwd: fresh, agentsDir: AGENTS_DIR });
-    expect(added.server).to.equal('selenium-mcp');
+    expect(added.server).to.equal('selenium-ai-agent');
     const vscode = JSON.parse(fs.readFileSync(path.join(fresh, '.vscode/mcp.json'), 'utf8'));
-    expect(vscode.servers['selenium-mcp'].args).to.deep.equal(['-y', 'selenium-ai-agent@latest']);
+    expect(vscode.servers['selenium-ai-agent'].args).to.deep.equal(['-y', 'selenium-ai-agent@latest']);
   });
 });

@@ -1,4 +1,4 @@
-# Contributing to Selenium MCP Server
+# Contributing to Selenium AI Agent
 
 First off, thank you for considering contributing! 🎉
 

@@ -1,6 +1,6 @@
-# Getting Started with Selenium MCP Server
+# Getting Started with Selenium AI Agent
 
-This guide will get you up and running with Selenium MCP Server in under 5 minutes.
+This guide will get you up and running with Selenium AI Agent in under 5 minutes.
 
 ## Prerequisites
 

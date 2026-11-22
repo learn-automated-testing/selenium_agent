@@ -1,4 +1,4 @@
-# Selenium MCP Server - Usage Demo
+# Selenium AI Agent - Usage Demo
 
 ## Once Claude Code/Desktop loads the MCP server, you can use it like this:
 

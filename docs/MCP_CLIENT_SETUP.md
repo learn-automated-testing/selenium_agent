@@ -23,13 +23,13 @@ Requirements: Node.js 20+, Chrome browser.
 ### CLI (recommended)
 
 ```bash
-claude mcp add selenium-mcp -- npx selenium-ai-agent
+claude mcp add selenium-ai-agent -- npx selenium-ai-agent
 ```
 
 With environment variables:
 
 ```bash
-claude mcp add selenium-mcp -- npx selenium-ai-agent \
+claude mcp add selenium-ai-agent -- npx selenium-ai-agent \
   -e SELENIUM_HEADLESS=true \
   -e SE_AVOID_STATS=true
 ```
@@ -41,7 +41,7 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -66,7 +66,7 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -98,7 +98,7 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -125,7 +125,7 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "servers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "type": "stdio"
@@ -149,7 +149,7 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -175,7 +175,7 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"]
     }
@@ -192,7 +192,7 @@ To enable parallel browser automation, add `SELENIUM_GRID_URL` to any config:
 ### Claude Code
 
 ```bash
-claude mcp add selenium-mcp -- npx selenium-ai-agent \
+claude mcp add selenium-ai-agent -- npx selenium-ai-agent \
   -e SELENIUM_GRID_URL=http://localhost:4444
 ```
 
@@ -203,7 +203,7 @@ Add an `env` block to the config:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "env": {
@@ -243,7 +243,7 @@ Example with environment variables:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "env": {
@@ -291,7 +291,7 @@ npx --version
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "/usr/local/bin/npx",
       "args": ["selenium-ai-agent"]
     }

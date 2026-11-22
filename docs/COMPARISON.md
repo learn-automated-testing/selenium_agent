@@ -1,4 +1,4 @@
-# Selenium MCP Server — Comparison with Alternatives
+# Selenium AI Agent — Comparison with Alternatives
 
 ## Quick Comparison
 
@@ -30,7 +30,7 @@
 - Shared state between clients
 - Limited parallelism
 
-### Selenium MCP Server
+### Selenium AI Agent
 ```
 ┌─────────────┐     ┌─────────────────┐
 │  AI Agent   │────▶│  Selenium MCP   │
