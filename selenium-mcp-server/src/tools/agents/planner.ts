@@ -271,7 +271,7 @@ export class PlannerApprovePlanTool extends BaseTool {
       const before = planStatus(content);
       const when = new Date().toISOString().slice(0, 16).replace('T', ' ');
       const words = approval.replace(/\s+/g, ' ').trim().slice(0, 200).replace(/"/g, "'");
-      await fs.writeFile(file, withPlanStatus(content, 'approved', `approved by the user on ${when}: "${words}"`));
+      await fs.writeFile(file, withPlanStatus(content, 'approved', `approved by the user on ${when} UTC: "${words}"`));
       return this.success(
         `Test plan approved: ${file}${before === 'approved' ? ' (it was already approved; the approval is updated)' : ''}\n` +
         'The generator can now write tests from it (generator_setup_page, generator_read_spec).',

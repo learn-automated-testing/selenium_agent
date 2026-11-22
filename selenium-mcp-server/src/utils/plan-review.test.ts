@@ -81,7 +81,7 @@ describe('test plan review: tests are only generated from an approved plan', () 
       expect(r.isError).to.not.equal(true);
       const saved = fs.readFileSync(specPath(), 'utf8');
       expect(planStatus(saved)).to.equal('approved');
-      expect(saved).to.match(/\*\*Status:\*\* approved — approved by the user on \d{4}-\d\d-\d\d \d\d:\d\d: "Looks good, generate the tests"/);
+      expect(saved).to.match(/\*\*Status:\*\* approved — approved by the user on \d{4}-\d\d-\d\d \d\d:\d\d UTC: "Looks good, generate the tests"/);
       expect(saved).to.include('#### 1.1. Valid login');
     });
 
