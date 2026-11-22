@@ -9,7 +9,7 @@ import { runSetupSteps, setupStepSchema } from '../../utils/setup-steps.js';
 import { planFileName, renderPlan, structuredPlanSchema } from '../../utils/plan-format.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
 import { getPageInventory } from '../../utils/page-inventory.js';
-import { planStatus, withPlanStatus } from '../../utils/plan-review.js';
+import { planReviewRequired, planStatus, withPlanStatus } from '../../utils/plan-review.js';
 import { findSpec } from './spec.js';
 
 // Planner Setup Tool
@@ -226,10 +226,12 @@ export class PlannerSavePlanTool extends BaseTool {
       validateOutputPath(planPath, unrestricted);
       // A saved plan is always a draft, also when the content says otherwise: a changed plan is reviewed again.
       await fs.writeFile(planPath, withPlanStatus(content, 'draft'));
+      await import('../../plan-review-server.js').then(m => m.writeStaticPages()).catch(() => undefined);
 
       return this.success(
         `Test plan saved as a draft to: ${planPath}${summary}\n` +
-        'Now show the plan to the user and ask them to review it: tests are only generated from an approved plan. ' +
+        'Now let the user review it: planner_review_plan opens it as a page in their browser with Approve and Request ' +
+        'changes buttons (or show it in the chat). Tests are only generated from an approved plan. ' +
         `When they approve it, call planner_approve_plan (specFile: "${finalFilename}") with their words; ` +
         `the generator then reads it with generator_read_spec (specFile: "${finalFilename}").`,
         false
@@ -272,6 +274,7 @@ export class PlannerApprovePlanTool extends BaseTool {
       const when = new Date().toISOString().slice(0, 16).replace('T', ' ');
       const words = approval.replace(/\s+/g, ' ').trim().slice(0, 200).replace(/"/g, "'");
       await fs.writeFile(file, withPlanStatus(content, 'approved', `approved by the user on ${when} UTC: "${words}"`));
+      await import('../../plan-review-server.js').then(m => m.writeStaticPages()).catch(() => undefined);
       return this.success(
         `Test plan approved: ${file}${before === 'approved' ? ' (it was already approved; the approval is updated)' : ''}\n` +
         'The generator can now write tests from it (generator_setup_page, generator_read_spec).',
@@ -282,4 +285,78 @@ export class PlannerApprovePlanTool extends BaseTool {
       return this.error(`Failed to approve the plan: ${message}`);
     }
   }
+}
+
+// Planner Review Plan Tool
+const reviewPlanSchema = z.object({
+  specFile: z.string().optional()
+    .describe('The plan to review: its name in specs/ (e.g. "login.md"). Leave it out to open the overview of all plans.'),
+  open: z.boolean().optional().describe('Open the page in the user\'s browser (default: true). false only returns the link.'),
+});
+
+export class PlannerReviewPlanTool extends BaseTool {
+  readonly name = 'planner_review_plan';
+  readonly description =
+    'Open a test plan as a review page in the user\'s browser: suites, tests, steps with their expected results, ' +
+    'elements and gaps, with a comment box per test and Approve / Request changes buttons that write the decision ' +
+    'into the plan. Without specFile it opens the overview of all plans in specs/ (review status, tests, generated ' +
+    'test files, last run). Read-only copies are saved as specs/<plan>.html and specs/index.html.\n\n' +
+    'Use it after planner_save_plan: ask the user to review the plan in the page, then call it again (or read the ' +
+    'plan) to see their decision. "approved": continue with the generator. "changes requested": read the "Review ' +
+    'comments" in the plan, change the plan, save it and ask for a review again.';
+  readonly inputSchema = reviewPlanSchema;
+  readonly category: ToolCategory = 'agent';
+
+  async execute(_context: Context, params: unknown): Promise<ToolResult> {
+    const { specFile, open = true } = this.parseParams(reviewPlanSchema, params);
+    const path = await import('path');
+    const { ensureReviewServer, reviewUrls, writeStaticPages, listPlans } = await import('../../plan-review-server.js');
+    try {
+      let file: string | undefined;
+      let status: string | undefined;
+      if (specFile) {
+        const found = await findSpec(specFile);
+        if (path.dirname(found.file) !== getSpecsDir()) {
+          return this.error(`The review page shows plans in ${getSpecsDir()}; ${found.file} is somewhere else. Save it there with planner_save_plan.`);
+        }
+        file = path.basename(found.file);
+        status = planStatus(found.content) ?? 'none (written by hand?)';
+      }
+      await ensureReviewServer();
+      const pageUrl = file ? reviewUrls.plan(file) : reviewUrls.overview();
+      const staticIndex = await writeStaticPages();
+      const opened = open ? await openInBrowser(pageUrl) : false;
+      const plans = await listPlans();
+      return this.success(JSON.stringify({
+        message: file
+          ? `Review page for ${file} ${opened ? 'opened in the user\'s browser' : 'ready'}.`
+          : `Overview of ${plans.length} test plan(s) ${opened ? 'opened in the user\'s browser' : 'ready'}.`,
+        url: pageUrl,
+        ...(file ? { plan: file, status } : { plans }),
+        readOnlyCopies: staticIndex.replace(/index\.html$/, '<plan>.html and index.html'),
+        planReview: planReviewRequired() ? 'required: tests are only generated from approved plans' : 'off (SELENIUM_MCP_PLAN_REVIEW=off)',
+        next: file
+          ? 'Ask the user to review the plan in the page and click Approve plan or Request changes (with comments), and to tell you when done. Then call planner_review_plan again to read the decision.'
+          : 'The user can open each plan from the overview to review it.',
+        ...(opened || !open ? {} : { note: 'Could not open a browser here: give the user the url.' }),
+      }, null, 2), false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return this.error(`Failed to open the review page: ${message}`);
+    }
+  }
+}
+
+/** Open the review page in the user's own default browser (not the browser the agent drives). */
+async function openInBrowser(target: string): Promise<boolean> {
+  if (!/^http:\/\/127\.0\.0\.1:\d+\/[\w/?=&%.-]*$/.test(target)) return false;
+  const { execFile } = await import('child_process');
+  const [command, args] = process.platform === 'darwin' ? ['open', [target]]
+    : process.platform === 'win32' ? ['rundll32', ['url.dll,FileProtocolHandler', target]]
+      : ['xdg-open', [target]];
+  return new Promise(resolve => {
+    // Opens our own review page (checked above: a 127.0.0.1 URL) in the default browser; no shell is involved.
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
+    execFile(command, args, { timeout: 10000 }, err => resolve(!err));
+  });
 }

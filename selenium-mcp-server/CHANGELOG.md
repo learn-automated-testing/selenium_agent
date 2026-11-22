@@ -9,6 +9,9 @@
   - The new `planner_approve_plan` tool marks a plan approved after the user has read it. It needs the user's own words, and writes them with the time into the plan. Users can also change the line themselves.
   - `generator_setup_page`, `generator_read_spec` and `generator_write_test` (with `specFile`) refuse a draft plan, with an error that tells the agent to show the plan to the user first. `skipPlanReview: true` starts from a draft only when the user explicitly asks to skip the review.
   - A plan written by hand without a status line is still accepted, with a note to check that it is reviewed. The sample plans in `examples/` are marked approved.
+- **Review plans in the browser.** `planner_review_plan` opens a test plan as a readable page in the user's own browser: suites, tests, steps with their expected results, elements and gaps, a comment box per test, and **Approve plan** / **Request changes** buttons. Approve writes the approval into the plan. Request changes needs a comment, writes the comments into a "Review comments" section and sets the status to "changes requested", which the generator also refuses; the planner then changes the plan and asks again. The page is served on 127.0.0.1 with a random token and only reads and writes plans in `specs/`.
+- **Overview of all test plans.** `planner_review_plan` without a plan opens an overview: every plan with its review status, number of tests, the test files generated from it and their last results. `healer_run_tests` now keeps the latest results in `.test-runs.json` for it. Read-only copies are kept up to date as `specs/<plan>.html` and `specs/index.html`, to share or attach to a pull request.
+- **Review on by default, off for speed.** `SELENIUM_MCP_PLAN_REVIEW=off` (or `--no-plan-review`) lets the generator use plans nobody approved; the tools say so in their results.
 
 ## [3.6.0] - 2026-11-22
 

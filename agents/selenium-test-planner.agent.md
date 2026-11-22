@@ -30,6 +30,7 @@ tools:
   - planner_setup_page
   - planner_explore_page
   - planner_save_plan
+  - planner_review_plan
   - planner_approve_plan
 ---
 
@@ -137,16 +138,25 @@ This is enforced: `planner_save_plan` saves every plan as a draft (`**Status:** 
 After saving the test plan with `planner_save_plan`, you MUST:
 
 1. **STOP** - Do not proceed to test code generation
-2. **PRESENT** the test plan to the user for review: the scenarios, the steps and what each step expects
-3. **WAIT** for explicit user approval or feedback
-4. **ASK** the user if they want to:
-   - Approve the plan as-is and proceed to code generation
-   - Request modifications to the test plan
-   - Add or remove test scenarios
-5. **On feedback**: change the plan and save it again with `planner_save_plan` (a draft again), and ask again.
-6. **On approval**: call `planner_approve_plan` with the plan and the user's own words, quoted from the chat
-   (for example `approval: "looks good, generate the tests"`). It writes `**Status:** approved`, with the words and
-   the time, into the plan. The user can also change `draft` to `approved` in the file themselves.
+2. **OPEN THE REVIEW PAGE**: call `planner_review_plan` with the plan. It opens the plan in the user's browser as a
+   readable page (suites, tests, steps with their expected results, elements, gaps) with a comment box per test and
+   **Approve plan** / **Request changes** buttons. Tell the user in one or two lines what the plan covers and ask them to
+   review it there and tell you when they're done. If no browser can be opened, give them the `url` from the result,
+   or present the plan in the chat.
+3. **WAIT** for the user. Then call `planner_review_plan` again (or read the plan) to see their decision:
+   - `approved`: your part is done; the `selenium-test-generator` agent can write the tests.
+   - `changes requested`: read the **Review comments** at the end of the plan, change the plan accordingly, save it
+     with `planner_save_plan` (a draft again) and open the review page again.
+   - still `draft`: the user hasn't decided yet; ask whether they have questions.
+4. **In the chat instead**: if the user approves in the chat, call `planner_approve_plan` with their own words
+   (for example `approval: "looks good, generate the tests"`). The user can also change `draft` to `approved` in the file.
+
+The overview of all plans (`planner_review_plan` without a plan) shows every plan's review status, its tests, the test
+files generated from it and the last test run. Use it when the user asks where things stand.
+
+If the team turned the review off for speed (`SELENIUM_MCP_PLAN_REVIEW=off` or `--no-plan-review`), the generator
+doesn't wait for an approval; still offer the review page, and mention that tests from an unreviewed plan may test the
+wrong things.
 
 Never approve a plan yourself: not because it looks complete, not because the user asked for tests in their first
 message, and not to get past the generator's check. Approval means the user has read this version of the plan.

@@ -8,7 +8,7 @@
 > - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
 > - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
 
-**64 tools (78 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
+**65 tools (79 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
 
 ### Video Tutorials
 
@@ -335,6 +335,7 @@ These clients typically allow you to configure auto-approval per tool or per ser
 | `SELENIUM_HEADLESS` | `false` | Run browser in headless mode |
 | `SELENIUM_STEALTH` | `false` | Enable stealth mode (masks basic automation flags; does not get past advanced bot protection such as Cloudflare) |
 | `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated [tool groups](#tool-groups) to load, e.g. `core,generator,healer` |
+| `SELENIUM_MCP_PLAN_REVIEW` | `required` | `off` turns the test plan review off: the generator then also uses plans nobody approved (faster, riskier) |
 | `SELENIUM_ATTACH_CDP` | — | Attach to an already running Chrome at `host:port` (e.g. `127.0.0.1:9222`) instead of launching one |
 | `SELENIUM_MCP_OUTPUT_MODE` | `stdout` | Output mode: `stdout` (return data to LLM) or `file` (save to disk) |
 | `SELENIUM_MCP_OUTPUT_DIR` | auto | Output folder for test plans, tests, specs and reports. Auto: the project folder (found via `.git`, `package.json` or `.claude`); when the server is started outside a project, as Claude Desktop does, `~/selenium-ai-agent`. `~` is allowed. `doctor` shows the folder in use |
@@ -385,6 +386,7 @@ npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Seleni
 | `install claude-desktop\|cursor\|windsurf\|junie [--with-rules[=...]]` | Add the server to the client's config; `--with-rules` also writes the rules into this project's instruction file |
 | `--stealth` | Enable stealth mode |
 | `--headless` | Run browser headless |
+| `--no-plan-review` | Turn the test plan review off (same as `SELENIUM_MCP_PLAN_REVIEW=off`) |
 | `--save-trace` | Save session trace JSON |
 | `--output-mode=stdout\|file` | Set output mode |
 | `--output-dir=<path>` | Set output directory |
@@ -414,7 +416,7 @@ The default is `all`. For example, browsing and self-healing only:
 "env": { "SELENIUM_MCP_TOOLSETS": "core,healer" }
 ```
 
-## Tools (78)
+## Tools (79)
 
 ### Navigation (5)
 
@@ -506,13 +508,14 @@ The default is `all`. For example, browsing and self-healing only:
 | `recording_status` | Check if recording is active and show recent actions. Read-only. |
 | `clear_recording` | Clear all recorded browser actions. |
 
-### Test Planner (4)
+### Test Planner (5)
 
 | Tool | Description |
 |------|-------------|
 | `planner_setup_page` | Start test planning: open the app, run optional `setupSteps` (e.g. a login) and load the `seedTest` that generated tests follow. |
 | `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
 | `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. Structured as in Playwright: suites (seed file) → tests (target file) → steps with `expect`, plus elements and gaps. |
+| `planner_review_plan` | Open a plan as a review page in the user's browser: suites, tests, steps with expected results, elements and gaps, a comment box per test, and **Approve plan** / **Request changes** buttons that write the decision (and the comments) into the plan. Without a plan: the overview of all plans with review status, tests, generated test files and the last run. Served on 127.0.0.1 with a random token; read-only copies in `specs/<plan>.html` and `specs/index.html`. |
 | `planner_approve_plan` | Mark a reviewed plan approved, with the user's own words and the time. Every plan saved with `planner_save_plan` (or `generator_save_spec`) is a draft, and `generator_setup_page`, `generator_read_spec` and `generator_write_test` refuse a draft plan: tests are only generated from a plan someone has read. `skipPlanReview: true` only when the user explicitly skips the review. |
 
 ### Test Generator (6)
@@ -773,7 +776,7 @@ The generator and healer tools form a complete test automation pipeline:
 
 ```
 planner_setup_page (seedTest, setupSteps) → planner_explore_page → planner_save_plan → specs/<plan>.md (draft)
-  → the user reviews it → planner_approve_plan (approved)
+  → planner_review_plan: the user reviews it in the browser → Approve (approved) or Request changes (back to the planner)
 ```
 
 ### 2. Record & Generate

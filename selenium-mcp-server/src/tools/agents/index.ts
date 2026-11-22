@@ -1,5 +1,5 @@
 // Planner tools
-export { PlannerSetupTool, PlannerExplorePageTool, PlannerSavePlanTool, PlannerApprovePlanTool } from './planner.js';
+export { PlannerSetupTool, PlannerExplorePageTool, PlannerSavePlanTool, PlannerApprovePlanTool, PlannerReviewPlanTool } from './planner.js';
 
 // Generator tools
 export { GeneratorSetupTool, GeneratorReadLogTool, GeneratorWriteTestTool, GeneratorWriteSeedTestTool } from './generator.js';

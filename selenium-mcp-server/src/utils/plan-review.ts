@@ -7,10 +7,20 @@
  * Plans without a status line (written by hand) are accepted, with a note.
  */
 
-export type PlanStatus = 'draft' | 'approved';
+export type PlanStatus = 'draft' | 'approved' | 'changes requested';
 
 /** `**Status:** draft`, `Status: approved — ...`, with or without bold or a leading "> ". */
-const STATUS_LINE = /^[ \t]*(?:>[ \t]*)?\*{0,2}Status:?\*{0,2}[ \t]*:?[ \t]*\*{0,2}(draft|approved)\b.*$/im;
+const STATUS_LINE = /^[ \t]*(?:>[ \t]*)?\*{0,2}Status:?\*{0,2}[ \t]*:?[ \t]*\*{0,2}(draft|approved|changes requested)\b.*$/im;
+
+/**
+ * The review is on by default. SELENIUM_MCP_PLAN_REVIEW=off (or the --no-plan-review flag) turns the check off,
+ * for teams that want speed: plans are still saved as drafts and can still be reviewed, but the generator no
+ * longer waits for an approval.
+ */
+export function planReviewRequired(): boolean {
+  const v = (process.env.SELENIUM_MCP_PLAN_REVIEW ?? '').trim().toLowerCase();
+  return !['off', 'false', '0', 'no', 'skip'].includes(v);
+}
 
 export const DRAFT_NOTE =
   'review this plan, then change "draft" to "approved" here (or tell the agent you approve it). ' +
@@ -18,7 +28,7 @@ export const DRAFT_NOTE =
 
 export function planStatus(content: string): PlanStatus | null {
   const m = STATUS_LINE.exec(content);
-  return m ? (m[1].toLowerCase() as PlanStatus) : null;
+  return m ? (m[1].toLowerCase().replace(/\s+/g, ' ') as PlanStatus) : null;
 }
 
 function statusLine(status: PlanStatus, note: string): string {
@@ -49,6 +59,19 @@ export interface PlanCheck {
 export function checkPlanApproved(content: string, where: string, skipPlanReview = false): PlanCheck {
   const status = planStatus(content);
   if (status === 'approved') return { ok: true, status };
+  if ((status === 'draft' || status === 'changes requested') && !planReviewRequired()) {
+    return { ok: true, status, message: `The plan ${where} is not approved, but the plan review is turned off (SELENIUM_MCP_PLAN_REVIEW=off).` };
+  }
+  if (status === 'changes requested') {
+    return {
+      ok: false,
+      status,
+      message:
+        `The user asked for changes to the test plan ${where} (see its "Review comments"): no tests are generated from it.\n` +
+        'Change the plan as the comments ask, save it with planner_save_plan and let the user review it again ' +
+        '(planner_review_plan opens the review page).',
+    };
+  }
   if (status === 'draft') {
     if (skipPlanReview) {
       return { ok: true, status, message: `The plan ${where} is still a draft; the review was skipped because the user asked for it.` };
@@ -58,7 +81,8 @@ export function checkPlanApproved(content: string, where: string, skipPlanReview
       status,
       message:
         `The test plan ${where} is a draft: nobody has approved it yet, so no tests are generated from it.\n` +
-        'Show the plan to the user and ask them to review it. When they approve it, call planner_approve_plan with their ' +
+        'Show the plan to the user and ask them to review it: planner_review_plan opens it as a page in their browser with ' +
+        'Approve and Request changes buttons. When they approve it in the chat instead, call planner_approve_plan with their ' +
         'words (or they change "Status: draft" to "Status: approved" in the file), then try again.\n' +
         'Only if the user explicitly says to skip the review, pass skipPlanReview: true.',
     };
@@ -70,4 +94,25 @@ export function checkPlanApproved(content: string, where: string, skipPlanReview
 export function looksLikePlanPath(text: string): boolean {
   const t = text.trim();
   return !t.includes('\n') && t.length < 400 && /\.(md|markdown|txt)$/i.test(t);
+}
+
+export interface ReviewComment {
+  /** The test it is about, e.g. "1.2 Wrong password"; empty for a comment on the whole plan. */
+  test?: string;
+  text: string;
+}
+
+const COMMENTS_HEADING = '## Review comments';
+
+/**
+ * Record a "request changes" review: the status becomes "changes requested" and the comments go into a
+ * "Review comments" section at the end (replacing the previous review's comments).
+ */
+export function withReviewComments(content: string, comments: ReviewComment[], when: string): string {
+  const kept = content.includes(COMMENTS_HEADING) ? content.slice(0, content.indexOf(COMMENTS_HEADING)).trimEnd() : content.trimEnd();
+  const lines = comments
+    .filter(c => c.text.trim())
+    .map(c => `- ${c.test ? `**${c.test.replace(/\s+/g, ' ').trim()}:** ` : ''}${c.text.replace(/\s+/g, ' ').trim()}`);
+  const body = `${kept}\n\n${COMMENTS_HEADING}\n\nRequested on ${when} UTC:\n\n${lines.join('\n')}\n`;
+  return withPlanStatus(body, 'changes requested', `the user asked for changes on ${when} UTC: see "Review comments" below`);
 }

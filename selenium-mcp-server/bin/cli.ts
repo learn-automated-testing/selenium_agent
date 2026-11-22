@@ -65,6 +65,9 @@ for (const arg of args) {
     case '--headless':
       process.env.SELENIUM_HEADLESS = 'true';
       break;
+    case '--no-plan-review':
+      process.env.SELENIUM_MCP_PLAN_REVIEW = 'off';
+      break;
     case '--verbose-attributes':
       process.env.SELENIUM_MCP_VERBOSE_ATTRIBUTES = 'true';
       break;
