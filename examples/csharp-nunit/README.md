@@ -34,7 +34,7 @@ Expected result: `Passed! - Failed: 0, Passed: 6`.
 
 ## Use it with the AI agent
 
-Add the MCP server to your assistant (Node.js 18+ needed for `npx`).
+Add the MCP server to your assistant (Node.js 20+ needed for `npx`).
 
 | Assistant | Setup |
 |---|---|

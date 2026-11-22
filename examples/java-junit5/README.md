@@ -34,7 +34,7 @@ Expected result: `Tests run: 6, Failures: 0, Errors: 0`.
 
 ## Use it with the AI agent
 
-Add the MCP server to your assistant (Node.js 18+ needed for `npx`).
+Add the MCP server to your assistant (Node.js 20+ needed for `npx`).
 
 | Assistant | Setup |
 |---|---|

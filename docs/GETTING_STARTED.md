@@ -4,7 +4,7 @@ This guide will get you up and running with Selenium MCP Server in under 5 minut
 
 ## Prerequisites
 
-- **Node.js** 18+ or **Python** 3.8+
+- **Node.js** 20+ or **Python** 3.8+
 - **Docker** (for Selenium Grid)
 - **Chrome** browser
 - An MCP-compatible client (Claude Desktop, Cursor, Cline, etc.)
