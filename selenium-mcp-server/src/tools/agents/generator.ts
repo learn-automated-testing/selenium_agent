@@ -9,7 +9,7 @@ import {
 } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
-import { getOutputDir } from '../../utils/paths.js';
+import { detectProjectRoot, getOutputDir } from '../../utils/paths.js';
 import { detectProject } from '../../project-detect.js';
 import { checkPlanApproved, looksLikePlanPath } from '../../utils/plan-review.js';
 import { findSpec } from './spec.js';
@@ -331,7 +331,8 @@ With specFile, the plan must be approved by the user: a test for a draft plan is
       context.clearRecording();
 
       // --- Manifest handling ---
-      const projectRoot = explicitProjectRoot || path.dirname(testsDir);
+      // The project the tests belong to (pyproject.toml, pom.xml, .git, ...), not just the folder above the test file.
+      const projectRoot = explicitProjectRoot || detectProjectRoot(testsDir) || path.dirname(testsDir);
       const detectedConfig = explicitConfig || await detectConfigFile(projectRoot);
       // The run command writes a test report (JUnit XML; Allure too when chosen), which healer_run_tests links to the plan.
       const existing = await readManifest(projectRoot);
@@ -452,7 +453,7 @@ the main test suite by the healer. Use this for:
       await fs.writeFile(seedPath, testCode);
 
       // Update manifest
-      const projectRoot = explicitRoot || path.dirname(testsDir);
+      const projectRoot = explicitRoot || detectProjectRoot(testsDir) || path.dirname(testsDir);
       let manifest = await readManifest(projectRoot);
       if (!manifest) {
         manifest = {

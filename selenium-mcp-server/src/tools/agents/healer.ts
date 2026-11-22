@@ -126,6 +126,11 @@ Explicit mode examples:
       const projectManifest = await readManifest(finalCwd);
       if (projectManifest?.runCommand && sameRunner(explicitCmd, explicitArgs, projectManifest.runCommand.command)) {
         finalArgs = withReportArgs(explicitArgs, projectManifest.framework, projectManifest.reporting ?? chooseReportFormat(undefined, projectManifest.projectRoot).format);
+      } else if (!projectManifest) {
+        // No manifest: pytest and Robot Framework write the report without any extra package, so add it for them.
+        const builtIn = sameRunner(explicitCmd, explicitArgs, 'pytest') ? 'selenium-python-pytest'
+          : sameRunner(explicitCmd, explicitArgs, 'robot') ? 'robot-framework' : undefined;
+        if (builtIn) finalArgs = withReportArgs(explicitArgs, builtIn, chooseReportFormat(undefined, finalCwd).format);
       }
     } else if (testPath) {
       // Manifest mode — discover from .test-manifest.json
