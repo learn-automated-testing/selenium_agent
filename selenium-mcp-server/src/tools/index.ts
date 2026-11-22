@@ -36,6 +36,8 @@ import {
   PlannerSetupTool,
   PlannerExplorePageTool,
   PlannerSavePlanTool,
+  PlannerApprovePlanTool,
+  PlannerReviewPlanTool,
   GeneratorSetupTool,
   GeneratorReadLogTool,
   GeneratorWriteTestTool,
@@ -168,11 +170,13 @@ export async function getAllTools(): Promise<BaseTool[]> {
       new ClearRecordingTool(),
     ],
 
-    // Planner Agent (3)
+    // Planner Agent (5)
     planner: [
       new PlannerSetupTool(),
       new PlannerExplorePageTool(),
       new PlannerSavePlanTool(),
+      new PlannerReviewPlanTool(),
+      new PlannerApprovePlanTool(),
     ],
 
     // Generator Agent (6)
@@ -313,6 +317,8 @@ export {
   PlannerSetupTool,
   PlannerExplorePageTool,
   PlannerSavePlanTool,
+  PlannerApprovePlanTool,
+  PlannerReviewPlanTool,
   // Generator Agent
   GeneratorSetupTool,
   GeneratorReadLogTool,

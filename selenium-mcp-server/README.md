@@ -8,7 +8,7 @@
 > - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
 > - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
 
-**63 tools (77 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
+**65 tools (79 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
 
 ### Video Tutorials
 
@@ -335,9 +335,11 @@ These clients typically allow you to configure auto-approval per tool or per ser
 | `SELENIUM_HEADLESS` | `false` | Run browser in headless mode |
 | `SELENIUM_STEALTH` | `false` | Enable stealth mode (masks basic automation flags; does not get past advanced bot protection such as Cloudflare) |
 | `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated [tool groups](#tool-groups) to load, e.g. `core,generator,healer` |
+| `SELENIUM_MCP_PLAN_REVIEW` | `required` | `off` turns the test plan review off: the generator then also uses plans nobody approved (faster, riskier) |
+| `SELENIUM_MCP_SPECS_DIR` | `specs` | Folder for the test plans, relative to the project (or absolute). Use e.g. `test-plans` when your project already uses `specs/` for something else |
 | `SELENIUM_ATTACH_CDP` | — | Attach to an already running Chrome at `host:port` (e.g. `127.0.0.1:9222`) instead of launching one |
 | `SELENIUM_MCP_OUTPUT_MODE` | `stdout` | Output mode: `stdout` (return data to LLM) or `file` (save to disk) |
-| `SELENIUM_MCP_OUTPUT_DIR` | auto | Output folder for test plans, tests, specs and reports. Auto: the project folder (found via `.git`, `package.json` or `.claude`); when the server is started outside a project, as Claude Desktop does, `~/selenium-ai-agent`. `~` is allowed. `doctor` shows the folder in use |
+| `SELENIUM_MCP_OUTPUT_DIR` | auto | Output folder for test plans (`specs/`), tests and reports. Auto: the project the server runs in (the nearest folder with `.git`, `package.json`, `.claude`, `pom.xml`, `build.gradle`, `*.csproj`, `*.sln`, `pyproject.toml` or `requirements.txt`); outside any project `~/selenium-ai-agent`. Claude Desktop and other clients with one global config start the server outside any project, so they use `~/selenium-ai-agent` unless you set this (`install ... --output-dir=`); Claude Code, VS Code and Cursor with `init-agents` start it in the project. `~` is allowed. `doctor` shows the folder in use |
 | `SELENIUM_MCP_SAVE_TRACE` | `false` | Save session trace JSON to `<output>/traces/` |
 | `SELENIUM_MCP_UNRESTRICTED_FILES` | `false` | Bypass workspace path validation (allow writing outside output dir) |
 | `SE_AVOID_STATS` | — | Set to `true` to disable Selenium usage statistics |
@@ -374,6 +376,7 @@ Pass env vars in your MCP config:
 ```bash
 npx selenium-ai-agent [flags]
 npx selenium-ai-agent doctor   # run driver/proxy diagnostics and exit
+npx selenium-ai-agent review   # review test plans in your browser: Approve / Request changes, without the AI
 npx selenium-ai-agent init-agents --loop=claude   # install the planner/generator/healer agents
 npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Selenium's rules in CLAUDE.md
 ```
@@ -381,10 +384,13 @@ npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Seleni
 | Flag | Description |
 |------|-------------|
 | `doctor` | Run preflight diagnostics (Chrome, driver, proxy, cache, output folder) and exit |
+| `review [folder] [plan] [--no-open] [--port=…]` | Review test plans yourself, without asking the AI: opens the overview of all plans in the folder's `specs/` (default: the project you're in; or one plan) in your browser, with **Approve plan** / **Request changes** per plan. Runs on 127.0.0.1 until Ctrl+C; your AI assistant reads the decision from the plan. With no plans there, it lists the folders that have plans |
 | `init-agents --loop=claude\|vscode\|copilot\|cursor [--server=name] [--with-rules[=...]] [--framework=f]` | Install the test agents for your AI client (see [Test Agents](#test-agents)) and exit; `--with-rules` also writes the [rules for AI agents](#rules-for-ai-agents) into the project |
-| `install claude-desktop\|cursor\|windsurf\|junie [--with-rules[=...]]` | Add the server to the client's config; `--with-rules` also writes the rules into this project's instruction file |
+| `install claude-desktop\|cursor\|windsurf\|junie [--output-dir=…] [--with-rules[=...]]` | Add the server to the client's (global) config. Plans, tests and reports go to `~/selenium-ai-agent`, or to the folder named with `--output-dir=` (also for an existing setup). For project work use `init-agents` in the project. `--with-rules` also writes the rules into this project's instruction file |
 | `--stealth` | Enable stealth mode |
 | `--headless` | Run browser headless |
+| `--no-plan-review` | Turn the test plan review off (same as `SELENIUM_MCP_PLAN_REVIEW=off`) |
+| `--specs-dir=<folder>` | Folder for the test plans (same as `SELENIUM_MCP_SPECS_DIR`) |
 | `--save-trace` | Save session trace JSON |
 | `--output-mode=stdout\|file` | Set output mode |
 | `--output-dir=<path>` | Set output directory |
@@ -414,7 +420,7 @@ The default is `all`. For example, browsing and self-healing only:
 "env": { "SELENIUM_MCP_TOOLSETS": "core,healer" }
 ```
 
-## Tools (77)
+## Tools (79)
 
 ### Navigation (5)
 
@@ -506,13 +512,15 @@ The default is `all`. For example, browsing and self-healing only:
 | `recording_status` | Check if recording is active and show recent actions. Read-only. |
 | `clear_recording` | Clear all recorded browser actions. |
 
-### Test Planner (3)
+### Test Planner (5)
 
 | Tool | Description |
 |------|-------------|
 | `planner_setup_page` | Start test planning: open the app, run optional `setupSteps` (e.g. a login) and load the `seedTest` that generated tests follow. |
 | `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
 | `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. Structured as in Playwright: suites (seed file) → tests (target file) → steps with `expect`, plus elements and gaps. |
+| `planner_review_plan` | Open a plan as a review page in the user's browser: suites, tests, steps with expected results, elements and gaps, a comment box per test, and **Approve plan** / **Request changes** buttons that write the decision (and the comments) into the plan; an approved plan can be **reopened for review**. Without a plan: the overview of all plans with review status, tests, generated test files and the last run. Served on 127.0.0.1 with a random token; only Markdown files with the plan layout count as plans, so other documents in `specs/` are left alone; read-only copies in `.selenium-ai-agent/review/` (ignored by git). |
+| `planner_approve_plan` | Mark a reviewed plan approved, with the user's own words and the time. Every plan saved with `planner_save_plan` (or `generator_save_spec`) is a draft, and `generator_setup_page`, `generator_read_spec` and `generator_write_test` refuse a draft plan: tests are only generated from a plan someone has read. `skipPlanReview: true` only when the user explicitly skips the review. |
 
 ### Test Generator (6)
 
@@ -771,7 +779,8 @@ The generator and healer tools form a complete test automation pipeline:
 ### 1. Plan
 
 ```
-planner_setup_page (seedTest, setupSteps) → planner_explore_page → planner_save_plan → specs/<plan>.md
+planner_setup_page (seedTest, setupSteps) → planner_explore_page → planner_save_plan → specs/<plan>.md (draft)
+  → planner_review_plan: the user reviews it in the browser → Approve (approved) or Request changes (back to the planner)
 ```
 
 ### 2. Record & Generate

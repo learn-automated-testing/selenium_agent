@@ -63,6 +63,11 @@ claude mcp add selenium-mcp -- npx -y selenium-ai-agent
 npx selenium-ai-agent install claude-desktop   # or: cursor, windsurf, junie
 ```
 
+Where your test plans, tests and reports go:
+
+- **Claude Code, VS Code, Cursor** with the agents installed in your project (`init-agents`, step 2): in the project itself, with plans in its `specs/`.
+- **Claude Desktop** and other clients with one global config: in `~/selenium-ai-agent`, since they aren't tied to a project. Add `--output-dir=<folder>` to use another folder.
+
 <details>
 <summary>Manual configuration</summary>
 
@@ -146,7 +151,7 @@ Something not starting? Run `npx selenium-ai-agent doctor`.
 
 The generator and healer follow [Selenium's guide for AI agents](https://www.selenium.dev/documentation/ai_agents/) (and [WebdriverIO's](https://webdriver.io/docs/ai-agents) for WebdriverIO): they read the current docs from `llms.txt` with `get_selenium_docs`, and refuse to write a test with a sleep, a driver path, `DesiredCapabilities` or a Selenium 3 API.
 
-You review the plan before code is generated, and the code before it is committed. The [Agent Workflow](docs/AGENT_WORKFLOW.md) guide covers each stage in detail.
+You review the plan before code is generated, and the code before it is committed. The plan review is on by default: every plan is saved as a **draft**, and the generator refuses a draft plan. The planner opens it as a **review page** in your browser: every test with its steps and expected results, a comment box per test, and **Approve plan** / **Request changes** buttons that write your decision into the plan. Requested changes go back to the planner. You can also review without the AI: `npx selenium-ai-agent review` in your project opens all plans in your browser. An **overview of all plans** shows each plan's review status, its tests, the test files generated from it and the last run. Need speed instead? `SELENIUM_MCP_PLAN_REVIEW=off` (or `--no-plan-review`) turns the check off. The [Agent Workflow](docs/AGENT_WORKFLOW.md) guide covers each stage in detail.
 
 ## Example Prompts
 
@@ -235,6 +240,8 @@ Explore https://practiceautomatedtesting.com in parallel: the homepage, products
 | `SELENIUM_GRID_URL` | — | Grid hub URL; enables the parallel tools |
 | `SELENIUM_HEADLESS` | `false` | Run the browser headless |
 | `SELENIUM_MCP_TOOLSETS` | `all` | Tool groups to load, e.g. `core,generator,healer` |
+| `SELENIUM_MCP_PLAN_REVIEW` | `required` | `off` lets the generator use plans nobody approved, for speed (flag: `--no-plan-review`) |
+| `SELENIUM_MCP_SPECS_DIR` | `specs` | Folder for the test plans, e.g. `test-plans` when your project already uses `specs/` (flag: `--specs-dir=`) |
 | `SELENIUM_STEALTH` | `false` | Mask basic automation flags (does not get past advanced bot protection) |
 | `SE_AVOID_STATS` | — | `true` disables Selenium usage statistics |
 
@@ -242,7 +249,7 @@ All variables, CLI flags, driver and proxy setup, and troubleshooting are in the
 
 ## Tools
 
-77 tools, 63 without Grid.
+79 tools, 65 without Grid.
 
 <details>
 <summary>Show all tools</summary>
@@ -251,7 +258,7 @@ All variables, CLI flags, driver and proxy setup, and troubleshooting are in the
 
 | Agent | Tools |
 |-------|-------|
-| **Planner** | `planner_setup_page`, `planner_explore_page`, `planner_save_plan` |
+| **Planner** | `planner_setup_page`, `planner_explore_page`, `planner_save_plan`, `planner_review_plan`, `planner_approve_plan` |
 | **Generator** | `generator_setup_page`, `generator_read_log`, `generator_write_test`, `generator_write_seed`, `generator_save_spec`, `generator_read_spec` |
 | **Healer** | `healer_run_tests`, `healer_debug_test`, `healer_fix_test`, `healer_inspect_page`, `browser_generate_locator`, `selenium_rules_check` |
 | **Analyzer** | `analyzer_setup`, `analyzer_import_context`, `analyzer_scan_product`, `analyzer_build_risk_profile`, `analyzer_save_profile`, `analyzer_generate_documentation` |

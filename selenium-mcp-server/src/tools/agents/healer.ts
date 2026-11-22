@@ -7,6 +7,7 @@ import { TestManifest, findManifest } from '../../types/manifest.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { collectLocatorCandidates, locatorSnippets, rankCandidates, type LocatorCandidate } from '../../utils/locator-match.js';
 import { checkSeleniumRules, findLongerTimeouts, formatRuleViolations } from './selenium-rules.js';
+import { recordTestRun } from '../../utils/test-runs.js';
 import { countDeep } from '../../utils/shadow-dom.js';
 
 // ============================================================================
@@ -164,6 +165,8 @@ Explicit mode examples:
       }
 
       const result = await runCommand(finalCmd, finalArgs, finalCwd, timeout);
+      // Keep the latest result for the plans overview.
+      await recordTestRun({ testPath, command: commandLine(finalCmd, finalArgs), exitCode: result.exitCode, output: result.stdout + '\n' + result.stderr });
 
       return this.success(JSON.stringify({
         message: 'Tests executed',

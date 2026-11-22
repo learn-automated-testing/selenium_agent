@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir, platform } from 'os';
 import { writeProjectRules, RULES_TARGETS, type RulesTarget } from '../src/project-rules.js';
+import { defaultOutputDir, expandHome } from '../src/utils/paths.js';
+import { resolve as resolvePath } from 'path';
 
 interface TargetConfig {
   name: string;
@@ -56,7 +58,20 @@ function readJsonFile(filePath: string): Record<string, unknown> {
   }
 }
 
-function installToTarget(targetKey: string): void {
+interface ServerEntry { command: string; args: string[]; env?: Record<string, string> }
+
+/**
+ * Where plans, tests and reports go for a client with one global config. Such a client is generic (Claude Desktop is
+ * used for all kinds of conversations), so no project is pinned: only a folder named with --output-dir=...
+ * Project work belongs in a project-level client (Claude Code, VS Code, Cursor via init-agents), which starts the
+ * server in the project, so the project is the default there.
+ */
+export function outputDirFor(args: string[]): { dir: string | null; explicit: boolean } {
+  const given = args.find(a => a.startsWith('--output-dir='))?.slice('--output-dir='.length);
+  return given ? { dir: resolvePath(expandHome(given)), explicit: true } : { dir: null, explicit: false };
+}
+
+function installToTarget(targetKey: string, args: string[] = []): void {
   const target = TARGETS[targetKey];
   if (!target) {
     console.error(`Unknown target: ${targetKey}`);
@@ -69,29 +84,42 @@ function installToTarget(targetKey: string): void {
   console.log(`  Config: ${configPath}`);
 
   const config = readJsonFile(configPath);
-
   const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
+  const { dir } = outputDirFor(args);
+  const existing = mcpServers['selenium-mcp'] as ServerEntry | undefined;
+  const current = existing?.env?.SELENIUM_MCP_OUTPUT_DIR;
 
-  if (mcpServers['selenium-mcp']) {
-    console.log('\n  Already configured — no changes made.');
-    return;
+  if (existing) {
+    if (!dir || current === dir) {
+      console.log('\n  Already configured — no changes made.');
+      console.log(`  Plans, tests and reports go to: ${current ? expandHome(current) : defaultOutputDir()}`);
+      return;
+    }
+    existing.env = { ...(existing.env ?? {}), SELENIUM_MCP_OUTPUT_DIR: dir };
+  } else {
+    mcpServers['selenium-mcp'] = { ...SERVER_ENTRY, ...(dir ? { env: { SELENIUM_MCP_OUTPUT_DIR: dir } } : {}) };
   }
-
-  mcpServers['selenium-mcp'] = SERVER_ENTRY;
   config.mcpServers = mcpServers;
 
-  const dir = dirname(configPath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+  const configDir = dirname(configPath);
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
   }
 
   writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
-  console.log('\n  Done! Restart your MCP client to pick up the new server.');
+  console.log(`\n  Plans, tests and reports go to: ${dir ?? defaultOutputDir()}` +
+    (dir ? '' : ` (${target.name} is not tied to a project; name a folder with --output-dir=...)`));
+  if (!dir) console.log('  For work in a project, set up Claude Code (or VS Code, Cursor) in it: npx selenium-ai-agent init-agents --loop=claude');
+  console.log(`  ${existing ? 'Updated' : 'Done'}! Restart your MCP client to pick up the ${existing ? 'change' : 'new server'}.`);
 }
 
 function printInstallHelp(): void {
   console.log(`
-Usage: npx selenium-ai-agent install <target> [--with-rules[=claude,cursor,copilot,windsurf,agents]] [--framework=<f>]
+Usage: npx selenium-ai-agent install <target> [--output-dir=<project>] [--with-rules[=claude,cursor,copilot,windsurf,agents]] [--framework=<f>]
+
+These clients have one global config, so plans, tests and reports go to ~/selenium-ai-agent unless you name a
+folder with --output-dir=... For work in a project, use Claude Code (or VS Code, Cursor) in it:
+  npx selenium-ai-agent init-agents --loop=claude     # the server then runs in the project, which is the default
 
 Available targets:
   claude-desktop   Claude Desktop app
@@ -144,7 +172,7 @@ export function handleInstall(args: string[]): void {
     printInstallHelp();
     return;
   }
-  installToTarget(target);
+  installToTarget(target, args.slice(1));
   let targets: RulesTarget[] | null;
   try {
     targets = parseWithRules(args.slice(1), RULES_FOR_TARGET[target]);

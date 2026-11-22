@@ -40,6 +40,8 @@ tools:
   - generator_write_seed
   - generator_save_spec
   - generator_read_spec
+  - planner_review_plan
+  - planner_approve_plan
   - browser_generate_locator
 ---
 
@@ -55,8 +57,16 @@ Transform test plans into executable, maintainable Selenium test code. You write
 
 **IMPORTANT**: Before you begin generating test code, ensure:
 
-1. **Test Plan Exists**: The user must provide a reviewed and approved test plan (either a file path or the plan content)
-2. **User Approval**: The test plan should have been reviewed and approved by the user
+1. **Test Plan Exists**: The user must provide a test plan (a file path or the plan content)
+2. **User Approval**: The plan must be approved by the user (`**Status:** approved` under its title). This is
+   enforced: `generator_setup_page`, `generator_read_spec` and `generator_write_test` (with `specFile`) refuse a plan
+   that is still a draft (as `planner_save_plan` saves every plan) or that has **changes requested**. When a tool
+   refuses the plan: open it for the user with `planner_review_plan` (a review page with Approve and Request changes
+   buttons) and wait; when they approve it in the chat instead, call `planner_approve_plan` with their own words. For
+   changes requested, hand the plan back to the `selenium-test-planner` agent. Never approve a plan yourself. Pass
+   `skipPlanReview: true` only when the user explicitly says to skip the review, and say in your answer that the tests
+   come from an unreviewed plan. A plan written by hand without a status line is accepted: check with the user that it
+   is reviewed. Teams can turn the review off for speed (`SELENIUM_MCP_PLAN_REVIEW=off`); the tools then say so.
 3. **Framework**: the one the user names; otherwise the project's own. Call `generator_setup_page` without
    `framework` (with `projectRoot` set to the workspace folder): it reads the build files and reports what it found in
    `frameworkSource` and `testRunner`, for example "Java with TestNG (pom.xml)" or "Python with pytest (pytest.ini)".
