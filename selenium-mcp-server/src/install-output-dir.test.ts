@@ -6,7 +6,7 @@ import sinon from 'sinon';
 import { detectProjectRoot } from './utils/paths.js';
 import { handleInstall, outputDirFor } from '../bin/install.js';
 
-describe('the project is the default output folder', () => {
+describe('output folder: the project for project-level clients, generic for Claude Desktop', () => {
   let tmp: string;
   beforeEach(() => { tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'proj-'))); });
 
@@ -41,33 +41,24 @@ describe('the project is the default output folder', () => {
       sinon.restore();
     });
 
-    it('outputDirFor: --output-dir wins, else the project it runs in, else none', () => {
+    it('outputDirFor: only a folder named with --output-dir', () => {
+      expect(outputDirFor([])).to.deep.equal({ dir: null, explicit: false });
+      expect(outputDirFor(['--output-dir=/work/other'])).to.deep.equal({ dir: path.resolve('/work/other'), explicit: true });
+    });
+
+    it('Claude Desktop and other global clients stay generic: no project is pinned, also when run in one', () => {
       const project = path.join(tmp, 'shop');
       fs.mkdirSync(project);
       fs.writeFileSync(path.join(project, 'pom.xml'), '');
-      expect(outputDirFor([], project)).to.deep.equal({ dir: project, explicit: false });
-      expect(outputDirFor(['--output-dir=/work/other'], project)).to.deep.equal({ dir: path.resolve('/work/other'), explicit: true });
-      expect(outputDirFor([], home).dir).to.equal(null);
-    });
-
-    it('run in a project, it writes that project as the output folder', () => {
-      const project = path.join(tmp, 'shop');
-      fs.mkdirSync(project);
-      fs.writeFileSync(path.join(project, 'Shop.Tests.csproj'), '');
       process.chdir(project);
       quiet(() => handleInstall(['junie']));
-      expect(config()).to.deep.equal({ command: 'npx', args: ['selenium-ai-agent'], env: { SELENIUM_MCP_OUTPUT_DIR: project } });
+      expect(config()).to.deep.equal({ command: 'npx', args: ['selenium-ai-agent'] });
     });
 
-    it('does not move an existing setup to another project unless asked with --output-dir', () => {
-      const a = path.join(tmp, 'a');
+    it('--output-dir sets the folder, also for an existing setup', () => {
+      process.chdir(home);
+      quiet(() => handleInstall(['junie']));
       const b = path.join(tmp, 'b');
-      for (const p of [a, b]) { fs.mkdirSync(p); fs.writeFileSync(path.join(p, 'package.json'), '{}'); }
-      process.chdir(a);
-      quiet(() => handleInstall(['junie']));
-      process.chdir(b);
-      quiet(() => handleInstall(['junie']));
-      expect(config().env.SELENIUM_MCP_OUTPUT_DIR).to.equal(a);
       quiet(() => handleInstall(['junie', `--output-dir=${b}`]));
       expect(config().env.SELENIUM_MCP_OUTPUT_DIR).to.equal(b);
     });

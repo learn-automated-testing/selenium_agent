@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir, platform } from 'os';
 import { writeProjectRules, RULES_TARGETS, type RulesTarget } from '../src/project-rules.js';
-import { detectProjectRoot, defaultOutputDir, expandHome } from '../src/utils/paths.js';
+import { defaultOutputDir, expandHome } from '../src/utils/paths.js';
 import { resolve as resolvePath } from 'path';
 
 interface TargetConfig {
@@ -61,14 +61,14 @@ function readJsonFile(filePath: string): Record<string, unknown> {
 interface ServerEntry { command: string; args: string[]; env?: Record<string, string> }
 
 /**
- * Where plans, tests and reports go. These clients start the server outside any project (Claude Desktop in "/"),
- * so the project is written into the config: --output-dir=..., else the project install runs in, else none
- * (then ~/selenium-ai-agent).
+ * Where plans, tests and reports go for a client with one global config. Such a client is generic (Claude Desktop is
+ * used for all kinds of conversations), so no project is pinned: only a folder named with --output-dir=...
+ * Project work belongs in a project-level client (Claude Code, VS Code, Cursor via init-agents), which starts the
+ * server in the project, so the project is the default there.
  */
-export function outputDirFor(args: string[], cwd = process.cwd()): { dir: string | null; explicit: boolean } {
+export function outputDirFor(args: string[]): { dir: string | null; explicit: boolean } {
   const given = args.find(a => a.startsWith('--output-dir='))?.slice('--output-dir='.length);
-  if (given) return { dir: resolvePath(expandHome(given)), explicit: true };
-  return { dir: detectProjectRoot(cwd), explicit: false };
+  return given ? { dir: resolvePath(expandHome(given)), explicit: true } : { dir: null, explicit: false };
 }
 
 function installToTarget(targetKey: string, args: string[] = []): void {
@@ -85,7 +85,7 @@ function installToTarget(targetKey: string, args: string[] = []): void {
 
   const config = readJsonFile(configPath);
   const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
-  const { dir, explicit } = outputDirFor(args);
+  const { dir } = outputDirFor(args);
   const existing = mcpServers['selenium-mcp'] as ServerEntry | undefined;
   const current = existing?.env?.SELENIUM_MCP_OUTPUT_DIR;
 
@@ -93,12 +93,6 @@ function installToTarget(targetKey: string, args: string[] = []): void {
     if (!dir || current === dir) {
       console.log('\n  Already configured — no changes made.');
       console.log(`  Plans, tests and reports go to: ${current ? expandHome(current) : defaultOutputDir()}`);
-      return;
-    }
-    if (current && !explicit) {
-      console.log('\n  Already configured — no changes made.');
-      console.log(`  Plans, tests and reports go to: ${expandHome(current)}`);
-      console.log(`  To use this project instead: npx selenium-ai-agent install ${targetKey} --output-dir=${dir}`);
       return;
     }
     existing.env = { ...(existing.env ?? {}), SELENIUM_MCP_OUTPUT_DIR: dir };
@@ -114,7 +108,8 @@ function installToTarget(targetKey: string, args: string[] = []): void {
 
   writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
   console.log(`\n  Plans, tests and reports go to: ${dir ?? defaultOutputDir()}` +
-    (dir ? (explicit ? '' : ' (the project you ran this in)') : ' (no project found here; run install in your project folder to use it)'));
+    (dir ? '' : ` (${target.name} is not tied to a project; name a folder with --output-dir=...)`));
+  if (!dir) console.log('  For work in a project, set up Claude Code (or VS Code, Cursor) in it: npx selenium-ai-agent init-agents --loop=claude');
   console.log(`  ${existing ? 'Updated' : 'Done'}! Restart your MCP client to pick up the ${existing ? 'change' : 'new server'}.`);
 }
 
@@ -122,7 +117,9 @@ function printInstallHelp(): void {
   console.log(`
 Usage: npx selenium-ai-agent install <target> [--output-dir=<project>] [--with-rules[=claude,cursor,copilot,windsurf,agents]] [--framework=<f>]
 
-Run it in your project folder: plans, tests and reports then go to that project (or name it with --output-dir).
+These clients have one global config, so plans, tests and reports go to ~/selenium-ai-agent unless you name a
+folder with --output-dir=... For work in a project, use Claude Code (or VS Code, Cursor) in it:
+  npx selenium-ai-agent init-agents --loop=claude     # the server then runs in the project, which is the default
 
 Available targets:
   claude-desktop   Claude Desktop app
