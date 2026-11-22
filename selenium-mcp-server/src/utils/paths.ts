@@ -95,7 +95,27 @@ export function getTestsDir(): string {
 
 /** Directory for test specs: <output>/specs/ */
 export function getSpecsDir(): string {
-  return path.join(getOutputDir(), 'specs');
+  return specsDirFor(getOutputDir());
+}
+
+/**
+ * The plans folder for an output (project) folder: specs/ by default, as in Playwright's planner.
+ * SELENIUM_MCP_SPECS_DIR (or --specs-dir) picks another one, e.g. "test-plans" when the project already has a
+ * specs/ folder for something else; a relative path is taken from the output folder.
+ */
+export function specsDirFor(outputDir: string): string {
+  const configured = process.env.SELENIUM_MCP_SPECS_DIR?.trim();
+  if (!configured) return path.join(outputDir, 'specs');
+  const dir = expandHome(configured);
+  return path.isAbsolute(dir) ? dir : path.join(outputDir, dir);
+}
+
+/**
+ * The agent's own folder for generated files the user does not edit (the read-only review pages):
+ * <output>/.selenium-ai-agent/. It never writes HTML into the user's own folders.
+ */
+export function getAgentFilesDir(): string {
+  return path.join(getOutputDir(), '.selenium-ai-agent');
 }
 
 /** Directory for risk profiles: <output>/risk-profiles/ */

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { parsePlan, renderOverviewPage, renderPlanPage } from './plan-pages.js';
 import { renderPlan } from './utils/plan-format.js';
 import { checkPlanApproved, planStatus, withPlanStatus, withReviewComments } from './utils/plan-review.js';
-import { ensureReviewServer, overviewRows, reviewUrls, stopReviewServer, writeStaticPages } from './plan-review-server.js';
+import { ensureReviewServer, listPlans, otherContent, overviewRows, reviewUrls, sharedFolderNote, stopReviewServer, writeStaticPages } from './plan-review-server.js';
 import { recordTestRun, readTestRuns, runSummary } from './utils/test-runs.js';
 import { PlannerReviewPlanTool, PlannerSavePlanTool } from './tools/agents/planner.js';
 import { GeneratorReadSpecTool } from './tools/agents/spec.js';
@@ -209,8 +209,11 @@ describe('plan review pages', () => {
 
     it('saving a plan writes the read-only copies, and the overview links generated tests and results', async () => {
       await save();
-      expect(fs.existsSync(path.join(dir, 'specs', 'login.html'))).to.equal(true);
-      expect(fs.readFileSync(path.join(dir, 'specs', 'index.html'), 'utf8')).to.include('Login');
+      const pages = path.join(dir, '.selenium-ai-agent', 'review');
+      expect(fs.existsSync(path.join(pages, 'login.html'))).to.equal(true);
+      expect(fs.readFileSync(path.join(pages, 'index.html'), 'utf8')).to.include('Login');
+      expect(fs.readFileSync(path.join(dir, '.selenium-ai-agent', '.gitignore'), 'utf8')).to.include('*');
+      expect(fs.readdirSync(path.join(dir, 'specs'))).to.deep.equal(['login.md']);
       const testFile = path.join(dir, 'tests', 'test_login.py');
       fs.writeFileSync(path.join(dir, '.test-manifest.json'), JSON.stringify({
         version: 1, projectRoot: dir, baseUrl: '', framework: 'selenium-python-pytest', runCommand: null, configFile: null,
@@ -235,6 +238,56 @@ describe('plan review pages', () => {
       expect(j.url).to.match(/^http:\/\/127\.0\.0\.1:\d+\/plan\?f=login\.md&t=[0-9a-f]+$/);
       const all = JSON.parse(String((await new PlannerReviewPlanTool().execute({} as never, { open: false })).content));
       expect(all.plans).to.deep.equal(['login.md']);
+    });
+    describe('a specs/ folder that is also used for other things', () => {
+      const other = () => {
+        fs.mkdirSync(path.join(dir, 'specs', 'api'), { recursive: true });
+        fs.writeFileSync(path.join(dir, 'specs', 'openapi.md'), '# Orders API\n\n## Endpoints\n\nGET /orders\n');
+        fs.writeFileSync(path.join(dir, 'specs', 'index.html'), '<h1>Our own docs</h1>');
+        fs.writeFileSync(path.join(dir, 'specs', 'cart.spec.js'), 'describe("cart", () => {});');
+        fs.writeFileSync(path.join(dir, 'specs', 'README.md'), '# Specs');
+      };
+
+      it('lists and serves only test plans, and leaves the other files alone', async () => {
+        other();
+        await save();
+        expect(await listPlans()).to.deep.equal(['login.md']);
+        expect((await overviewRows()).map(r => r.file)).to.deep.equal(['login.md']);
+        expect(fs.readFileSync(path.join(dir, 'specs', 'index.html'), 'utf8')).to.equal('<h1>Our own docs</h1>');
+        expect(fs.readFileSync(path.join(dir, 'specs', 'openapi.md'), 'utf8')).to.include('Orders API');
+        await ensureReviewServer();
+        expect((await fetch(reviewUrls.plan('openapi.md'))).status).to.equal(404);
+        expect((await fetch(reviewUrls.plan('login.md'))).status).to.equal(200);
+      });
+
+      it('a plan written by hand counts by its layout or status line', async () => {
+        fs.mkdirSync(path.join(dir, 'specs'), { recursive: true });
+        fs.writeFileSync(path.join(dir, 'specs', 'checkout.md'), '# Checkout\n\n## Test Scenarios\n\n### 1. Pay\n');
+        fs.writeFileSync(path.join(dir, 'specs', 'search.md'), '# Search\n\n**Status:** approved\n');
+        expect(await listPlans()).to.deep.equal(['checkout.md', 'search.md']);
+      });
+
+      it('says once where else the plans can go', async () => {
+        other();
+        expect(await otherContent()).to.deep.equal(['api', 'cart.spec.js', 'openapi.md']);
+        const r = await save();
+        expect(String(r.content)).to.include('SELENIUM_MCP_SPECS_DIR=test-plans').and.include('openapi.md');
+        expect(await sharedFolderNote()).to.equal('');
+      });
+
+      it('SELENIUM_MCP_SPECS_DIR gives the plans a folder of their own', async () => {
+        process.env.SELENIUM_MCP_SPECS_DIR = 'test-plans';
+        try {
+          other();
+          await save();
+          expect(fs.existsSync(path.join(dir, 'test-plans', 'login.md'))).to.equal(true);
+          expect(fs.existsSync(path.join(dir, 'specs', 'login.md'))).to.equal(false);
+          expect(await listPlans()).to.deep.equal(['login.md']);
+          expect(String((await new PlannerSavePlanTool().execute({} as never, { planContent: STRUCTURED, filename: 'login.md' })).content)).to.not.include('Note:');
+        } finally {
+          delete process.env.SELENIUM_MCP_SPECS_DIR;
+        }
+      });
     });
   });
 });

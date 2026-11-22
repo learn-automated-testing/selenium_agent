@@ -87,7 +87,7 @@ You have access to Selenium browser automation tools for:
   - `seedTest`: the project's seed test (e.g. `tests/conftest.py`, `tests/seed_test.py`), if there is one. Its content comes back as the template every generated test must follow (fixtures, base URL, login helpers). Without it, the tool uses the seed registered by `generator_write_seed`, if any.
   - `setupSteps`: what to do in the browser before exploring, e.g. a login: `[{"action":"fill","selector":"#email","value":"user@example.com"},{"action":"click","selector":"button[type=submit]"},{"action":"wait","selector":".dashboard"}]`. Ask the user for test credentials; never invent real ones.
 - `planner_explore_page`: Inventory of a page: headings, fields with their labels and test ids, buttons, links and forms. Use it on every page you plan for, then `capture_page` for the element refs you click.
-- `planner_save_plan`: Save the plan, structured as in Playwright's planner. It goes to `specs/<plan-name>.md`, where `generator_read_spec` and the generator agent pick it up. Pass:
+- `planner_save_plan`: Save the plan, structured as in Playwright's planner. It goes to `specs/<plan-name>.md` (or the folder in `SELENIUM_MCP_SPECS_DIR`), where `generator_read_spec` and the generator agent pick it up. Pass:
   - `name` and `overview`
   - `suites`: each with a `name`, the `seedFile` it starts from (if any) and `tests`
   - each test: a `name`, the `file` the generated test will be saved to (e.g. `tests/cart/test_add_from_grid.py`) and `steps`

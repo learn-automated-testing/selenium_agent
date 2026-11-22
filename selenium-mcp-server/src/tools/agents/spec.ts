@@ -21,7 +21,7 @@ export class GeneratorSaveSpecTool extends BaseTool {
   readonly description = `Save a structured markdown spec to the specs directory.
 
 Specs capture test requirements in a human-readable format before generating test code.
-Saved to <outputDir>/specs/<title-slug>.md as a draft: show it to the user, and generate tests from it only after they
+Saved to the plans folder (specs/ in the project, or SELENIUM_MCP_SPECS_DIR) as <title-slug>.md, a draft: show it to the user, and generate tests from it only after they
 approve it (planner_approve_plan).`;
   readonly inputSchema = saveSpecSchema;
   readonly category: ToolCategory = 'generator';
@@ -45,9 +45,12 @@ approve it (planner_approve_plan).`;
     const unrestricted = process.env.SELENIUM_MCP_UNRESTRICTED_FILES === 'true';
     validateOutputPath(specPath, unrestricted);
     await fs.writeFile(specPath, withPlanStatus(content, 'draft'));
+    const { sharedFolderNote } = await import('../../plan-review-server.js');
+    const note = (await sharedFolderNote(specsDir)).trim();
 
     return this.success(JSON.stringify({
       message: 'Spec saved as a draft',
+      ...(note ? { note } : {}),
       file: specPath,
       title,
       review: 'Show the spec to the user. Tests are generated from it only after they approve it (planner_approve_plan).',

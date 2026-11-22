@@ -3,15 +3,16 @@
  * plan, whose Approve and Request changes buttons write the decision into the plan's Markdown.
  *
  * It listens on 127.0.0.1 only, on a free port, and every request needs the random token in its URL, so other
- * sites and other users on the machine cannot read or change plans. It only reads and writes .md files directly in
- * the specs folder.
+ * sites and other users on the machine cannot read or change plans. It only reads and writes test plans (.md files
+ * with the plan layout) directly in the specs folder; its read-only HTML copies go to the agent's own folder,
+ * .selenium-ai-agent/review/, never into the user's folders.
  */
 import http from 'node:http';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { defaultOutputDir, getOutputDir, getSpecsDir } from './utils/paths.js';
-import { planReviewRequired, withPlanStatus, withReviewComments, planStatus, type ReviewComment } from './utils/plan-review.js';
+import { defaultOutputDir, getAgentFilesDir, getOutputDir, getSpecsDir, specsDirFor } from './utils/paths.js';
+import { isPlanMarkdown, planReviewRequired, withPlanStatus, withReviewComments, planStatus, type ReviewComment } from './utils/plan-review.js';
 import { renderOverviewPage, renderPlanPage, statusPill, type OverviewRow } from './plan-pages.js';
 import { readManifest } from './types/manifest.js';
 import { readTestRuns } from './utils/test-runs.js';
@@ -28,12 +29,68 @@ function planPath(name: string | null): string | null {
   return path.join(getSpecsDir(), name);
 }
 
+/** The test plans in a folder: Markdown files with the plan layout. Other documents in the same folder are left alone. */
 export async function listPlans(dir = getSpecsDir()): Promise<string[]> {
+  let names: string[];
   try {
-    return (await fs.readdir(dir)).filter(f => f.endsWith('.md') && f.toLowerCase() !== 'readme.md').sort();
+    names = (await fs.readdir(dir)).filter(f => f.endsWith('.md') && f.toLowerCase() !== 'readme.md').sort();
   } catch {
     return [];
   }
+  const plans: string[] = [];
+  for (const name of names) {
+    try {
+      if (isPlanMarkdown(await fs.readFile(path.join(dir, name), 'utf-8'))) plans.push(name);
+    } catch { /* unreadable: not ours */ }
+  }
+  return plans;
+}
+
+/**
+ * What else is in the plans folder: files and folders that are not test plans (a README and the HTML copies older
+ * versions wrote next to the plans do not count). Used to suggest a folder of its own, e.g. SELENIUM_MCP_SPECS_DIR=test-plans.
+ */
+export async function otherContent(dir = getSpecsDir()): Promise<string[]> {
+  let entries: string[];
+  try {
+    entries = await fs.readdir(dir);
+  } catch {
+    return [];
+  }
+  const plans = new Set(await listPlans(dir));
+  const ownHtml = (f: string) => f === 'index.html' || plans.has(f.replace(/\.html$/, '.md'));
+  return entries.filter(f => !plans.has(f) && f.toLowerCase() !== 'readme.md' && !f.startsWith('.') && !ownHtml(f)).sort();
+}
+
+// Folders already warned about, shared by every copy of this module (a loader can load it twice).
+const warned: Set<string> = ((globalThis as Record<string, unknown>).__seleniumAiAgentWarnedSpecs as Set<string> | undefined)
+  ?? ((globalThis as Record<string, unknown>).__seleniumAiAgentWarnedSpecs = new Set<string>()) as Set<string>;
+
+/**
+ * A one-time note when the plans folder also holds other things (once per folder per process): the plans are
+ * still saved and reviewed there, but a folder of their own keeps them apart.
+ */
+export async function sharedFolderNote(folder = getSpecsDir()): Promise<string> {
+  const dir = path.resolve(folder);
+  if (warned.has(dir)) return '';
+  const other = await otherContent(dir);
+  if (!other.length) return '';
+  warned.add(dir);
+  const examples = other.slice(0, 3).join(', ') + (other.length > 3 ? ', ...' : '');
+  return `\nNote: ${dir} also holds other files (${examples}). Only test plans are listed for review and nothing else ` +
+    'in it is changed. To keep the plans in a folder of their own, set SELENIUM_MCP_SPECS_DIR=test-plans (or start ' +
+    'the server with --specs-dir=test-plans).';
+}
+
+/** Where a plan is shown relative to the project folder, e.g. "specs/login.md". */
+function displayPath(file: string): string {
+  const rel = path.relative(getOutputDir(), path.join(getSpecsDir(), file));
+  return rel.startsWith('..') ? path.join(getSpecsDir(), file) : rel.split(path.sep).join('/');
+}
+
+/** Folder of the read-only review pages: <output>/.selenium-ai-agent/review/ (ignored by git). */
+export function reviewPagesDir(): string {
+  return path.join(getAgentFilesDir(), 'review');
 }
 
 /** The overview rows: every plan with the test files generated from it and their latest results. */
@@ -55,18 +112,22 @@ export async function overviewRows(): Promise<OverviewRow[]> {
   return rows;
 }
 
-/** Write the read-only copies: specs/<plan>.html for every plan, and specs/index.html. */
+/**
+ * Write the read-only copies to .selenium-ai-agent/review/: <plan>.html for every plan, and index.html. The folder
+ * gets a .gitignore of its own, so the copies stay out of the repository; the plans themselves are the source.
+ */
 export async function writeStaticPages(): Promise<string> {
-  const dir = getSpecsDir();
+  const dir = reviewPagesDir();
   await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(getAgentFilesDir(), '.gitignore'), '# Generated by selenium-ai-agent\n*\n');
   const rows = await overviewRows();
   for (const r of rows) {
     await fs.writeFile(path.join(dir, r.file.replace(/\.md$/, '.html')),
-      renderPlanPage(r.markdown, { file: `specs/${r.file}`, overviewUrl: 'index.html', reviewRequired: planReviewRequired() }));
+      renderPlanPage(r.markdown, { file: displayPath(r.file), overviewUrl: 'index.html', reviewRequired: planReviewRequired() }));
   }
   const runs = await readTestRuns();
   const index = path.join(dir, 'index.html');
-  await fs.writeFile(index, renderOverviewPage(rows, { dir: 'specs/', lastSuiteRun: runs.suite, reviewRequired: planReviewRequired() }));
+  await fs.writeFile(index, renderOverviewPage(rows, { dir: `${displayPath('')}/`, lastSuiteRun: runs.suite, reviewRequired: planReviewRequired() }));
   return index;
 }
 
@@ -102,7 +163,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   if (req.method === 'GET' && u.pathname === '/') {
     const runs = await readTestRuns();
     const rows = await overviewRows();
-    const elsewhere = rows.length ? [] : (await findPlanFolders()).filter(f => path.join(f.dir, 'specs') !== getSpecsDir());
+    const elsewhere = rows.length ? [] : (await findPlanFolders()).filter(f => specsDirFor(f.dir) !== getSpecsDir());
     return send(res, 200, 'text/html; charset=utf-8', renderOverviewPage(rows, {
       dir: getSpecsDir(), planUrl: f => reviewUrls.plan(f), lastSuiteRun: runs.suite, reviewRequired: planReviewRequired(), elsewhere,
     }));
@@ -117,10 +178,12 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
     return send(res, 404, 'text/plain', 'No such plan');
   }
   const name = path.basename(file);
+  // Only test plans: other Markdown in the same folder is not served or changed.
+  if (!isPlanMarkdown(markdown)) return send(res, 404, 'text/plain', 'No such plan');
 
   if (req.method === 'GET' && u.pathname === '/plan') {
     return send(res, 200, 'text/html; charset=utf-8', renderPlanPage(markdown, {
-      file: `specs/${name}`, decisionUrl: url('/plan/decision', { f: name }), overviewUrl: reviewUrls.overview(),
+      file: displayPath(name), decisionUrl: url('/plan/decision', { f: name }), overviewUrl: reviewUrls.overview(),
       reviewRequired: planReviewRequired(),
     }));
   }
@@ -220,7 +283,7 @@ export async function findPlanFolders(): Promise<Array<{ dir: string; plans: num
   } catch { /* no default folder */ }
   const found: Array<{ dir: string; plans: number }> = [];
   for (const dir of candidates) {
-    const plans = (await listPlans(path.join(dir, 'specs'))).length;
+    const plans = (await listPlans(specsDirFor(dir))).length;
     if (plans) found.push({ dir, plans });
   }
   return found;

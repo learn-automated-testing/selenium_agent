@@ -26,6 +26,14 @@ export const DRAFT_NOTE =
   'review this plan, then change "draft" to "approved" here (or tell the agent you approve it). ' +
   'Tests are only generated from an approved plan.';
 
+/**
+ * Is this Markdown a test plan? A folder named specs/ often holds other documents too (API specs, design notes,
+ * unit test specs). Only files with a review status line or the plan layout ("## Test Scenarios") count as plans.
+ */
+export function isPlanMarkdown(content: string): boolean {
+  return STATUS_LINE.test(content) || /^#{2,3}[ \t]+Test Scenarios\b/im.test(content);
+}
+
 export function planStatus(content: string): PlanStatus | null {
   const m = STATUS_LINE.exec(content);
   return m ? (m[1].toLowerCase().replace(/\s+/g, ' ') as PlanStatus) : null;

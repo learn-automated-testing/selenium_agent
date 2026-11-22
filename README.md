@@ -241,6 +241,7 @@ Explore https://practiceautomatedtesting.com in parallel: the homepage, products
 | `SELENIUM_HEADLESS` | `false` | Run the browser headless |
 | `SELENIUM_MCP_TOOLSETS` | `all` | Tool groups to load, e.g. `core,generator,healer` |
 | `SELENIUM_MCP_PLAN_REVIEW` | `required` | `off` lets the generator use plans nobody approved, for speed (flag: `--no-plan-review`) |
+| `SELENIUM_MCP_SPECS_DIR` | `specs` | Folder for the test plans, e.g. `test-plans` when your project already uses `specs/` (flag: `--specs-dir=`) |
 | `SELENIUM_STEALTH` | `false` | Mask basic automation flags (does not get past advanced bot protection) |
 | `SE_AVOID_STATS` | — | `true` disables Selenium usage statistics |
 

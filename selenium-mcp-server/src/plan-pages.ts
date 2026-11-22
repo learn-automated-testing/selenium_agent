@@ -3,7 +3,7 @@
  * - a review page per plan: suites, tests, steps with their expected results, elements and gaps, with Approve and
  *   Request changes buttons (when served by the review server) and a comment box per test;
  * - an overview of every plan in specs/: review status, tests, generated test files and the last run.
- * The same pages are saved next to the plans (specs/<plan>.html, specs/index.html) as read-only copies.
+ * The same pages are saved as read-only copies in .selenium-ai-agent/review/ (<plan>.html, index.html), never next to the plans.
  */
 import { DRAFT_NOTE, planStatus, type PlanStatus } from './utils/plan-review.js';
 

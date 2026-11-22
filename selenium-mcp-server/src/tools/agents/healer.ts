@@ -165,7 +165,7 @@ Explicit mode examples:
       }
 
       const result = await runCommand(finalCmd, finalArgs, finalCwd, timeout);
-      // Keep the latest result for the plans overview (specs/index.html).
+      // Keep the latest result for the plans overview.
       await recordTestRun({ testPath, command: commandLine(finalCmd, finalArgs), exitCode: result.exitCode, output: result.stdout + '\n' + result.stderr });
 
       return this.success(JSON.stringify({

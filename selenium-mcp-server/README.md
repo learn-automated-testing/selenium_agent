@@ -336,6 +336,7 @@ These clients typically allow you to configure auto-approval per tool or per ser
 | `SELENIUM_STEALTH` | `false` | Enable stealth mode (masks basic automation flags; does not get past advanced bot protection such as Cloudflare) |
 | `SELENIUM_MCP_TOOLSETS` | `all` | Comma-separated [tool groups](#tool-groups) to load, e.g. `core,generator,healer` |
 | `SELENIUM_MCP_PLAN_REVIEW` | `required` | `off` turns the test plan review off: the generator then also uses plans nobody approved (faster, riskier) |
+| `SELENIUM_MCP_SPECS_DIR` | `specs` | Folder for the test plans, relative to the project (or absolute). Use e.g. `test-plans` when your project already uses `specs/` for something else |
 | `SELENIUM_ATTACH_CDP` | — | Attach to an already running Chrome at `host:port` (e.g. `127.0.0.1:9222`) instead of launching one |
 | `SELENIUM_MCP_OUTPUT_MODE` | `stdout` | Output mode: `stdout` (return data to LLM) or `file` (save to disk) |
 | `SELENIUM_MCP_OUTPUT_DIR` | auto | Output folder for test plans (`specs/`), tests and reports. Auto: the project the server runs in (the nearest folder with `.git`, `package.json`, `.claude`, `pom.xml`, `build.gradle`, `*.csproj`, `*.sln`, `pyproject.toml` or `requirements.txt`); outside any project `~/selenium-ai-agent`. Claude Desktop and other clients with one global config start the server outside any project, so they use `~/selenium-ai-agent` unless you set this (`install ... --output-dir=`); Claude Code, VS Code and Cursor with `init-agents` start it in the project. `~` is allowed. `doctor` shows the folder in use |
@@ -389,6 +390,7 @@ npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Seleni
 | `--stealth` | Enable stealth mode |
 | `--headless` | Run browser headless |
 | `--no-plan-review` | Turn the test plan review off (same as `SELENIUM_MCP_PLAN_REVIEW=off`) |
+| `--specs-dir=<folder>` | Folder for the test plans (same as `SELENIUM_MCP_SPECS_DIR`) |
 | `--save-trace` | Save session trace JSON |
 | `--output-mode=stdout\|file` | Set output mode |
 | `--output-dir=<path>` | Set output directory |
@@ -517,7 +519,7 @@ The default is `all`. For example, browsing and self-healing only:
 | `planner_setup_page` | Start test planning: open the app, run optional `setupSteps` (e.g. a login) and load the `seedTest` that generated tests follow. |
 | `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
 | `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. Structured as in Playwright: suites (seed file) → tests (target file) → steps with `expect`, plus elements and gaps. |
-| `planner_review_plan` | Open a plan as a review page in the user's browser: suites, tests, steps with expected results, elements and gaps, a comment box per test, and **Approve plan** / **Request changes** buttons that write the decision (and the comments) into the plan; an approved plan can be **reopened for review**. Without a plan: the overview of all plans with review status, tests, generated test files and the last run. Served on 127.0.0.1 with a random token; read-only copies in `specs/<plan>.html` and `specs/index.html`. |
+| `planner_review_plan` | Open a plan as a review page in the user's browser: suites, tests, steps with expected results, elements and gaps, a comment box per test, and **Approve plan** / **Request changes** buttons that write the decision (and the comments) into the plan; an approved plan can be **reopened for review**. Without a plan: the overview of all plans with review status, tests, generated test files and the last run. Served on 127.0.0.1 with a random token; only Markdown files with the plan layout count as plans, so other documents in `specs/` are left alone; read-only copies in `.selenium-ai-agent/review/` (ignored by git). |
 | `planner_approve_plan` | Mark a reviewed plan approved, with the user's own words and the time. Every plan saved with `planner_save_plan` (or `generator_save_spec`) is a draft, and `generator_setup_page`, `generator_read_spec` and `generator_write_test` refuse a draft plan: tests are only generated from a plan someone has read. `skipPlanReview: true` only when the user explicitly skips the review. |
 
 ### Test Generator (6)

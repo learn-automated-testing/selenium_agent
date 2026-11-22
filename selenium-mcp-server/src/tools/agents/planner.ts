@@ -227,9 +227,10 @@ export class PlannerSavePlanTool extends BaseTool {
       // A saved plan is always a draft, also when the content says otherwise: a changed plan is reviewed again.
       await fs.writeFile(planPath, withPlanStatus(content, 'draft'));
       await import('../../plan-review-server.js').then(m => m.writeStaticPages()).catch(() => undefined);
+      const note = await import('../../plan-review-server.js').then(m => m.sharedFolderNote(plansDir)).catch(() => '');
 
       return this.success(
-        `Test plan saved as a draft to: ${planPath}${summary}\n` +
+        `Test plan saved as a draft to: ${planPath}${summary}${note}\n` +
         'Now let the user review it: planner_review_plan opens it as a page in their browser with Approve and Request ' +
         'changes buttons (or show it in the chat). Tests are only generated from an approved plan. ' +
         `When they approve it, call planner_approve_plan (specFile: "${finalFilename}") with their words; ` +
@@ -300,7 +301,8 @@ export class PlannerReviewPlanTool extends BaseTool {
     'Open a test plan as a review page in the user\'s browser: suites, tests, steps with their expected results, ' +
     'elements and gaps, with a comment box per test and Approve / Request changes buttons that write the decision ' +
     'into the plan. Without specFile it opens the overview of all plans in specs/ (review status, tests, generated ' +
-    'test files, last run). Read-only copies are saved as specs/<plan>.html and specs/index.html.\n\n' +
+    'test files, last run). Other Markdown in that folder is not a plan and is left alone. Read-only copies are ' +
+    'saved in .selenium-ai-agent/review/ (ignored by git).\n\n' +
     'Use it after planner_save_plan: ask the user to review the plan in the page, then call it again (or read the ' +
     'plan) to see their decision. "approved": continue with the generator. "changes requested": read the "Review ' +
     'comments" in the plan, change the plan, save it and ask for a review again.';
@@ -320,7 +322,14 @@ export class PlannerReviewPlanTool extends BaseTool {
           return this.error(`The review page shows plans in ${getSpecsDir()}; ${found.file} is somewhere else. Save it there with planner_save_plan.`);
         }
         file = path.basename(found.file);
-        status = planStatus(found.content) ?? 'none (written by hand?)';
+        const { isPlanMarkdown } = await import('../../utils/plan-review.js');
+        if (!isPlanMarkdown(found.content)) {
+          // A plan written by hand, without a status: asking to review it makes it a plan (a draft).
+          const fs = await import('fs/promises');
+          await fs.writeFile(found.file, withPlanStatus(found.content, 'draft'));
+          found.content = withPlanStatus(found.content, 'draft');
+        }
+        status = planStatus(found.content) ?? 'draft';
       }
       await ensureReviewServer();
       const pageUrl = file ? reviewUrls.plan(file) : reviewUrls.overview();
