@@ -112,9 +112,9 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 const STYLE = `
 :root{--bg:#f6f7f9;--card:#fff;--text:#1c1f24;--muted:#5d6572;--line:#e3e6eb;--accent:#2f5bd3;--ok:#16794a;--ok-bg:#e6f4ec;
---warn:#8a5a00;--warn-bg:#fdf3dc;--bad:#b42318;--bad-bg:#fdecea;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+--warn:#8a5a00;--warn-bg:#fdf3dc;--bad:#b42318;--bad-bg:#fdecea;--on-ok:#fff;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 @media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1b1e23;--text:#e7e9ed;--muted:#9aa3af;--line:#2c3138;--accent:#8aa8ff;
---ok:#6fd3a0;--ok-bg:#16302a;--warn:#f1c46b;--warn-bg:#352a12;--bad:#f59a90;--bad-bg:#3a1d1a}}
+--ok:#6fd3a0;--ok-bg:#16302a;--warn:#f1c46b;--warn-bg:#352a12;--bad:#f59a90;--bad-bg:#3a1d1a;--on-ok:#0b2a1c}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
 main{max-width:980px;margin:0 auto;padding:28px 20px 80px}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}.path{font:12px var(--mono);color:var(--muted)}
@@ -126,14 +126,14 @@ h1{font-size:26px;margin:2px 0 4px;font-weight:600}h2{font-size:17px;margin:26px
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .suite{font-weight:600;margin:22px 0 8px}.suite small{color:var(--muted);font-weight:400;font-family:var(--mono);margin-left:8px}
 .test-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.test-head b{font-weight:600}.file{font:12px var(--mono);color:var(--muted)}
-ol{margin:10px 0 0;padding-left:22px}li{margin:4px 0}.exp{color:var(--ok);list-style:none;margin-left:-4px}.exp::before{content:"✓  ";font-weight:700}
+ol{margin:10px 0 0;padding-left:22px}li{margin:4px 0}ul{margin:4px 0 6px;padding-left:4px}.exp{color:var(--ok);list-style:none}.exp::before{content:"✓  ";font-weight:700}
 textarea{width:100%;min-height:38px;margin-top:10px;font:14px inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);resize:vertical}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:500;font-size:12px}
 td code,.mono{font:13px var(--mono)}.gap{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 12px;margin:6px 0}
 .comment{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:8px 12px;margin:6px 0}
 .bar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:14px 20px;display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 button{font:600 14px inherit;padding:9px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
-button.primary{background:var(--ok);border-color:var(--ok);color:#fff}button:disabled{opacity:.55;cursor:default}
+button.primary{background:var(--ok);border-color:var(--ok);color:var(--on-ok)}button:disabled{opacity:.55;cursor:default}
 #msg{margin-right:auto;color:var(--muted);font-size:14px}.err{color:var(--bad)!important}pre{white-space:pre-wrap;font:13px var(--mono)}
 .muted{color:var(--muted)}.ok{color:var(--ok)}.bad{color:var(--bad)}`;
 
@@ -161,7 +161,7 @@ export function renderPlanPage(markdown: string, opts: PlanPageOptions): string 
   const testCard = (t: PlanTest) => `
 <div class="card" data-test="${esc(`${t.id} ${t.name}`)}">
   <div class="test-head"><b>${esc(t.id)} ${esc(t.name)}</b>${t.file ? `<span class="file">${esc(t.file)}</span>` : ''}</div>
-  <ol>${t.steps.map(s => `${s.perform ? `<li>${esc(s.perform)}</li>` : ''}${s.expect.map(e => `<li class="exp">${esc(e)}</li>`).join('')}`).join('')}</ol>
+  <ol>${t.steps.map(s => `<li>${s.perform ? esc(s.perform) : '<span class="muted">(no action)</span>'}${s.expect.length ? `<ul>${s.expect.map(e => `<li class="exp">${esc(e)}</li>`).join('')}</ul>` : ''}</li>`).join('')}</ol>
   ${interactive ? '<textarea placeholder="Comment on this test (optional)"></textarea>' : ''}
 </div>`;
   const body = plan.suites.length
@@ -171,7 +171,7 @@ export function renderPlanPage(markdown: string, opts: PlanPageOptions): string 
 <title>${esc(plan.title || opts.file)} · test plan review</title><style>${STYLE}</style></head><body><main>
 <div class="top"><div><div class="path">${opts.overviewUrl ? `<a href="${esc(opts.overviewUrl)}">All test plans</a> · ` : ''}${esc(opts.file)}</div>
 <h1>${esc(plan.title || opts.file)}</h1></div><div id="status">${statusPill(plan.status)}</div></div>
-${plan.statusNote ? `<div class="note">${esc(plan.statusNote)}</div>` : ''}
+${plan.statusNote && plan.status !== 'draft' ? `<div class="note">${esc(plan.statusNote)}</div>` : ''}
 <div class="stats"><div class="stat"><b>${plan.suites.length}</b><span>suites</span></div><div class="stat"><b>${tests.length}</b><span>tests</span></div>
 <div class="stat"><b>${steps}</b><span>steps</span></div><div class="stat"><b>${expects}</b><span>expected results</span></div>
 <div class="stat"><b class="${plan.gaps.length ? 'bad' : ''}">${plan.gaps.length}</b><span>gaps and questions</span></div></div>
