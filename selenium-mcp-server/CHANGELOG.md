@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Changes
+
+- **Node.js 20 or newer.** Selenium WebDriver and the MCP SDK's server already needed Node.js 20; `engines` said 18. Node.js 18 is end-of-life. CI now tests Node.js 20, 22 and 24.
+
+### Fixes
+
+- CI: failing unit tests no longer pass as green. The test job had `continue-on-error`, which hid 15 failures on Node.js 18 (tests that stub `os.homedir` and `fs`, which don't reach the code on Node 18).
+
 ## [3.7.0] - 2026-11-22
 
 ### New Features
