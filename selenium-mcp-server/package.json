@@ -1,6 +1,6 @@
 {
   "name": "selenium-ai-agent",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "Selenium MCP server for AI test automation: planner, generator and healer agents; Python (pytest) by default, multi-language test generation (Java, C#, JS/TS, Robot Framework); Selenium Grid. For Claude Desktop, Claude Code, VS Code and Cursor.",
   "mcpName": "io.github.learn-automated-testing/selenium-ai-agent",
   "type": "module",
