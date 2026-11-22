@@ -3,7 +3,10 @@ import { spawn } from 'child_process';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
-import { TestManifest, findManifest } from '../../types/manifest.js';
+import { TestManifest, findManifest, readManifest } from '../../types/manifest.js';
+import { chooseReportFormat, reportingFor, sameRunner, singleFileArgs, withReportArgs } from '../../reporting/frameworks.js';
+import { collectRunReport } from '../../reporting/results.js';
+import { getSpecsDir } from '../../utils/paths.js';
 import { extractSelectors, validateSelectorsLive } from '../../utils/selector-validation.js';
 import { collectLocatorCandidates, locatorSnippets, rankCandidates, type LocatorCandidate } from '../../utils/locator-match.js';
 import { checkSeleniumRules, findLongerTimeouts, formatRuleViolations } from './selenium-rules.js';
@@ -119,6 +122,11 @@ Explicit mode examples:
       finalCmd = explicitCmd;
       finalArgs = explicitArgs;
       finalCwd = explicitCwd || process.cwd();
+      // The project's own runner: add the test report (JUnit XML, Allure) the generated suite is set up for.
+      const projectManifest = await readManifest(finalCwd);
+      if (projectManifest?.runCommand && sameRunner(explicitCmd, explicitArgs, projectManifest.runCommand.command)) {
+        finalArgs = withReportArgs(explicitArgs, projectManifest.framework, projectManifest.reporting ?? chooseReportFormat(undefined, projectManifest.projectRoot).format);
+      }
     } else if (testPath) {
       // Manifest mode — discover from .test-manifest.json
       manifest = await findManifest(testPath);
@@ -135,7 +143,9 @@ Explicit mode examples:
       }
 
       finalCmd = manifest.runCommand.command;
-      finalArgs = [...manifest.runCommand.args, '--spec', testPath];
+      // The report arguments (JUnit XML, Allure) and the file in the form this runner takes it.
+      finalArgs = [...withReportArgs(manifest.runCommand.args, manifest.framework, manifest.reporting ?? chooseReportFormat(undefined, manifest.projectRoot).format),
+        ...singleFileArgs(manifest.framework, testPath, manifest.projectRoot)];
       finalCwd = explicitCwd || manifest.projectRoot;
     } else {
       return this.error('Provide either (command + args) or testPath.');
@@ -147,7 +157,7 @@ Explicit mode examples:
         for (const seed of manifest.seedTests) {
           const seedResult = await runCommand(
             manifest.runCommand!.command,
-            [...manifest.runCommand!.args, '--spec', seed.file],
+            [...manifest.runCommand!.args, ...singleFileArgs(manifest.framework, seed.file, manifest.projectRoot)],
             finalCwd,
             timeout
           );
@@ -164,9 +174,17 @@ Explicit mode examples:
         }
       }
 
+      const since = Date.now();
       const result = await runCommand(finalCmd, finalArgs, finalCwd, timeout);
-      // Keep the latest result for the plans overview.
-      await recordTestRun({ testPath, command: commandLine(finalCmd, finalArgs), exitCode: result.exitCode, output: result.stdout + '\n' + result.stderr });
+      // The runner's JUnit XML (and Allure results), linked to the approved plans; then the latest results for the overview.
+      const runManifest = manifest ?? await readManifest(finalCwd);
+      const framework = runManifest?.framework ?? '';
+      const report = await collectRunReport({ projectRoot: runManifest?.projectRoot ?? finalCwd, framework, since, manifest: runManifest, specsDir: getSpecsDir() });
+      await recordTestRun({ testPath, command: commandLine(finalCmd, finalArgs), exitCode: result.exitCode, output: result.stdout + '\n' + result.stderr, results: report });
+      if (report?.cases.some(c => c.link)) {
+        // Keep the read-only plan pages up to date with the results per scenario.
+        await import('../../plan-review-server.js').then(m => m.writeStaticPages()).catch(() => undefined);
+      }
 
       return this.success(JSON.stringify({
         message: 'Tests executed',
@@ -174,6 +192,18 @@ Explicit mode examples:
         cwd: finalCwd,
         exitCode: result.exitCode,
         passed: result.exitCode === 0,
+        report: report
+          ? {
+            results: report.files,
+            ...report.summary,
+            failures: report.cases.filter(c => c.status === 'failed').slice(0, 20).map(c => ({
+              test: `${c.classname} ${c.name}`.trim(), message: c.message,
+              ...(c.link ? { plan: c.link.plan, scenario: c.link.scenario ? `${c.link.scenario} ${c.link.scenarioName ?? ''}`.trim() : undefined } : {}),
+            })),
+            withoutPlan: report.unlinked,
+            written: report.written,
+          }
+          : `No JUnit XML found after this run. ${reportingFor(framework)?.junit.setup.join('; ') || 'Add the runner\'s JUnit XML output to the run command'} (see generator_setup_page "reporting").`,
         stdout: result.stdout.slice(0, 8000),
         stderr: result.stderr.slice(0, 4000),
       }, null, 2), false);

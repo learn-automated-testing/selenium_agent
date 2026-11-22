@@ -102,7 +102,22 @@ describe('plan review pages', () => {
     });
   });
 
-  describe('the review switch', () => {
+  describe('test results on the plan', () => {
+    it('shows the latest result per scenario on the plan page and in the overview', () => {
+      const md = '# Login\n\n**Status:** approved\n\n## Test Scenarios\n\n### 1. Login\n\n#### 1.1. Valid login\n\n**Steps:**\n  1. Log in\n    - expect: Secure area\n\n#### 1.2. Wrong password\n\n**Steps:**\n  1. Log in wrong\n    - expect: Error\n\n#### 1.3. Logout\n\n**Steps:**\n  1. Log out\n    - expect: Login page\n';
+      const results = {
+        '1.1': { status: 'passed' as const, at: '2026-11-22T17:50:00Z' },
+        '1.2': { status: 'failed' as const, at: '2026-11-22T17:50:00Z', message: 'no such element: #flash' },
+      };
+      const page = renderPlanPage(md, { file: 'specs/login.md', results });
+      expect(page).to.include('✓ passed · 22 Nov, 17:50 UTC').and.include('✗ failed').and.include('no such element: #flash')
+        .and.include('not run yet').and.include('<b class="bad">1/3</b><span>scenarios passed</span>');
+      const overview = renderOverviewPage([{ file: 'login.md', markdown: md, generated: [], results: [], scenarios: results }], { dir: 'specs/' });
+      expect(overview).to.include('1 of 3 scenarios passed, 1 failed, 1 not run');
+    });
+  });
+
+    describe('the review switch', () => {
     const env = process.env.SELENIUM_MCP_PLAN_REVIEW;
     afterEach(() => { if (env === undefined) delete process.env.SELENIUM_MCP_PLAN_REVIEW; else process.env.SELENIUM_MCP_PLAN_REVIEW = env; });
 

@@ -153,6 +153,15 @@ The generator and healer follow [Selenium's guide for AI agents](https://www.sel
 
 You review the plan before code is generated, and the code before it is committed. The plan review is on by default: every plan is saved as a **draft**, and the generator refuses a draft plan. The planner opens it as a **review page** in your browser: every test with its steps and expected results, a comment box per test, and **Approve plan** / **Request changes** buttons that write your decision into the plan. Requested changes go back to the planner. You can also review without the AI: `npx selenium-ai-agent review` in your project opens all plans in your browser. An **overview of all plans** shows each plan's review status, its tests, the test files generated from it and the last run. Need speed instead? `SELENIUM_MCP_PLAN_REVIEW=off` (or `--no-plan-review`) turns the check off. The [Agent Workflow](docs/AGENT_WORKFLOW.md) guide covers each stage in detail.
 
+### Test reports, linked to the approved plan
+
+Selenium has no reporting of its own, so every generated suite writes one: **JUnit XML** by default (read by every CI system, ReportPortal and Allure), and **Allure** when you ask for it or your project already uses it. `healer_run_tests` reads the results and links every test to the plan scenario it implements:
+
+- `reports/junit-plans.xml`: the JUnit results with the plan, scenario and review status as properties of each test, for your CI or ReportPortal
+- Allure results get the plan as **epic**, the suite as **feature** and the scenario as **story**, so Allure's Behaviors tab shows your approved plan with a result per scenario
+- the plan's review page shows the latest result per scenario (✓ passed, ✗ failed with the message, not run yet), and the overview of all plans shows "2 of 3 scenarios passed"
+- tests with no approved plan behind them are counted, so they stand out
+
 ## Example Prompts
 
 | Goal | Prompt |
@@ -162,6 +171,7 @@ You review the plan before code is generated, and the code before it is committe
 | Python tests (default) | `Generate tests from specs/checkout-flow.md` |
 | Another language | `Generate WebdriverIO tests for the login flow at https://practiceautomatedtesting.com` |
 | Fix failures | `Run my tests and fix any failures` |
+| Allure report | `Generate the tests from specs/checkout-flow.md with an Allure report` |
 | Parallel (Grid) | `Explore https://practiceautomatedtesting.com in parallel using 4 browsers` |
 
 [Example Chats](docs/EXAMPLE_CHATS.md) shows each prompt with the tools it calls and the result, including generated code for pytest, WebdriverIO, Playwright and Robot Framework.

@@ -13,7 +13,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { defaultOutputDir, getAgentFilesDir, getOutputDir, getSpecsDir, specsDirFor } from './utils/paths.js';
 import { isPlanMarkdown, planReviewRequired, withPlanStatus, withReviewComments, planStatus, type ReviewComment } from './utils/plan-review.js';
-import { renderOverviewPage, renderPlanPage, statusPill, type OverviewRow } from './plan-pages.js';
+import { renderOverviewPage, renderPlanPage, statusPill, type OverviewRow, type ScenarioResult } from './plan-pages.js';
 import { readManifest } from './types/manifest.js';
 import { readTestRuns } from './utils/test-runs.js';
 
@@ -93,6 +93,17 @@ export function reviewPagesDir(): string {
   return path.join(getAgentFilesDir(), 'review');
 }
 
+/** The latest result per scenario of one plan ("1.2" → result), from the test runs. */
+export async function scenarioResults(planFile: string): Promise<Record<string, ScenarioResult>> {
+  const runs = await readTestRuns();
+  const out: Record<string, ScenarioResult> = {};
+  for (const [key, r] of Object.entries(runs.scenarios)) {
+    const hash = key.lastIndexOf('#');
+    if (key.slice(0, hash) === planFile) out[key.slice(hash + 1)] = { status: r.status, at: r.at, ...(r.message ? { message: r.message } : {}) };
+  }
+  return out;
+}
+
 /** The overview rows: every plan with the test files generated from it and their latest results. */
 export async function overviewRows(): Promise<OverviewRow[]> {
   const manifest = await readManifest(getOutputDir());
@@ -107,7 +118,7 @@ export async function overviewRows(): Promise<OverviewRow[]> {
       .map(f => ({ file: f, run: runs.files[path.resolve(f)] }))
       .filter(r => r.run)
       .map(r => ({ file: r.file, passed: r.run.passed, at: r.run.at }));
-    rows.push({ file, markdown, generated, results });
+    rows.push({ file, markdown, generated, results, scenarios: await scenarioResults(file) });
   }
   return rows;
 }
@@ -123,7 +134,7 @@ export async function writeStaticPages(): Promise<string> {
   const rows = await overviewRows();
   for (const r of rows) {
     await fs.writeFile(path.join(dir, r.file.replace(/\.md$/, '.html')),
-      renderPlanPage(r.markdown, { file: displayPath(r.file), overviewUrl: 'index.html', reviewRequired: planReviewRequired() }));
+      renderPlanPage(r.markdown, { file: displayPath(r.file), overviewUrl: 'index.html', reviewRequired: planReviewRequired(), results: r.scenarios }));
   }
   const runs = await readTestRuns();
   const index = path.join(dir, 'index.html');
@@ -184,7 +195,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   if (req.method === 'GET' && u.pathname === '/plan') {
     return send(res, 200, 'text/html; charset=utf-8', renderPlanPage(markdown, {
       file: displayPath(name), decisionUrl: url('/plan/decision', { f: name }), overviewUrl: reviewUrls.overview(),
-      reviewRequired: planReviewRequired(),
+      reviewRequired: planReviewRequired(), results: await scenarioResults(name),
     }));
   }
 

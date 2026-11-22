@@ -13,6 +13,7 @@ import { getOutputDir } from '../../utils/paths.js';
 import { detectProject } from '../../project-detect.js';
 import { checkPlanApproved, looksLikePlanPath } from '../../utils/plan-review.js';
 import { findSpec } from './spec.js';
+import { chooseReportFormat, reportingFor, withReportArgs, type ReportFormat } from '../../reporting/frameworks.js';
 import {
   seleniumRulesFor, checkSeleniumRules, formatRuleViolations, SELENIUM_AI_AGENTS_DOCS,
 } from './selenium-rules.js';
@@ -80,7 +81,18 @@ const setupSchema = z.object({
     .describe('Test framework. Default: the one the project already uses (detected from pom.xml, build.gradle, requirements.txt, pyproject.toml, *.csproj, package.json, *.robot), else selenium-python-pytest. Others: selenium-java-maven, selenium-csharp-nunit, selenium-js-mocha, webdriverio-ts, robot-framework, playwright-js, ...'),
   projectRoot: z.string().optional()
     .describe('Folder of the project the tests go into, to detect its language and test runner (default: the output folder)'),
+  reporting: z.enum(['junit', 'allure']).optional()
+    .describe('Test report: junit (default: JUnit XML, read by every CI system, ReportPortal and Allure) or allure (Allure results as well; the default when the project already uses Allure)'),
 });
+
+/** The run command a framework's tests get, with its report arguments. unittest runs under pytest for JUnit XML. */
+export function runCommandWithReport(framework: string, base: RunCommand | null, format: ReportFormat): RunCommand | null {
+  if (!base) return null;
+  const cmd = framework === 'selenium-python-unittest' && base.command === 'python' && base.args[1] === 'unittest'
+    ? { command: 'python', args: ['-m', 'pytest', '-v'] }
+    : base;
+  return { command: cmd.command, args: withReportArgs(cmd.args, framework, format) };
+}
 
 export class GeneratorSetupTool extends BaseTool {
   readonly name = 'generator_setup_page';
@@ -107,7 +119,7 @@ For Selenium frameworks the result includes Selenium's official rules for AI ass
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { url, testPlan, framework: chosen, projectRoot, skipPlanReview } = this.parseParams(setupSchema, params);
+    const { url, testPlan, framework: chosen, projectRoot, skipPlanReview, reporting } = this.parseParams(setupSchema, params);
 
     // The plan must be reviewed first: a test is only as good as the plan it implements.
     let plan = { where: 'given', content: testPlan };
@@ -129,6 +141,9 @@ For Selenium frameworks the result includes Selenium's official rules for AI ass
     // Enable recording and persist framework choice
     context.startRecording();
     context.generatorFramework = framework;
+    const report = chooseReportFormat(reporting, projectRoot || getOutputDir());
+    context.generatorReporting = report.format;
+    const reportSetup = reportingFor(framework)?.[report.format];
 
     await context.captureSnapshot();
 
@@ -146,6 +161,16 @@ For Selenium frameworks the result includes Selenium's official rules for AI ass
       testPlanPreview: testPlan.slice(0, 200) + (testPlan.length > 200 ? '...' : ''),
       planStatus: review.status ?? 'none',
       ...(review.message ? { planReview: review.message } : {}),
+      reporting: {
+        format: report.format,
+        why: report.why,
+        ...(reportSetup ? {
+          runCommandAdds: reportSetup.args.join(' ') || '(nothing: the runner writes it by default)',
+          resultsIn: reportSetup.results,
+          projectNeeds: reportSetup.setup.length ? reportSetup.setup : 'nothing',
+        } : { note: 'No report setup known for this framework: add its JUnit XML output to the run command.' }),
+        planLinks: 'healer_run_tests links every result to its plan scenario through the plan\'s "File:" line (or generator_write_test scenario) and writes reports/junit-plans.xml; Allure results get the plan as epic, the suite as feature and the scenario as story. Write each test to the file its plan scenario names.',
+      },
       seleniumRules: undefined as string | undefined,
     };
 
@@ -217,6 +242,7 @@ const writeTestSchema = z.object({
   configFile: z.string().optional().describe('Path to framework config file (e.g. wdio.conf.ts, playwright.config.ts). Auto-detected if omitted.'),
   verify: z.boolean().optional().describe('Validate selectors against the live page before writing (default: true)'),
   specFile: z.string().optional().describe('Path to the spec file this test was generated from (it must be approved)'),
+  scenario: z.string().optional().describe('The plan scenario this file implements, e.g. "1.2" (needed only when the file differs from the one the plan names)'),
   skipPlanReview: z.boolean().optional()
     .describe('Write a test for a plan that is still a draft. Only when the user explicitly says to skip the plan review.'),
   allowRuleViolations: z.boolean().optional()
@@ -247,8 +273,7 @@ With specFile, the plan must be approved by the user: a test for a draft plan is
     const {
       testCode, filename, framework: chosenFramework, outputDir,
       projectRoot: explicitProjectRoot, baseUrl, runCommand, configFile: explicitConfig,
-      verify, specFile, allowRuleViolations, skipPlanReview,
-    } = this.parseParams(writeTestSchema, params);
+      verify, specFile, allowRuleViolations, skipPlanReview, scenario } = this.parseParams(writeTestSchema, params);
 
     if (specFile) {
       const spec = await findSpec(specFile).catch(() => null);
@@ -307,7 +332,10 @@ With specFile, the plan must be approved by the user: a test for a draft plan is
       // --- Manifest handling ---
       const projectRoot = explicitProjectRoot || path.dirname(testsDir);
       const detectedConfig = explicitConfig || await detectConfigFile(projectRoot);
-      const suggestedRun = runCommand || suggestRunCommand(framework, detectedConfig);
+      // The run command writes a test report (JUnit XML; Allure too when chosen), which healer_run_tests links to the plan.
+      const existing = await readManifest(projectRoot);
+      const reportFormat = context.generatorReporting ?? existing?.reporting ?? 'junit';
+      const suggestedRun = runCommand || runCommandWithReport(framework, suggestRunCommand(framework, detectedConfig), reportFormat);
 
       // Read existing manifest or create new
       let manifest = await readManifest(projectRoot);
@@ -316,7 +344,8 @@ With specFile, the plan must be approved by the user: a test for a draft plan is
         manifest.framework = framework;
         manifest.baseUrl = baseUrl || manifest.baseUrl;
         // A run command set earlier (e.g. ".venv/bin/pytest") stays unless this call gives a new one.
-        manifest.runCommand = runCommand || manifest.runCommand || suggestedRun;
+        manifest.runCommand = runCommand || runCommandWithReport(framework, manifest.runCommand, reportFormat) || suggestedRun;
+        manifest.reporting = reportFormat;
         manifest.configFile = detectedConfig || manifest.configFile;
         manifest.updatedAt = new Date().toISOString();
 
@@ -327,6 +356,7 @@ With specFile, the plan must be approved by the user: a test for a draft plan is
             framework,
             createdAt: new Date().toISOString(),
             specFile,
+            ...(scenario ? { scenario } : {}),
           });
         }
       } else {
@@ -338,11 +368,13 @@ With specFile, the plan must be approved by the user: a test for a draft plan is
           framework,
           runCommand: suggestedRun,
           configFile: detectedConfig,
+          reporting: reportFormat,
           tests: [{
             file: testPath,
             framework,
             createdAt: new Date().toISOString(),
             specFile,
+            ...(scenario ? { scenario } : {}),
           }],
           updatedAt: new Date().toISOString(),
         };
@@ -356,7 +388,8 @@ With specFile, the plan must be approved by the user: a test for a draft plan is
         framework,
         lines: testCode.split('\n').length,
         manifest: manifestPath,
-        runCommand: suggestedRun,
+        runCommand: manifest.runCommand,
+        reporting: manifest.reporting,
       };
       if (validationReport) {
         result.selectorValidation = validationReport;

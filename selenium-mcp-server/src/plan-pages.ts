@@ -125,7 +125,7 @@ h1{font-size:26px;margin:2px 0 4px;font-weight:600}h2{font-size:17px;margin:26px
 .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .suite{font-weight:600;margin:22px 0 8px}.suite small{color:var(--muted);font-weight:400;font-family:var(--mono);margin-left:8px}
-.test-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.test-head b{font-weight:600}.file{font:12px var(--mono);color:var(--muted)}
+.test-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.test-head b{font-weight:600}.file{font:12px var(--mono);color:var(--muted)}.result{font-size:12px;font-weight:600;margin-right:12px}
 ol{margin:10px 0 0;padding-left:22px}li{margin:4px 0}ul{margin:4px 0 6px;padding-left:4px}.exp{color:var(--ok);list-style:none}.exp::before{content:"✓  ";font-weight:700}
 textarea{width:100%;min-height:38px;margin-top:10px;font:14px inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);resize:vertical}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:500;font-size:12px}
@@ -150,6 +150,26 @@ export interface PlanPageOptions {
   decisionUrl?: string;
   overviewUrl?: string;
   reviewRequired?: boolean;
+  /** The latest test result per scenario id ("1.2"), from the test runs (healer_run_tests). */
+  results?: Record<string, ScenarioResult>;
+}
+
+export interface ScenarioResult { status: 'passed' | 'failed' | 'skipped'; at: string; message?: string }
+
+function resultBadge(r: ScenarioResult | undefined, approved: boolean): string {
+  if (!r) return approved ? '<span class="result muted">not run yet</span>' : '';
+  const label = r.status === 'passed' ? '✓ passed' : r.status === 'failed' ? '✗ failed' : 'skipped';
+  return `<span class="result ${r.status === 'passed' ? 'ok' : r.status === 'failed' ? 'bad' : 'muted'}" title="${esc(r.message ?? '')}">${label} · ${esc(day(r.at))}</span>`;
+}
+
+/** "2 of 3 scenarios passed, 1 failed" from the results of a plan's scenarios. */
+export function scenarioSummary(ids: string[], results: Record<string, ScenarioResult> | undefined): { text: string; failed: number; run: number } | null {
+  const run = ids.filter(id => results?.[id]);
+  if (!run.length) return null;
+  const passed = run.filter(id => results![id].status === 'passed').length;
+  const failed = run.filter(id => results![id].status === 'failed').length;
+  const notRun = ids.length - run.length;
+  return { text: `${passed} of ${ids.length} scenario${ids.length === 1 ? '' : 's'} passed${failed ? `, ${failed} failed` : ''}${notRun ? `, ${notRun} not run` : ''}`, failed, run: run.length };
 }
 
 export function renderPlanPage(markdown: string, opts: PlanPageOptions): string {
@@ -158,9 +178,12 @@ export function renderPlanPage(markdown: string, opts: PlanPageOptions): string 
   const steps = tests.reduce((n, t) => n + t.steps.length, 0);
   const expects = tests.reduce((n, t) => n + t.steps.reduce((m, s) => m + s.expect.length, 0), 0);
   const interactive = Boolean(opts.decisionUrl);
+  const approved = plan.status === 'approved';
+  const failure = (t: PlanTest) => opts.results?.[t.id]?.status === 'failed' && opts.results[t.id].message
+    ? `<div class="gap">${esc(opts.results[t.id].message!)}</div>` : '';
   const testCard = (t: PlanTest) => `
 <div class="card" data-test="${esc(`${t.id} ${t.name}`)}">
-  <div class="test-head"><b>${esc(t.id)} ${esc(t.name)}</b>${t.file ? `<span class="file">${esc(t.file)}</span>` : ''}</div>
+  <div class="test-head"><b>${esc(t.id)} ${esc(t.name)}</b><span>${resultBadge(opts.results?.[t.id], approved)}${t.file ? `<span class="file">${esc(t.file)}</span>` : ''}</span></div>${failure(t)}
   <ol>${t.steps.map(s => `<li>${s.perform ? esc(s.perform) : '<span class="muted">(no action)</span>'}${s.expect.length ? `<ul>${s.expect.map(e => `<li class="exp">${esc(e)}</li>`).join('')}</ul>` : ''}</li>`).join('')}</ol>
   ${interactive ? '<textarea placeholder="Comment on this test (optional)"></textarea>' : ''}
 </div>`;
@@ -174,7 +197,10 @@ export function renderPlanPage(markdown: string, opts: PlanPageOptions): string 
 ${plan.statusNote && plan.statusNote !== DRAFT_NOTE ? `<div class="note">${esc(plan.statusNote)}</div>` : ''}
 <div class="stats"><div class="stat"><b>${plan.suites.length}</b><span>suites</span></div><div class="stat"><b>${tests.length}</b><span>tests</span></div>
 <div class="stat"><b>${steps}</b><span>steps</span></div><div class="stat"><b>${expects}</b><span>expected results</span></div>
-<div class="stat"><b class="${plan.gaps.length ? 'bad' : ''}">${plan.gaps.length}</b><span>gaps and questions</span></div></div>
+<div class="stat"><b class="${plan.gaps.length ? 'bad' : ''}">${plan.gaps.length}</b><span>gaps and questions</span></div>${(() => {
+    const sum = scenarioSummary(tests.map(t => t.id), opts.results);
+    return sum ? `<div class="stat"><b class="${sum.failed ? 'bad' : 'ok'}">${tests.filter(t => opts.results?.[t.id]?.status === 'passed').length}/${tests.length}</b><span>scenarios passed</span></div>` : '';
+  })()}</div>
 ${plan.overview ? `<p class="muted">${esc(plan.overview)}</p>` : ''}
 ${plan.comments.length ? `<h2>Review comments</h2>${plan.comments.map(c => `<div class="comment">${esc(c)}</div>`).join('')}` : ''}
 <h2>Test scenarios</h2>${body}
@@ -220,6 +246,8 @@ export interface OverviewRow {
   generated: string[];
   /** Latest result per generated file, when the healer ran it. */
   results: Array<{ file: string; passed: boolean; at: string }>;
+  /** Latest result per scenario id, from the JUnit results linked to this plan. */
+  scenarios?: Record<string, ScenarioResult>;
 }
 
 export interface OverviewOptions {
@@ -240,7 +268,10 @@ export function renderOverviewPage(rows: OverviewRow[], opts: OverviewOptions): 
     const tests = r.plan.suites.reduce((n, s) => n + s.tests.length, 0);
     const passed = r.results.filter(x => x.passed).length;
     const failed = r.results.length - passed;
-    const last = r.results.length
+    const sum = scenarioSummary(r.plan.suites.flatMap(s => s.tests.map(t => t.id)), r.scenarios);
+    const last = sum
+      ? `<span class="${sum.failed ? 'bad' : 'ok'}">${esc(sum.text)}</span>`
+      : r.results.length
       ? `<span class="${failed ? 'bad' : 'ok'}">${passed} passed${failed ? `, ${failed} failed` : ''}</span>`
       : '<span class="muted">not run yet</span>';
     const href = opts.planUrl ? opts.planUrl(r.file) : r.file.replace(/\.md$/, '.html');
