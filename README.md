@@ -60,6 +60,7 @@ claude mcp add selenium-mcp -- npx -y selenium-ai-agent
 **Claude Desktop, Cursor, Windsurf or Junie in IntelliJ IDEA / PyCharm** (writes the config for you):
 
 ```bash
+cd ~/my-project                                # your project: plans, tests and reports go here
 npx selenium-ai-agent install claude-desktop   # or: cursor, windsurf, junie
 ```
 

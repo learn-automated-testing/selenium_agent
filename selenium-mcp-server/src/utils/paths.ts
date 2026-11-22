@@ -1,32 +1,46 @@
 import path from 'path';
 import os from 'os';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 
 let _cachedProjectRoot: string | null = null;
 
+/** Files and folders that mark a project folder: version control, AI tool settings and the build files of the stacks we generate for. */
+const PROJECT_MARKERS = [
+  '.git', 'package.json', '.claude', 'pom.xml', 'build.gradle', 'build.gradle.kts', 'pyproject.toml', 'requirements.txt',
+  'setup.py', '.test-manifest.json',
+];
+
+function isProjectDir(dir: string): boolean {
+  if (PROJECT_MARKERS.some(m => existsSync(path.join(dir, m)))) return true;
+  try {
+    return readdirSync(dir).some(f => f.endsWith('.csproj') || f.endsWith('.sln'));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The project a folder belongs to: the nearest folder, from `start` upwards, with a project marker (.git, package.json,
+ * .claude, pom.xml, build.gradle, *.csproj, *.sln, pyproject.toml, requirements.txt, ...). Null when there is none,
+ * or when it would be the filesystem root or the home folder.
+ */
+export function detectProjectRoot(start = process.cwd()): string | null {
+  let dir = path.resolve(start);
+  while (true) {
+    if (isProjectDir(dir)) return isUsableProjectRoot(dir) ? dir : null;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
 /**
  * Finds the project root by walking up from cwd looking for markers.
- * Looks for .git, package.json, or .claude directory.
  * Caches the result for the lifetime of the process.
  */
 function findProjectRoot(): string {
   if (_cachedProjectRoot) return _cachedProjectRoot;
-
-  const markers = ['.git', 'package.json', '.claude'];
-  let dir = process.cwd();
-
-  while (true) {
-    if (markers.some(m => existsSync(path.join(dir, m)))) {
-      _cachedProjectRoot = dir;
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break; // reached filesystem root
-    dir = parent;
-  }
-
-  // Final fallback: cwd
-  _cachedProjectRoot = process.cwd();
+  _cachedProjectRoot = detectProjectRoot() ?? process.cwd();
   return _cachedProjectRoot;
 }
 
@@ -35,8 +49,8 @@ function findProjectRoot(): string {
  *
  * Priority:
  *   1. SELENIUM_MCP_OUTPUT_DIR env var (explicit override)
- *   2. Auto-detected project root (walks up from cwd looking for .git/package.json/.claude)
- *   3. process.cwd() (final fallback)
+ *   2. The project the server runs in: walks up from cwd to a project marker (.git, package.json, pom.xml, *.csproj, ...)
+ *   3. ~/selenium-ai-agent, when it runs outside any project (Claude Desktop starts servers in "/")
  *
  * This keeps the server generic: it writes output relative to the
  * caller's project, not relative to where the server is installed.
