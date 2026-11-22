@@ -14,7 +14,7 @@ npm install -g selenium-ai-agent
 npx selenium-ai-agent
 ```
 
-Requirements: Node.js 18+, Chrome browser.
+Requirements: Node.js 20+, Chrome browser.
 
 ---
 
@@ -274,7 +274,7 @@ You should see the server navigate to the page and return a screenshot.
 
 ### "npx: command not found"
 
-Install Node.js 18+ from https://nodejs.org/. Verify with:
+Install Node.js 20+ from https://nodejs.org/. Verify with:
 
 ```bash
 node --version  # Should be 18+

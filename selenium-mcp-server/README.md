@@ -39,7 +39,7 @@ npx selenium-ai-agent
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 20+
 - Chrome browser for local runs (Firefox and Edge are available through Selenium Grid)
 - ChromeDriver is provisioned automatically — the server detects your installed
   Chrome version, reuses a matching cached driver, and only downloads a new one
@@ -262,7 +262,7 @@ Add to `~/.codeium/windsurf/mcp_config.json` (global) or `.windsurf/mcp_config.j
 
 ### JetBrains IDEs (IntelliJ IDEA, PyCharm, WebStorm, ...)
 
-Three ways, depending on the assistant you use in the IDE. All three start the server with `npx`, so Node.js 18+ must be installed.
+Three ways, depending on the assistant you use in the IDE. All three start the server with `npx`, so Node.js 20+ must be installed.
 
 **Junie** (writes `~/.junie/mcp/mcp.json` for you; or put the same JSON in `.junie/mcp/mcp.json` in the project to share it with your team):
 

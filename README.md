@@ -47,7 +47,7 @@ More tutorials: [youtube.com/@ralphvanderhorst5193](https://www.youtube.com/@ral
 
 ## Quick Start
 
-You need **Node.js 18+** and a browser (Chrome, Firefox or Edge).
+You need **Node.js 20+** and a browser (Chrome, Firefox or Edge).
 
 ### 1. Add the server to your AI client
 
