@@ -19,7 +19,9 @@ export interface ReportSetup {
 
 export interface FrameworkReporting { junit: ReportSetup; allure: ReportSetup }
 
-const ALLURE_VIEW = 'View it with Allure Report: npx allure generate allure-results && npx allure open (or allure serve allure-results).';
+const ALLURE_VIEW = 'View it with Allure Report: npx allure generate allure-results && npx allure open (or allure serve allure-results). ' +
+  'The plan is the epic, the suite the feature and the scenario the story: Allure 2 shows that tree in its Behaviors tab; for Allure 3 ' +
+  'set it in allurerc.mjs: export default { plugins: { awesome: { options: { groupBy: ["epic", "feature", "story"] } } } }';
 
 const PYTEST: FrameworkReporting = {
   junit: { args: ['--junitxml=reports/junit.xml'], results: ['reports/junit.xml'], setup: [] },
