@@ -424,7 +424,7 @@ export function formatRuleViolations(violations: RuleViolation[], file: string):
 export function timeoutsOnLine(line: string, language: SeleniumLanguage | 'WebdriverIO', robot = false): number[] {
   const found: number[] = [];
   const num = (v: string) => parseFloat(v);
-  const unit = (v: number, u = '') => (/^ms|millis/i.test(u) ? v / 1000 : /^m(in)?/i.test(u) ? v * 60 : v);
+  const unit = (v: number, u = '') => (/^(ms|millis)/i.test(u) ? v / 1000 : /^m(in)?/i.test(u) ? v * 60 : v);
   for (const m of line.matchAll(/Duration\.of(Seconds|Millis|Minutes)\(\s*(\d+(?:\.\d+)?)/g)) found.push(unit(num(m[2]), m[1] === 'Millis' ? 'ms' : m[1] === 'Minutes' ? 'min' : 's'));
   for (const m of line.matchAll(/TimeSpan\.From(Seconds|Milliseconds|Minutes)\(\s*(\d+(?:\.\d+)?)/g)) found.push(unit(num(m[2]), m[1] === 'Milliseconds' ? 'ms' : m[1] === 'Minutes' ? 'min' : 's'));
   for (const m of line.matchAll(/WebDriverWait\(\s*[\w.]+\s*,\s*(?:timeout\s*=\s*)?(\d+(?:\.\d+)?)\s*[,)]/g)) found.push(num(m[1]));
