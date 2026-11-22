@@ -526,9 +526,9 @@ The default is `all`. For example, browsing and self-healing only:
 
 | Tool | Description |
 |------|-------------|
-| `generator_setup_page` | Initialize test generation session — navigate to app, start recording, set framework. |
+| `generator_setup_page` | Initialize test generation session — navigate to app, start recording, set framework. `reporting`: `junit` (default) or `allure` (the default when the project already uses Allure); the result says what the run command adds and what the project needs once. |
 | `generator_read_log` | Retrieve the action log from the recording session. Read-only. |
-| `generator_write_test` | Save generated test code and update `.test-manifest.json`. Supports `verify` (validates selectors against live page) and `specFile` (links to spec). |
+| `generator_write_test` | Save generated test code and update `.test-manifest.json`. Supports `verify` (validates selectors against live page), `specFile` (links to spec) and `scenario` (the plan scenario, when the file differs from the plan's **File:**). The run command it stores writes the test report. |
 | `generator_write_seed` | Write a seed/bootstrap test (auth, fixtures, env setup) and register in manifest under `seedTests[]`. |
 | `generator_save_spec` | Save a structured markdown spec to `<output>/specs/`. |
 | `generator_read_spec` | Read a spec or test plan, by path or by name in `specs/`. Read-only. |
@@ -538,7 +538,7 @@ The default is `all`. For example, browsing and self-healing only:
 | Tool | Description |
 |------|-------------|
 | `selenium_rules_check` | Scan existing tests (a folder or a file) for Selenium 3 APIs, sleeps, mixed waits, driver managers and paths, the old headless API, absolute XPath, Robot `Sleep`, WebdriverIO `browser.pause()` and removed v10 APIs; lists findings per rule and per file with line numbers. Changes nothing. Used by the migrator. |
-| `healer_run_tests` | Execute tests and return output. Supports manifest mode (reads `.test-manifest.json`) or explicit mode (provide command + args). Runs seed tests first when present. |
+| `healer_run_tests` | Execute tests and return output. Supports manifest mode (reads `.test-manifest.json`) or explicit mode (provide command + args). Runs seed tests first when present. Reads the runner's JUnit XML and returns a `report`: totals, every failure with its message and plan scenario, and how many tests have no approved plan. Writes `reports/junit-plans.xml` (plan, scenario and review status per test) and labels Allure results with the plan (epic), suite (feature) and scenario (story). |
 | `healer_debug_test` | Run a single test in verbose mode with detailed output (15KB stdout, 8KB stderr). |
 | `healer_fix_test` | Apply a fix to a test file with `.bak` backup. Supports `verify` (validates selectors in fixed code). |
 | `healer_inspect_page` | Inspect current page against expected locators — reports found, missing, and changed elements with suggested updated locators. Use after test failure to understand UI drift. |

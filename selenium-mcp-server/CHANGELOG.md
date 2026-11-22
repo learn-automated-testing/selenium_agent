@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### New Features
+
+- **Test reports, linked to the approved plan.** Selenium has no reporting of its own, so generated test suites had none. Now every generated suite writes **JUnit XML** (pytest `--junitxml`, Maven Surefire and Gradle by default, `dotnet test` with the JUnit logger, mocha-junit-reporter, jest-junit, WebdriverIO's junit reporter, Robot Framework `--xunit`), read by every CI system, ReportPortal and Allure. **Allure** is the richer option: `generator_setup_page` takes `reporting: "allure"`, and uses it by default when the project already uses Allure. The result says what the run command adds and what the project needs once.
+- **Every result linked to its plan scenario.** `healer_run_tests` reads the JUnit XML after the run and links each test to the plan scenario it implements, through the plan's `**File:**` line (or the new `scenario` of `generator_write_test`). It returns a `report` (totals, every failure with its message and scenario, the number of tests without an approved plan), writes `reports/junit-plans.xml` with the plan, scenario and review status as test case properties, and labels Allure results with the plan as epic, the suite as feature and the scenario as story, so Allure's Behaviors tab shows the approved plan.
+- **Results on the plan.** The plan review page shows the latest result per scenario (passed, failed with the message, not run yet) and how many scenarios pass; the overview of all plans shows "2 of 3 scenarios passed, 1 failed". Also after a run of the whole suite, not only of one file.
+
+### Fixes
+
+- `healer_run_tests` in manifest mode passed `--spec <file>` to every runner (only WebdriverIO takes it). It now runs one file the way each runner takes it: the path for pytest, Mocha, Jest and Robot Framework, `-Dtest=` for Maven, `--tests` for Gradle and `--filter` for `dotnet test`.
+
 ## [3.7.0] - 2026-11-22
 
 ### New Features

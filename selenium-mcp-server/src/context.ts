@@ -183,6 +183,7 @@ export class Context {
   public recordingEnabled = false;
   public actionHistory: RecordedAction[] = [];
   public generatorFramework: string | null = null;
+  public generatorReporting: 'junit' | 'allure' | null = null;
 
   // Analysis session for regression analyzer
   public analysisSession: AnalysisSession | null = null;

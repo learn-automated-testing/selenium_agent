@@ -28,7 +28,9 @@ describe('generator framework default and manifest', () => {
     const base = { outputDir: path.join(root, 'tests'), projectRoot: root };
     await tool.execute(ctx(), { ...base, testCode: 'def test_a(): pass', filename: 'test_a.py', runCommand: { command: '.venv/bin/pytest', args: [] } });
     await tool.execute(ctx(), { ...base, testCode: 'def test_b(): pass', filename: 'test_b.py' });
-    expect(manifest().runCommand).to.deep.equal({ command: '.venv/bin/pytest', args: [] });
+    // The command stays; the JUnit XML report is added to it.
+    expect(manifest().runCommand).to.deep.equal({ command: '.venv/bin/pytest', args: ['--junitxml=reports/junit.xml'] });
+    expect(manifest().reporting).to.equal('junit');
     expect(manifest().tests).to.have.length(2);
   });
 

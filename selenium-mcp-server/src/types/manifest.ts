@@ -14,6 +14,8 @@ export interface TestManifestEntry {
   framework: string;
   createdAt: string;
   specFile?: string;
+  /** The scenario of the plan this file implements, e.g. "1.2" (else found through the plan's "File:" line). */
+  scenario?: string;
 }
 
 export interface SeedTestEntry {
@@ -32,6 +34,8 @@ export interface TestManifest {
   configFile: string | null;
   tests: TestManifestEntry[];
   seedTests?: SeedTestEntry[];
+  /** junit (default) or allure: what the run command writes (see src/reporting/frameworks.ts). */
+  reporting?: 'junit' | 'allure';
   updatedAt: string;
 }
 
