@@ -159,17 +159,20 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   return send(res, 404, 'text/plain', 'Not found');
 }
 
-/** Start the review server once (on a free port on 127.0.0.1) and return its base URL. */
-export async function ensureReviewServer(): Promise<string> {
+/**
+ * Start the review server once (on a free port on 127.0.0.1) and return its base URL.
+ * keepAlive: keep the process running for it (the `review` command); inside the MCP server it lives as long as that.
+ */
+export async function ensureReviewServer(opts: { keepAlive?: boolean; port?: number } = {}): Promise<string> {
   if (server) return base;
   const s = http.createServer((req, res) => {
     handle(req, res).catch(err => send(res, 500, 'text/plain', err instanceof Error ? err.message : String(err)));
   });
   await new Promise<void>((resolve, reject) => {
     s.once('error', reject);
-    s.listen(0, '127.0.0.1', () => resolve());
+    s.listen(opts.port ?? 0, '127.0.0.1', () => resolve());
   });
-  s.unref();
+  if (!opts.keepAlive) s.unref();
   const address = s.address();
   base = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
   server = s;
@@ -182,3 +185,19 @@ export async function stopReviewServer(): Promise<void> {
   server = null;
   base = '';
 }
+
+/** Open a review page in the user's own default browser (not the browser the agent drives). */
+export async function openInBrowser(target: string): Promise<boolean> {
+  if (!/^http:\/\/127\.0\.0\.1:\d+\/[\w/?=&%.-]*$/.test(target)) return false;
+  const { execFile } = await import('child_process');
+  const [command, args] = process.platform === 'darwin' ? ['open', [target]]
+    : process.platform === 'win32' ? ['rundll32', ['url.dll,FileProtocolHandler', target]]
+      : ['xdg-open', [target]];
+  return new Promise(resolve => {
+    // Opens our own review page (checked above: a 127.0.0.1 URL) in the default browser; no shell is involved.
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
+    execFile(command, args, { timeout: 10000 }, err => resolve(!err));
+  });
+}
+
+export const REVIEW_COMMAND = 'npx selenium-ai-agent review';

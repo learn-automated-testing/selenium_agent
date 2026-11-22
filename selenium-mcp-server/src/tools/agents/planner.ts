@@ -310,7 +310,7 @@ export class PlannerReviewPlanTool extends BaseTool {
   async execute(_context: Context, params: unknown): Promise<ToolResult> {
     const { specFile, open = true } = this.parseParams(reviewPlanSchema, params);
     const path = await import('path');
-    const { ensureReviewServer, reviewUrls, writeStaticPages, listPlans } = await import('../../plan-review-server.js');
+    const { ensureReviewServer, reviewUrls, writeStaticPages, listPlans, openInBrowser } = await import('../../plan-review-server.js');
     try {
       let file: string | undefined;
       let status: string | undefined;
@@ -338,6 +338,7 @@ export class PlannerReviewPlanTool extends BaseTool {
         next: file
           ? 'Ask the user to review the plan in the page and click Approve plan or Request changes (with comments), and to tell you when done. Then call planner_review_plan again to read the decision.'
           : 'The user can open each plan from the overview to review it.',
+        reviewYourself: 'The user can also open these pages without you: npx selenium-ai-agent review (in the project folder).',
         ...(opened || !open ? {} : { note: 'Could not open a browser here: give the user the url.' }),
       }, null, 2), false);
     } catch (err) {
@@ -345,18 +346,4 @@ export class PlannerReviewPlanTool extends BaseTool {
       return this.error(`Failed to open the review page: ${message}`);
     }
   }
-}
-
-/** Open the review page in the user's own default browser (not the browser the agent drives). */
-async function openInBrowser(target: string): Promise<boolean> {
-  if (!/^http:\/\/127\.0\.0\.1:\d+\/[\w/?=&%.-]*$/.test(target)) return false;
-  const { execFile } = await import('child_process');
-  const [command, args] = process.platform === 'darwin' ? ['open', [target]]
-    : process.platform === 'win32' ? ['rundll32', ['url.dll,FileProtocolHandler', target]]
-      : ['xdg-open', [target]];
-  return new Promise(resolve => {
-    // Opens our own review page (checked above: a 127.0.0.1 URL) in the default browser; no shell is involved.
-    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
-    execFile(command, args, { timeout: 10000 }, err => resolve(!err));
-  });
 }

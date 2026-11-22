@@ -375,6 +375,7 @@ Pass env vars in your MCP config:
 ```bash
 npx selenium-ai-agent [flags]
 npx selenium-ai-agent doctor   # run driver/proxy diagnostics and exit
+npx selenium-ai-agent review   # review test plans in your browser: Approve / Request changes, without the AI
 npx selenium-ai-agent init-agents --loop=claude   # install the planner/generator/healer agents
 npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Selenium's rules in CLAUDE.md
 ```
@@ -382,6 +383,7 @@ npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Seleni
 | Flag | Description |
 |------|-------------|
 | `doctor` | Run preflight diagnostics (Chrome, driver, proxy, cache, output folder) and exit |
+| `review [plan] [--output-dir=…] [--no-open] [--port=…]` | Review test plans yourself, without asking the AI: opens the overview of all plans in `specs/` (or one plan) in your browser, with **Approve plan** / **Request changes** per plan. Runs on 127.0.0.1 until Ctrl+C; your AI assistant reads the decision from the plan |
 | `init-agents --loop=claude\|vscode\|copilot\|cursor [--server=name] [--with-rules[=...]] [--framework=f]` | Install the test agents for your AI client (see [Test Agents](#test-agents)) and exit; `--with-rules` also writes the [rules for AI agents](#rules-for-ai-agents) into the project |
 | `install claude-desktop\|cursor\|windsurf\|junie [--with-rules[=...]]` | Add the server to the client's config; `--with-rules` also writes the rules into this project's instruction file |
 | `--stealth` | Enable stealth mode |

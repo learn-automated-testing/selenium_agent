@@ -148,6 +148,8 @@ After saving the test plan with `planner_save_plan`, you MUST:
    - `changes requested`: read the **Review comments** at the end of the plan, change the plan accordingly, save it
      with `planner_save_plan` (a draft again) and open the review page again.
    - still `draft`: the user hasn't decided yet; ask whether they have questions.
+   The user can also review on their own at any time, without you: `npx selenium-ai-agent review` in the project
+   opens the same pages. Mention it once, so they know.
 4. **In the chat instead**: if the user approves in the chat, call `planner_approve_plan` with their own words
    (for example `approval: "looks good, generate the tests"`). The user can also change `draft` to `approved` in the file.
 

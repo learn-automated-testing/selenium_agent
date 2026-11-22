@@ -89,7 +89,7 @@ describe('plan review pages', () => {
       expect(page).to.include('id="approve"').and.include('id="changes"').and.include('<textarea');
       const copy = renderPlanPage(md, { file: 'specs/login.md' });
       expect(copy).to.not.include('id="approve"');
-      expect(copy).to.include('Read-only copy');
+      expect(copy).to.include('Read-only copy').and.include('npx selenium-ai-agent review');
     });
 
     it('overview counts plans per status and shows generated files and results', () => {

@@ -41,6 +41,32 @@ if (args[0] === 'init-agents') {
   process.exit(0);
 }
 
+if (args[0] === 'review') {
+  // Review test plans yourself, without asking the AI: the overview of all plans with Approve / Request changes per plan.
+  for (const arg of args.slice(1)) {
+    if (arg.startsWith('--output-dir=')) process.env.SELENIUM_MCP_OUTPUT_DIR = arg.slice('--output-dir='.length);
+  }
+  const portArg = args.find(a => a.startsWith('--port='));
+  const plan = args.slice(1).find(a => !a.startsWith('--'));
+  const { ensureReviewServer, reviewUrls, writeStaticPages, listPlans, openInBrowser } = await import('../src/plan-review-server.js');
+  const { getSpecsDir } = await import('../src/utils/paths.js');
+  const plans = await listPlans();
+  if (plan && !plans.includes(plan.endsWith('.md') ? plan : `${plan}.md`)) {
+    console.error(`No plan "${plan}" in ${getSpecsDir()}. Plans there: ${plans.join(', ') || 'none'}`);
+    process.exit(1);
+  }
+  await ensureReviewServer({ keepAlive: true, port: portArg ? parseInt(portArg.slice('--port='.length), 10) : undefined });
+  await writeStaticPages();
+  const url = plan ? reviewUrls.plan(plan.endsWith('.md') ? plan : `${plan}.md`) : reviewUrls.overview();
+  console.log(`Selenium AI Agent: test plan review for ${getSpecsDir()} (${plans.length} plan(s))\n`);
+  console.log(`  ${url}\n`);
+  const opened = args.includes('--no-open') ? false : await openInBrowser(url);
+  console.log(opened ? 'Opened in your browser. ' : 'Open the link above in your browser. ');
+  console.log('Approve plans or request changes there; your AI assistant reads the decision from the plan.');
+  console.log('The page only works on this computer. Press Ctrl+C to stop.');
+  await new Promise(() => undefined);
+}
+
 if (args[0] === 'doctor') {
   const { runDoctor, formatDoctorReport } = await import('../src/doctor.js');
   const report = await runDoctor();

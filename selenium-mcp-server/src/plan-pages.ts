@@ -134,7 +134,7 @@ td code,.mono{font:13px var(--mono)}.gap{background:var(--warn-bg);color:var(--w
 .bar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:14px 20px;display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 button{font:600 14px inherit;padding:9px 18px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
 button.primary{background:var(--ok);border-color:var(--ok);color:var(--on-ok)}button:disabled{opacity:.55;cursor:default}
-#msg{margin-right:auto;color:var(--muted);font-size:14px}.err{color:var(--bad)!important}pre{white-space:pre-wrap;font:13px var(--mono)}
+#msg{margin-right:auto;color:var(--muted);font-size:14px}.cmd{font:14px var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px}.err{color:var(--bad)!important}pre{white-space:pre-wrap;font:13px var(--mono)}
 .muted{color:var(--muted)}.ok{color:var(--ok)}.bad{color:var(--bad)}`;
 
 function statusPill(status: PlanStatus | null): string {
@@ -201,7 +201,9 @@ const send = async (decision) => {
 };
 document.getElementById('approve').onclick = () => send('approve');
 document.getElementById('changes').onclick = () => send('changes');
-</script>` : `<div class="bar"><span id="msg">Read-only copy. To approve or request changes, ask your AI assistant to open the review page (planner_review_plan).</span></div>`}
+</script>` : `<div class="bar"><span id="msg">Read-only copy. To approve or request changes, run this in your project folder:</span>
+<code class="cmd" id="cmd">npx selenium-ai-agent review</code><button id="copy">Copy</button></div>
+<script>document.getElementById('copy').onclick = async () => { try { await navigator.clipboard.writeText(document.getElementById('cmd').textContent); document.getElementById('copy').textContent = 'Copied'; } catch { document.getElementById('copy').textContent = 'Select and copy'; } };</script>`}
 </body></html>`;
 }
 
@@ -247,6 +249,7 @@ export function renderOverviewPage(rows: OverviewRow[], opts: OverviewOptions): 
 <title>Test plans</title><style>${STYLE}</style></head><body><main>
 <div class="top"><div><div class="path">${esc(opts.dir)}</div><h1>Test plans</h1></div>
 <div>${count('approved') ? `<span class="pill s-approved">${count('approved')} approved</span> ` : ''}${count('draft') ? `<span class="pill s-draft">${count('draft')} to review</span> ` : ''}${count('changes requested') ? `<span class="pill s-changes">${count('changes requested')} changes requested</span> ` : ''}${count(null) ? `<span class="pill s-none">${count(null)} without status</span>` : ''}</div></div>
+${opts.planUrl ? '' : '<div class="note">Read-only copy. To review plans, run <code class="mono">npx selenium-ai-agent review</code> in your project folder.</div>'}
 <div class="note">${opts.reviewRequired === false ? 'The plan review is turned off (SELENIUM_MCP_PLAN_REVIEW=off): tests may be generated from any plan.' : 'Tests are only generated from approved plans.'}${run ? ` Last test run: <span class="${run.passed ? 'ok' : 'bad'}">${esc(run.summary || (run.passed ? 'passed' : 'failed'))}</span>, ${esc(day(run.at))}.` : ''}</div>
 <div class="card" style="margin-top:16px;padding:6px 8px">${parsed.length
     ? `<table><tr><th>Plan</th><th>Review</th><th>Tests</th><th>Generated</th><th>Last run</th></tr>${body}</table>`
