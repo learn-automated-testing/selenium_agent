@@ -34,6 +34,14 @@ describe('generator framework default and manifest', () => {
     expect(manifest().tests).to.have.length(2);
   });
 
+  it('keeps the manifest in the project root, also for a test in a subfolder', async () => {
+    fs.writeFileSync(path.join(root, 'pyproject.toml'), '[project]\nname = "x"\n');
+    await new GeneratorWriteTestTool().execute(ctx(), { testCode: 'def test_a(): pass', filename: 'test_a.py', outputDir: path.join(root, 'tests', 'dropdown') });
+    expect(fs.existsSync(path.join(root, '.test-manifest.json'))).to.equal(true);
+    expect(fs.existsSync(path.join(root, 'tests', '.test-manifest.json'))).to.equal(false);
+    expect(manifest().projectRoot).to.equal(root);
+  });
+
   it('uses the framework chosen in generator_setup_page', async () => {
     await new GeneratorWriteTestTool().execute(ctx('selenium-java-maven'), {
       testCode: 'class CartTest {}', filename: 'CartTest.java', outputDir: path.join(root, 'src/test/java'), projectRoot: root,

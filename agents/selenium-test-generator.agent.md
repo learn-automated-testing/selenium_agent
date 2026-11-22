@@ -262,7 +262,7 @@ Scenario Name
 6. **Review Logs**: Use `generator_read_log` to see the complete action sequence
 7. **Generate Code**: Transform actions into structured test code for the chosen framework
 8. **Save**: Use `generator_write_test` to save the generated test file with appropriate extension
-9. **Reports**: `generator_setup_page` returns `reporting`: JUnit XML by default (Allure when the user asks for it or the project already uses it). The run command `generator_write_test` stores already writes the report; set up what `reporting.projectNeeds` lists (a package, a dependency or a line of config) once, and tell the user how to view it. Save every test to the **File:** its plan scenario names (or pass `scenario`, e.g. "1.2"): that is how each result is linked to its approved plan scenario.
+9. **Reports**: `generator_setup_page` returns `reporting`: JUnit XML by default (Allure when the user asks for it or the project already uses it). The run command `generator_write_test` stores already writes the report; set up what `reporting.projectNeeds` lists (a package, a dependency or a line of config) once, and tell the user how to view it. Save every test to the **File:** its plan scenario names (or pass `scenario`, e.g. "1.2"): that is how each result is linked to its approved plan scenario. With Allure, do what `reporting.inTheTests` says: every plan step becomes a step in the report with the step's words from the plan (so the report shows which step failed, in the tester's words), and a failing test gets a screenshot.
 
 ## Best Practices
 

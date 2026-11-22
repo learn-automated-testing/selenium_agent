@@ -5,7 +5,7 @@ import os from 'os';
 import path from 'path';
 import { parseJUnitXml, summarize } from './junit.js';
 import { chooseReportFormat, sameRunner, singleFileArgs, withReportArgs } from './frameworks.js';
-import { caseMatchesFile, collectRunReport, JUNIT_PLANS_FILE } from './results.js';
+import { ALLURE_VIEW_COMMAND, caseMatchesFile, collectRunReport, JUNIT_PLANS_FILE, tidyAllureContainers } from './results.js';
 import { runCommandWithReport } from '../tools/agents/generator.js';
 import { readTestRuns, recordTestRun } from '../utils/test-runs.js';
 import type { TestManifest } from '../types/manifest.js';
@@ -120,6 +120,15 @@ describe('reporting', () => {
       expect(sameRunner('robot', ['tests'], 'pytest')).to.equal(false);
     });
 
+    it('tells the generator how to write Allure steps and a screenshot on failure, per framework', async () => {
+      const { reportingFor } = await import('./frameworks.js');
+      expect(reportingFor('selenium-python-pytest')!.allure.testCode!.join('\n')).to.include('with allure.step(').and.include('get_screenshot_as_png');
+      for (const f of ['selenium-java-maven', 'selenium-csharp-nunit', 'selenium-js-mocha', 'webdriverio-ts', 'robot-framework']) {
+        expect(reportingFor(f)!.allure.testCode, f).to.have.length(2);
+      }
+      expect(reportingFor('selenium-python-pytest')!.junit.testCode).to.equal(undefined);
+    });
+
     it('runs unittest tests under pytest, which writes JUnit XML', () => {
       expect(runCommandWithReport('selenium-python-unittest', { command: 'python', args: ['-m', 'unittest', '-v'] }, 'junit'))
         .to.deep.equal({ command: 'python', args: ['-m', 'pytest', '-v', '--junitxml=reports/junit.xml'] });
@@ -195,10 +204,15 @@ describe('reporting', () => {
       const file = path.join(root, 'allure-results', 'abc-result.json');
       fs.writeFileSync(file, JSON.stringify({
         name: 'test_toggle_checkbox_1_on', fullName: 'tests.checkboxes.test_toggle_checkbox_1_on#test_toggle_checkbox_1_on', status: 'passed',
+        description: 'Scenario 1.2 docstring',
         labels: [{ name: 'package', value: 'tests.checkboxes.test_toggle_checkbox_1_on' }, { name: 'framework', value: 'pytest' }],
       }));
       const report = await collectRunReport({ projectRoot: root, framework: 'selenium-python-pytest', since: since(), manifest: null, specsDir: path.join(root, 'specs') });
-      expect(report!.written).to.deep.equal(['1 Allure result(s) labelled with their plan']);
+      expect(report!.written[0]).to.equal('1 Allure result(s) labelled with their plan');
+      // Allure 3 shows the plan tree: allurerc.mjs is written once, never over an existing config.
+      expect(report!.written[1]).to.include('allurerc.mjs');
+      expect(fs.readFileSync(path.join(root, 'allurerc.mjs'), 'utf8')).to.include('groupBy: ["epic", "feature"]');
+      expect(report!.view).to.include(ALLURE_VIEW_COMMAND).and.not.match(/^allure serve/);
       const labels = JSON.parse(fs.readFileSync(file, 'utf8')).labels as Array<{ name: string; value: string }>;
       const get = (n: string) => labels.filter(l => l.name === n).map(l => l.value);
       expect(get('epic')).to.deep.equal(['Checkboxes page']);
@@ -207,6 +221,44 @@ describe('reporting', () => {
       expect(get('plan')).to.deep.equal(['checkboxes.md']);
       expect(get('tag')).to.deep.equal(['approved-plan']);
       expect(get('framework')).to.deep.equal(['pytest']);
+      // Readable for testers: the scenario as the name, the plan steps as the description, a link to the plan.
+      const result = JSON.parse(fs.readFileSync(file, 'utf8'));
+      expect(result.name).to.equal('1.2 Toggle checkbox 1 on');
+      expect(get('testMethod')).to.deep.equal(['test_toggle_checkbox_1_on']);
+      expect(result.descriptionHtml).to.include('<b>Test plan:</b> Checkboxes page').and.include('<li>Click checkbox 1<ul><li>✓ Checkbox 1 is checked</li></ul></li>')
+        .and.include('approved (by the user in the review page');
+      expect(result.links).to.have.length(1);
+      expect(result.links[0].url).to.match(/^file:\/\/\/.*specs\/checkboxes\.md$/);
+      // A second pass (the next run) does not add the plan twice.
+      fs.utimesSync(file, new Date(), new Date());
+      await collectRunReport({ projectRoot: root, framework: 'selenium-python-pytest', since: since(), manifest: null, specsDir: path.join(root, 'specs') });
+      const again = JSON.parse(fs.readFileSync(file, 'utf8'));
+      expect(again.descriptionHtml.match(/Test plan:/g)).to.have.length(1);
+      expect(again.links).to.have.length(1);
+      expect(again.labels.filter((l: { name: string }) => l.name === 'testMethod')).to.have.length(1);
+    });
+
+    it('leaves pytest internals out of set up and tear down', async () => {
+      fs.mkdirSync(path.join(root, 'allure-results'));
+      const file = path.join(root, 'allure-results', 'c-container.json');
+      fs.writeFileSync(file, JSON.stringify({
+        befores: [{ name: 'driver', status: 'passed' }],
+        afters: [{ name: 'driver::1', status: 'passed' }, { name: 'driver::<lambda>' }, { name: 'wait::<lambda>', steps: [{ name: 'kept: it has a step' }] }],
+      }));
+      expect(await tidyAllureContainers(path.join(root, 'allure-results'), since())).to.equal(1);
+      const c = JSON.parse(fs.readFileSync(file, 'utf8'));
+      expect(c.befores.map((x: { name: string }) => x.name)).to.deep.equal(['driver']);
+      expect(c.afters.map((x: { name: string }) => x.name)).to.deep.equal(['driver', 'wait::<lambda>']);
+    });
+
+    it('leaves an existing Allure config alone', async () => {
+      fs.writeFileSync(path.join(root, 'allurerc.json'), '{"name":"ours"}');
+      fs.mkdirSync(path.join(root, 'allure-results'));
+      fs.writeFileSync(path.join(root, 'allure-results', 'x-result.json'), JSON.stringify({ fullName: 'tests.checkboxes.test_initial_state#t', labels: [] }));
+      const report = await collectRunReport({ projectRoot: root, framework: 'selenium-python-pytest', since: since(), manifest: null, specsDir: path.join(root, 'specs') });
+      expect(fs.existsSync(path.join(root, 'allurerc.mjs'))).to.equal(false);
+      expect(report!.written).to.deep.equal(['1 Allure result(s) labelled with their plan']);
+      expect(report!.view).to.include('npx allure generate');
     });
 
     it('keeps the latest result per test file and per plan scenario, also for a whole-suite run', async () => {

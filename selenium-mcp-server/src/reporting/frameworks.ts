@@ -15,13 +15,53 @@ export interface ReportSetup {
   results: string[];
   /** What the project needs once: a package, a dependency or a line of config. Empty when nothing is needed. */
   setup: string[];
+  /** How the generated tests use it (Allure): a step per plan step, a screenshot on failure. */
+  testCode?: string[];
 }
 
 export interface FrameworkReporting { junit: ReportSetup; allure: ReportSetup }
 
-const ALLURE_VIEW = 'View it with Allure Report: npx allure generate allure-results && npx allure open (or allure serve allure-results). ' +
-  'The plan is the epic, the suite the feature and the scenario the story: Allure 2 shows that tree in its Behaviors tab; for Allure 3 ' +
-  'set it in allurerc.mjs: export default { plugins: { awesome: { options: { groupBy: ["epic", "feature", "story"] } } } }';
+const ALLURE_VIEW = 'View it with Allure Report 3 (no install or Java needed): npx allure generate allure-results && npx allure open allure-report. ' +
+  'The plan is the epic, the suite the feature and the scenario the story; healer_run_tests writes an allurerc.mjs that shows that tree ' +
+  '(when the project has no Allure config yet). Allure 2 shows it in its Behaviors tab.';
+
+/**
+ * Allure in the generated tests, so the report reads like the plan: every plan step is an Allure step with the
+ * step's words from the plan (the report then shows which step failed, in the tester's words), and a failing test
+ * gets a screenshot of the page.
+ */
+const PYTEST_ALLURE_CODE = [
+  'Every plan step is a step in the report: wrap the code of each step in `with allure.step("<the step as written in the plan>"):` (import allure), and put its asserts for the step\'s expected results inside it.',
+  'A screenshot when a test fails, once in tests/conftest.py (with the driver fixture):\n' +
+  'import allure, pytest\n\n' +
+  '@pytest.hookimpl(hookwrapper=True)\n' +
+  'def pytest_runtest_makereport(item, call):\n' +
+  '    outcome = yield\n' +
+  '    report = outcome.get_result()\n' +
+  '    driver = item.funcargs.get("driver")\n' +
+  '    if report.when == "call" and report.failed and driver is not None:\n' +
+  '        allure.attach(driver.get_screenshot_as_png(), name="Screenshot at failure", attachment_type=allure.attachment_type.PNG)',
+];
+
+const JAVA_ALLURE_CODE = [
+  'Every plan step is a step in the report: io.qameta.allure.Allure.step("<the step as written in the plan>", () -> { ...code and asserts of the step... });',
+  'A screenshot when a test fails: a JUnit 5 TestWatcher extension (or TestNG ITestListener) whose testFailed calls Allure.addAttachment("Screenshot at failure", "image/png", new ByteArrayInputStream(((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES)), "png").',
+];
+
+const DOTNET_ALLURE_CODE = [
+  'Every plan step is a step in the report: AllureApi.Step("<the step as written in the plan>", () => { ...code and asserts of the step... }); ([AllureNUnit] on the test class for NUnit).',
+  'A screenshot when a test fails: in [TearDown], when TestContext.CurrentContext.Result.Outcome is a failure, AllureApi.AddAttachment("Screenshot at failure", "image/png", ((ITakesScreenshot)driver).GetScreenshot().AsByteArray).',
+];
+
+const JS_ALLURE_CODE = [
+  'Every plan step is a step in the report: await allure.step("<the step as written in the plan>", async () => { ...code and asserts of the step... }); (import * as allure from "allure-js-commons").',
+  'A screenshot when a test fails: in afterEach, when the test failed, await allure.attachment("Screenshot at failure", Buffer.from(await driver.takeScreenshot(), "base64"), "image/png").',
+];
+
+const ROBOT_ALLURE_CODE = [
+  'Every plan step is a step in the report: write each plan step as its own keyword line (or a user keyword named after the step); allure-robotframework reports keywords as steps.',
+  'A screenshot when a test fails: SeleniumLibrary takes one on failure by default (run_on_failure=Capture Page Screenshot); allure-robotframework attaches it.',
+];
 
 const PYTEST: FrameworkReporting = {
   junit: { args: ['--junitxml=reports/junit.xml'], results: ['reports/junit.xml'], setup: [] },
@@ -29,6 +69,7 @@ const PYTEST: FrameworkReporting = {
     args: ['--junitxml=reports/junit.xml', '--alluredir=allure-results'],
     results: ['allure-results'],
     setup: ['pip install allure-pytest', ALLURE_VIEW],
+    testCode: PYTEST_ALLURE_CODE,
   },
 };
 
@@ -43,6 +84,7 @@ const DOTNET = (adapter: string): FrameworkReporting => ({
     results: ['allure-results'],
     setup: ['dotnet add package JunitXml.TestLogger', `dotnet add package ${adapter}`,
       'allureConfig.json in the test project: { "allure": { "directory": "../../../../allure-results" } } (relative to bin/<config>/<tfm>)', ALLURE_VIEW],
+    testCode: DOTNET_ALLURE_CODE,
   },
 });
 
@@ -53,7 +95,7 @@ export const REPORTING: Record<string, FrameworkReporting> = {
   // unittest writes no JUnit XML; pytest runs unittest tests unchanged and does.
   'selenium-python-unittest': {
     junit: { args: ['--junitxml=reports/junit.xml'], results: ['reports/junit.xml'], setup: ['pip install pytest (it runs unittest tests as they are): python -m pytest --junitxml=reports/junit.xml'] },
-    allure: { args: ['--junitxml=reports/junit.xml', '--alluredir=allure-results'], results: ['allure-results'], setup: ['pip install pytest allure-pytest', ALLURE_VIEW] },
+    allure: { args: ['--junitxml=reports/junit.xml', '--alluredir=allure-results'], results: ['allure-results'], setup: ['pip install pytest allure-pytest', ALLURE_VIEW], testCode: PYTEST_ALLURE_CODE },
   },
   'selenium-java-maven': {
     junit: { args: [], results: ['target/surefire-reports'], setup: [] },
@@ -61,11 +103,12 @@ export const REPORTING: Record<string, FrameworkReporting> = {
       args: [], results: ['target/allure-results', 'allure-results'],
       setup: ['pom.xml: io.qameta.allure:allure-junit5 (or allure-testng) as a test dependency',
         'surefire systemPropertyVariables: <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>', ALLURE_VIEW.replace(/allure-results/g, 'target/allure-results')],
+      testCode: JAVA_ALLURE_CODE,
     },
   },
   'selenium-java-gradle': {
     junit: { args: [], results: ['build/test-results/test'], setup: [] },
-    allure: { args: [], results: ['build/allure-results'], setup: ['build.gradle: plugins { id "io.qameta.allure" version "2.12.0" }', 'then: gradle allureReport'] },
+    allure: { args: [], results: ['build/allure-results'], setup: ['build.gradle: plugins { id "io.qameta.allure" version "2.12.0" }', 'then: gradle allureReport'], testCode: JAVA_ALLURE_CODE },
   },
   'selenium-csharp-nunit': DOTNET('Allure.NUnit'),
   'selenium-csharp-xunit': DOTNET('Allure.Xunit'),
@@ -75,15 +118,15 @@ export const REPORTING: Record<string, FrameworkReporting> = {
       args: ['--reporter', 'mocha-junit-reporter', '--reporter-options', 'mochaFile=reports/junit.xml'],
       results: ['reports/junit.xml'], setup: ['npm install -D mocha-junit-reporter'],
     },
-    allure: { args: ['--reporter', 'allure-mocha'], results: ['allure-results'], setup: ['npm install -D allure-mocha', ALLURE_VIEW] },
+    allure: { args: ['--reporter', 'allure-mocha'], results: ['allure-results'], setup: ['npm install -D allure-mocha', ALLURE_VIEW], testCode: JS_ALLURE_CODE },
   },
   'selenium-js-jest': {
     junit: { args: ['--reporters=default', '--reporters=jest-junit'], results: ['junit.xml', 'reports/junit.xml'], setup: ['npm install -D jest-junit'] },
-    allure: { args: [], results: ['allure-results'], setup: ['npm install -D allure-jest', 'jest.config: testEnvironment: "allure-jest/node"', ALLURE_VIEW] },
+    allure: { args: [], results: ['allure-results'], setup: ['npm install -D allure-jest', 'jest.config: testEnvironment: "allure-jest/node"', ALLURE_VIEW], testCode: JS_ALLURE_CODE },
   },
   'webdriverio-ts': {
     junit: { args: [], results: ['reports/junit'], setup: ['npm install -D @wdio/junit-reporter', "wdio.conf: reporters: ['spec', ['junit', { outputDir: './reports/junit' }]]"] },
-    allure: { args: [], results: ['allure-results'], setup: ['npm install -D @wdio/allure-reporter', "wdio.conf: reporters: ['spec', ['allure', { outputDir: 'allure-results' }]]", ALLURE_VIEW] },
+    allure: { args: [], results: ['allure-results'], setup: ['npm install -D @wdio/allure-reporter', "wdio.conf: reporters: ['spec', ['allure', { outputDir: 'allure-results' }]]", ALLURE_VIEW], testCode: JS_ALLURE_CODE },
   },
   'playwright-js': {
     junit: { args: [], results: ['reports/junit.xml'], setup: ["playwright.config: reporter: [['list'], ['junit', { outputFile: 'reports/junit.xml' }]]"] },
@@ -94,6 +137,7 @@ export const REPORTING: Record<string, FrameworkReporting> = {
     allure: {
       args: ['--xunit', 'junit.xml', '--listener', 'allure_robotframework:allure-results'], results: ['allure-results'],
       setup: ['pip install allure-robotframework', ALLURE_VIEW],
+      testCode: ROBOT_ALLURE_CODE,
     },
   },
 };

@@ -23,6 +23,8 @@ export interface PlanLink {
   scenarioName?: string;
   suite?: string;
   review: string;
+  /** The scenario's steps with their expected results, as approved (for the Allure description). */
+  steps?: Array<{ perform: string; expect: string[] }>;
 }
 
 export interface LinkedCase extends TestCaseResult { testFile?: string; link?: PlanLink }
@@ -34,6 +36,36 @@ export interface RunReport {
   /** Test cases with no approved plan behind them. */
   unlinked: number;
   written: string[];
+  /** How to view the Allure report, when Allure results were written. */
+  view?: string;
+}
+
+/** Allure 3 groups by suite unless told otherwise: this config shows the approved plan as the tree. */
+export const ALLURERC = `// Written by selenium-ai-agent: show the report as your approved test plans (plan > suite > scenario test).
+export default {
+  name: "Test report",
+  output: "./allure-report",
+  plugins: { awesome: { options: { groupBy: ["epic", "feature"] } } },
+};
+`;
+
+export const ALLURE_VIEW_COMMAND = 'npx allure generate allure-results && npx allure open allure-report';
+
+/**
+ * Make sure Allure 3 shows the plan tree: write allurerc.mjs when the project has no Allure config yet.
+ * Returns the file written, or undefined when one was already there.
+ */
+export async function ensureAllureConfig(projectRoot: string): Promise<string | undefined> {
+  const names = ['allurerc.mjs', 'allurerc.js', 'allurerc.cjs', 'allurerc.json', 'allurerc.yml', 'allurerc.yaml'];
+  for (const n of names) {
+    try {
+      await fs.access(path.join(projectRoot, n));
+      return undefined;
+    } catch { /* not there */ }
+  }
+  const file = path.join(projectRoot, 'allurerc.mjs');
+  await fs.writeFile(file, ALLURERC);
+  return file;
 }
 
 async function filesIn(target: string, since: number, pattern: RegExp): Promise<string[]> {
@@ -113,7 +145,7 @@ export function linkFor(testFile: string, manifest: TestManifest | null, plans: 
       for (const t of s.tests) {
         const byScenario = entry?.scenario && p.file === specName && t.id === entry.scenario;
         if (byScenario || (t.file && samePath(t.file, path.relative(projectRoot, testFile), projectRoot))) {
-          return { plan: p.file, planTitle: p.plan.title, scenario: t.id, scenarioName: t.name, suite: s.name, review: review(p.markdown) };
+          return { plan: p.file, planTitle: p.plan.title, scenario: t.id, scenarioName: t.name, suite: s.name, review: review(p.markdown), steps: t.steps };
         }
       }
     }
@@ -164,12 +196,57 @@ export function junitWithPlans(cases: LinkedCase[], name = 'selenium-ai-agent'):
   return lines.join('\n');
 }
 
+const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Marks a description the agent wrote, so a second pass does not add the plan twice. */
+const PLAN_MARK = '<!-- selenium-ai-agent:plan -->';
+
 /**
- * Add the plan to Allure results written since the run started: epic = plan, feature = suite, story = scenario,
- * plus plan and review labels. Allure's Behaviors tab then shows the approved plan with a result per scenario.
+ * The test's description in the report: the plan scenario as the tester approved it (steps with their expected
+ * results), who approved it, and the test's own description (a docstring) after it.
+ */
+export function planDescriptionHtml(link: PlanLink, own?: string): string {
+  const steps = (link.steps ?? []).map(s => `<li>${escHtml(s.perform || '')}${s.expect.length
+    ? `<ul>${s.expect.map(e => `<li>✓ ${escHtml(e)}</li>`).join('')}</ul>` : ''}</li>`).join('');
+  return [PLAN_MARK,
+    `<p><b>Test plan:</b> ${escHtml(link.planTitle)} (<code>${escHtml(link.plan)}</code>)<br><b>Scenario:</b> ${escHtml(`${link.scenario ?? ''} ${link.scenarioName ?? ''}`.trim())}<br><b>Review:</b> ${escHtml(link.review)}</p>`,
+    steps ? `<p><b>Steps and expected results</b></p><ol>${steps}</ol>` : '',
+    own ? `<hr><p>${escHtml(own)}</p>` : ''].join('');
+}
+
+/**
+ * Make the Allure results readable for testers, from the approved plan (results written since the run started):
+ *  - the scenario as the test name ("1.2 Select each option") instead of the function name
+ *  - the scenario's steps and expected results as the description, with who approved the plan
+ *  - a link to the plan, and labels epic = plan, feature = suite, story = scenario, so the report is the plan's tree
  * Returns the number of results changed.
  */
+/**
+ * Set up and tear down in the report, without the runner's internals: pytest registers its own clean-up
+ * functions ("driver::<lambda>") without a status, which Allure shows as unknown; and "driver::1" is the driver.
+ */
+export async function tidyAllureContainers(dir: string, since: number): Promise<number> {
+  let changed = 0;
+  for (const f of await filesIn(dir, since - 1000, /-container\.json$/)) {
+    try {
+      const c = JSON.parse(await fs.readFile(f, 'utf8')) as Record<string, Array<{ name?: string; status?: string; steps?: unknown[]; attachments?: unknown[] }>>;
+      let touched = false;
+      for (const key of ['befores', 'afters']) {
+        const list = c[key];
+        if (!Array.isArray(list)) continue;
+        const kept = list.filter(a => a.status || a.steps?.length || a.attachments?.length || !/::<lambda>$/.test(a.name ?? ''));
+        for (const a of kept) if (a.name && /::\d+$/.test(a.name)) { a.name = a.name.replace(/::\d+$/, ''); touched = true; }
+        if (kept.length !== list.length) touched = true;
+        c[key] = kept;
+      }
+      if (touched) { await fs.writeFile(f, JSON.stringify(c)); changed++; }
+    } catch { /* not a container we understand */ }
+  }
+  return changed;
+}
+
 export async function labelAllureResults(dir: string, since: number, projectRoot: string, manifest: TestManifest | null, specsDir: string): Promise<number> {
+  await tidyAllureContainers(dir, since);
   const files = await filesIn(dir, since - 1000, /-result\.json$/);
   if (!files.length) return 0;
   const plans = await readPlans(specsDir);
@@ -178,7 +255,11 @@ export async function labelAllureResults(dir: string, since: number, projectRoot
   let changed = 0;
   for (const f of files) {
     try {
-      const result = JSON.parse(await fs.readFile(f, 'utf8')) as { fullName?: string; labels?: Array<{ name: string; value: string }> };
+      const result = JSON.parse(await fs.readFile(f, 'utf8')) as {
+        name?: string; fullName?: string; description?: string; descriptionHtml?: string;
+        labels?: Array<{ name: string; value: string }>; links?: Array<{ name?: string; url: string; type?: string }>;
+        parameters?: Array<{ name: string; value: string }>;
+      };
       const labels = result.labels ?? [];
       const label = (n: string) => labels.find(l => l.name === n)?.value;
       const classname = (result.fullName ?? '').split('#')[0] || label('testClass') || label('package') || label('suite') || '';
@@ -198,6 +279,18 @@ export async function labelAllureResults(dir: string, since: number, projectRoot
       set('planReview', link.review);
       if (!labels.some(l => l.name === 'tag' && l.value === 'approved-plan') && link.review.startsWith('approved')) labels.push({ name: 'tag', value: 'approved-plan' });
       result.labels = labels;
+      // Readable for testers: the scenario as the name, the plan as the description, a link to the plan.
+      if (link.scenario) {
+        const title = `${link.scenario} ${link.scenarioName ?? ''}`.trim();
+        if (result.name && result.name !== title && !label('testMethod')) set('testMethod', result.name);
+        result.name = title;
+      }
+      if (!result.descriptionHtml?.startsWith(PLAN_MARK)) {
+        const own = result.description?.trim() || result.descriptionHtml?.replace(/<[^>]+>/g, ' ').trim();
+        result.descriptionHtml = planDescriptionHtml(link, own);
+      }
+      const planUrl = `file://${path.resolve(specsDir, link.plan).split(path.sep).join('/').replace(/^\/?/, '/')}`;
+      result.links = [...(result.links ?? []).filter(l => l.url !== planUrl), { name: `Test plan: ${link.planTitle}`, url: planUrl, type: 'link' }];
       await fs.writeFile(f, JSON.stringify(result));
       changed++;
     } catch { /* not a result file we understand */ }
@@ -218,8 +311,14 @@ export async function collectRunReport(opts: {
     const allureDirs = [...new Set([...(reportingFor(opts.framework)?.allure.results ?? []), 'allure-results'])].map(d => path.resolve(opts.projectRoot, d));
     let labelled = 0;
     for (const d of allureDirs) labelled += await labelAllureResults(d, opts.since, opts.projectRoot, opts.manifest, opts.specsDir);
-    if (labelled) written.push(`${labelled} Allure result(s) labelled with their plan`);
-    if (!files.length) return labelled ? { files: [], summary: summarize([]), cases: [], unlinked: 0, written } : null;
+    let view: string | undefined;
+    if (labelled) {
+      written.push(`${labelled} Allure result(s) labelled with their plan`);
+      const config = await ensureAllureConfig(opts.projectRoot).catch(() => undefined);
+      if (config) written.push(`${config} (Allure 3: the report shows plan > suite > scenario)`);
+      view = `${ALLURE_VIEW_COMMAND} (Allure 3 via npx, no install or Java needed; with Allure 2: allure serve allure-results, Behaviors tab)`;
+    }
+    if (!files.length) return labelled ? { files: [], summary: summarize([]), cases: [], unlinked: 0, written, view } : null;
     const cases: TestCaseResult[] = [];
     for (const f of files) cases.push(...parseJUnitXml(await fs.readFile(f, 'utf8')));
     const linked = await linkCases(cases, opts.projectRoot, opts.manifest, opts.specsDir);
@@ -227,7 +326,7 @@ export async function collectRunReport(opts: {
     await fs.mkdir(path.dirname(out), { recursive: true });
     await fs.writeFile(out, junitWithPlans(linked));
     written.unshift(out);
-    return { files, summary: summarize(linked), cases: linked, unlinked: linked.filter(c => !c.link).length, written };
+    return { files, summary: summarize(linked), cases: linked, unlinked: linked.filter(c => !c.link).length, written, ...(view ? { view } : {}) };
   } catch {
     return null;
   }
