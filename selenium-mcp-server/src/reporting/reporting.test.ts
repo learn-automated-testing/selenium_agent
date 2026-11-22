@@ -5,7 +5,7 @@ import os from 'os';
 import path from 'path';
 import { parseJUnitXml, summarize } from './junit.js';
 import { chooseReportFormat, sameRunner, singleFileArgs, withReportArgs } from './frameworks.js';
-import { ALLURE_VIEW_COMMAND, caseMatchesFile, collectRunReport, JUNIT_PLANS_FILE } from './results.js';
+import { ALLURE_VIEW_COMMAND, caseMatchesFile, collectRunReport, JUNIT_PLANS_FILE, tidyAllureContainers } from './results.js';
 import { runCommandWithReport } from '../tools/agents/generator.js';
 import { readTestRuns, recordTestRun } from '../utils/test-runs.js';
 import type { TestManifest } from '../types/manifest.js';
@@ -211,7 +211,7 @@ describe('reporting', () => {
       expect(report!.written[0]).to.equal('1 Allure result(s) labelled with their plan');
       // Allure 3 shows the plan tree: allurerc.mjs is written once, never over an existing config.
       expect(report!.written[1]).to.include('allurerc.mjs');
-      expect(fs.readFileSync(path.join(root, 'allurerc.mjs'), 'utf8')).to.include('groupBy: ["epic", "feature", "story"]');
+      expect(fs.readFileSync(path.join(root, 'allurerc.mjs'), 'utf8')).to.include('groupBy: ["epic", "feature"]');
       expect(report!.view).to.include(ALLURE_VIEW_COMMAND).and.not.match(/^allure serve/);
       const labels = JSON.parse(fs.readFileSync(file, 'utf8')).labels as Array<{ name: string; value: string }>;
       const get = (n: string) => labels.filter(l => l.name === n).map(l => l.value);
@@ -236,6 +236,19 @@ describe('reporting', () => {
       expect(again.descriptionHtml.match(/Test plan:/g)).to.have.length(1);
       expect(again.links).to.have.length(1);
       expect(again.labels.filter((l: { name: string }) => l.name === 'testMethod')).to.have.length(1);
+    });
+
+    it('leaves pytest internals out of set up and tear down', async () => {
+      fs.mkdirSync(path.join(root, 'allure-results'));
+      const file = path.join(root, 'allure-results', 'c-container.json');
+      fs.writeFileSync(file, JSON.stringify({
+        befores: [{ name: 'driver', status: 'passed' }],
+        afters: [{ name: 'driver::1', status: 'passed' }, { name: 'driver::<lambda>' }, { name: 'wait::<lambda>', steps: [{ name: 'kept: it has a step' }] }],
+      }));
+      expect(await tidyAllureContainers(path.join(root, 'allure-results'), since())).to.equal(1);
+      const c = JSON.parse(fs.readFileSync(file, 'utf8'));
+      expect(c.befores.map((x: { name: string }) => x.name)).to.deep.equal(['driver']);
+      expect(c.afters.map((x: { name: string }) => x.name)).to.deep.equal(['driver', 'wait::<lambda>']);
     });
 
     it('leaves an existing Allure config alone', async () => {

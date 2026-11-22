@@ -41,11 +41,11 @@ export interface RunReport {
 }
 
 /** Allure 3 groups by suite unless told otherwise: this config shows the approved plan as the tree. */
-export const ALLURERC = `// Written by selenium-ai-agent: show the report as your approved test plans (plan > suite > scenario).
+export const ALLURERC = `// Written by selenium-ai-agent: show the report as your approved test plans (plan > suite > scenario test).
 export default {
   name: "Test report",
   output: "./allure-report",
-  plugins: { awesome: { options: { groupBy: ["epic", "feature", "story"] } } },
+  plugins: { awesome: { options: { groupBy: ["epic", "feature"] } } },
 };
 `;
 
@@ -221,7 +221,32 @@ export function planDescriptionHtml(link: PlanLink, own?: string): string {
  *  - a link to the plan, and labels epic = plan, feature = suite, story = scenario, so the report is the plan's tree
  * Returns the number of results changed.
  */
+/**
+ * Set up and tear down in the report, without the runner's internals: pytest registers its own clean-up
+ * functions ("driver::<lambda>") without a status, which Allure shows as unknown; and "driver::1" is the driver.
+ */
+export async function tidyAllureContainers(dir: string, since: number): Promise<number> {
+  let changed = 0;
+  for (const f of await filesIn(dir, since - 1000, /-container\.json$/)) {
+    try {
+      const c = JSON.parse(await fs.readFile(f, 'utf8')) as Record<string, Array<{ name?: string; status?: string; steps?: unknown[]; attachments?: unknown[] }>>;
+      let touched = false;
+      for (const key of ['befores', 'afters']) {
+        const list = c[key];
+        if (!Array.isArray(list)) continue;
+        const kept = list.filter(a => a.status || a.steps?.length || a.attachments?.length || !/::<lambda>$/.test(a.name ?? ''));
+        for (const a of kept) if (a.name && /::\d+$/.test(a.name)) { a.name = a.name.replace(/::\d+$/, ''); touched = true; }
+        if (kept.length !== list.length) touched = true;
+        c[key] = kept;
+      }
+      if (touched) { await fs.writeFile(f, JSON.stringify(c)); changed++; }
+    } catch { /* not a container we understand */ }
+  }
+  return changed;
+}
+
 export async function labelAllureResults(dir: string, since: number, projectRoot: string, manifest: TestManifest | null, specsDir: string): Promise<number> {
+  await tidyAllureContainers(dir, since);
   const files = await filesIn(dir, since - 1000, /-result\.json$/);
   if (!files.length) return 0;
   const plans = await readPlans(specsDir);
