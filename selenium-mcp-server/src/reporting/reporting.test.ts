@@ -120,6 +120,15 @@ describe('reporting', () => {
       expect(sameRunner('robot', ['tests'], 'pytest')).to.equal(false);
     });
 
+    it('tells the generator how to write Allure steps and a screenshot on failure, per framework', async () => {
+      const { reportingFor } = await import('./frameworks.js');
+      expect(reportingFor('selenium-python-pytest')!.allure.testCode!.join('\n')).to.include('with allure.step(').and.include('get_screenshot_as_png');
+      for (const f of ['selenium-java-maven', 'selenium-csharp-nunit', 'selenium-js-mocha', 'webdriverio-ts', 'robot-framework']) {
+        expect(reportingFor(f)!.allure.testCode, f).to.have.length(2);
+      }
+      expect(reportingFor('selenium-python-pytest')!.junit.testCode).to.equal(undefined);
+    });
+
     it('runs unittest tests under pytest, which writes JUnit XML', () => {
       expect(runCommandWithReport('selenium-python-unittest', { command: 'python', args: ['-m', 'unittest', '-v'] }, 'junit'))
         .to.deep.equal({ command: 'python', args: ['-m', 'pytest', '-v', '--junitxml=reports/junit.xml'] });
@@ -195,6 +204,7 @@ describe('reporting', () => {
       const file = path.join(root, 'allure-results', 'abc-result.json');
       fs.writeFileSync(file, JSON.stringify({
         name: 'test_toggle_checkbox_1_on', fullName: 'tests.checkboxes.test_toggle_checkbox_1_on#test_toggle_checkbox_1_on', status: 'passed',
+        description: 'Scenario 1.2 docstring',
         labels: [{ name: 'package', value: 'tests.checkboxes.test_toggle_checkbox_1_on' }, { name: 'framework', value: 'pytest' }],
       }));
       const report = await collectRunReport({ projectRoot: root, framework: 'selenium-python-pytest', since: since(), manifest: null, specsDir: path.join(root, 'specs') });
@@ -211,6 +221,21 @@ describe('reporting', () => {
       expect(get('plan')).to.deep.equal(['checkboxes.md']);
       expect(get('tag')).to.deep.equal(['approved-plan']);
       expect(get('framework')).to.deep.equal(['pytest']);
+      // Readable for testers: the scenario as the name, the plan steps as the description, a link to the plan.
+      const result = JSON.parse(fs.readFileSync(file, 'utf8'));
+      expect(result.name).to.equal('1.2 Toggle checkbox 1 on');
+      expect(get('testMethod')).to.deep.equal(['test_toggle_checkbox_1_on']);
+      expect(result.descriptionHtml).to.include('<b>Test plan:</b> Checkboxes page').and.include('<li>Click checkbox 1<ul><li>✓ Checkbox 1 is checked</li></ul></li>')
+        .and.include('approved (by the user in the review page');
+      expect(result.links).to.have.length(1);
+      expect(result.links[0].url).to.match(/^file:\/\/\/.*specs\/checkboxes\.md$/);
+      // A second pass (the next run) does not add the plan twice.
+      fs.utimesSync(file, new Date(), new Date());
+      await collectRunReport({ projectRoot: root, framework: 'selenium-python-pytest', since: since(), manifest: null, specsDir: path.join(root, 'specs') });
+      const again = JSON.parse(fs.readFileSync(file, 'utf8'));
+      expect(again.descriptionHtml.match(/Test plan:/g)).to.have.length(1);
+      expect(again.links).to.have.length(1);
+      expect(again.labels.filter((l: { name: string }) => l.name === 'testMethod')).to.have.length(1);
     });
 
     it('leaves an existing Allure config alone', async () => {

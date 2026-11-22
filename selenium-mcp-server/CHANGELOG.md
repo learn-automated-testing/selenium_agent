@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### New Features
+
+- **An Allure report testers can read.** By default Allure shows what the test runner knows: function names, fixtures and stack traces. Now the report reads like the approved plan:
+  - every test is named after its scenario ("1.2 Select each option by visible text"), not its function (kept as the `testMethod` label)
+  - its description is the scenario as the tester approved it: the steps with their expected results, the plan and who approved it, with a link to the plan
+  - generated tests make every plan step an Allure step, with the step's words from the plan, so the report shows which step failed in the tester's words; a failing test gets a screenshot of the page (`generator_setup_page` returns `reporting.inTheTests` for pytest, Java, C#, JavaScript, WebdriverIO and Robot Framework)
+
 ### Fixes
 
 - **Opening the Allure report.** The agent suggested `allure serve allure-results`, which needs the Allure command-line tool (and Java). `healer_run_tests` now returns `viewAllure`: `npx allure generate allure-results && npx allure open allure-report` (Allure 3, nothing to install). When the project has no Allure config yet, it writes an `allurerc.mjs` that groups the report by plan > suite > scenario, so Allure 3 shows the approved plans as the tree. An existing config is left alone.

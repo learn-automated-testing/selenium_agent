@@ -23,6 +23,8 @@ export interface PlanLink {
   scenarioName?: string;
   suite?: string;
   review: string;
+  /** The scenario's steps with their expected results, as approved (for the Allure description). */
+  steps?: Array<{ perform: string; expect: string[] }>;
 }
 
 export interface LinkedCase extends TestCaseResult { testFile?: string; link?: PlanLink }
@@ -143,7 +145,7 @@ export function linkFor(testFile: string, manifest: TestManifest | null, plans: 
       for (const t of s.tests) {
         const byScenario = entry?.scenario && p.file === specName && t.id === entry.scenario;
         if (byScenario || (t.file && samePath(t.file, path.relative(projectRoot, testFile), projectRoot))) {
-          return { plan: p.file, planTitle: p.plan.title, scenario: t.id, scenarioName: t.name, suite: s.name, review: review(p.markdown) };
+          return { plan: p.file, planTitle: p.plan.title, scenario: t.id, scenarioName: t.name, suite: s.name, review: review(p.markdown), steps: t.steps };
         }
       }
     }
@@ -194,9 +196,29 @@ export function junitWithPlans(cases: LinkedCase[], name = 'selenium-ai-agent'):
   return lines.join('\n');
 }
 
+const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Marks a description the agent wrote, so a second pass does not add the plan twice. */
+const PLAN_MARK = '<!-- selenium-ai-agent:plan -->';
+
 /**
- * Add the plan to Allure results written since the run started: epic = plan, feature = suite, story = scenario,
- * plus plan and review labels. Allure's Behaviors tab then shows the approved plan with a result per scenario.
+ * The test's description in the report: the plan scenario as the tester approved it (steps with their expected
+ * results), who approved it, and the test's own description (a docstring) after it.
+ */
+export function planDescriptionHtml(link: PlanLink, own?: string): string {
+  const steps = (link.steps ?? []).map(s => `<li>${escHtml(s.perform || '')}${s.expect.length
+    ? `<ul>${s.expect.map(e => `<li>✓ ${escHtml(e)}</li>`).join('')}</ul>` : ''}</li>`).join('');
+  return [PLAN_MARK,
+    `<p><b>Test plan:</b> ${escHtml(link.planTitle)} (<code>${escHtml(link.plan)}</code>)<br><b>Scenario:</b> ${escHtml(`${link.scenario ?? ''} ${link.scenarioName ?? ''}`.trim())}<br><b>Review:</b> ${escHtml(link.review)}</p>`,
+    steps ? `<p><b>Steps and expected results</b></p><ol>${steps}</ol>` : '',
+    own ? `<hr><p>${escHtml(own)}</p>` : ''].join('');
+}
+
+/**
+ * Make the Allure results readable for testers, from the approved plan (results written since the run started):
+ *  - the scenario as the test name ("1.2 Select each option") instead of the function name
+ *  - the scenario's steps and expected results as the description, with who approved the plan
+ *  - a link to the plan, and labels epic = plan, feature = suite, story = scenario, so the report is the plan's tree
  * Returns the number of results changed.
  */
 export async function labelAllureResults(dir: string, since: number, projectRoot: string, manifest: TestManifest | null, specsDir: string): Promise<number> {
@@ -208,7 +230,11 @@ export async function labelAllureResults(dir: string, since: number, projectRoot
   let changed = 0;
   for (const f of files) {
     try {
-      const result = JSON.parse(await fs.readFile(f, 'utf8')) as { fullName?: string; labels?: Array<{ name: string; value: string }> };
+      const result = JSON.parse(await fs.readFile(f, 'utf8')) as {
+        name?: string; fullName?: string; description?: string; descriptionHtml?: string;
+        labels?: Array<{ name: string; value: string }>; links?: Array<{ name?: string; url: string; type?: string }>;
+        parameters?: Array<{ name: string; value: string }>;
+      };
       const labels = result.labels ?? [];
       const label = (n: string) => labels.find(l => l.name === n)?.value;
       const classname = (result.fullName ?? '').split('#')[0] || label('testClass') || label('package') || label('suite') || '';
@@ -228,6 +254,18 @@ export async function labelAllureResults(dir: string, since: number, projectRoot
       set('planReview', link.review);
       if (!labels.some(l => l.name === 'tag' && l.value === 'approved-plan') && link.review.startsWith('approved')) labels.push({ name: 'tag', value: 'approved-plan' });
       result.labels = labels;
+      // Readable for testers: the scenario as the name, the plan as the description, a link to the plan.
+      if (link.scenario) {
+        const title = `${link.scenario} ${link.scenarioName ?? ''}`.trim();
+        if (result.name && result.name !== title && !label('testMethod')) set('testMethod', result.name);
+        result.name = title;
+      }
+      if (!result.descriptionHtml?.startsWith(PLAN_MARK)) {
+        const own = result.description?.trim() || result.descriptionHtml?.replace(/<[^>]+>/g, ' ').trim();
+        result.descriptionHtml = planDescriptionHtml(link, own);
+      }
+      const planUrl = `file://${path.resolve(specsDir, link.plan).split(path.sep).join('/').replace(/^\/?/, '/')}`;
+      result.links = [...(result.links ?? []).filter(l => l.url !== planUrl), { name: `Test plan: ${link.planTitle}`, url: planUrl, type: 'link' }];
       await fs.writeFile(f, JSON.stringify(result));
       changed++;
     } catch { /* not a result file we understand */ }

@@ -168,6 +168,7 @@ For Selenium frameworks the result includes Selenium's official rules for AI ass
           runCommandAdds: reportSetup.args.join(' ') || '(nothing: the runner writes it by default)',
           resultsIn: reportSetup.results,
           projectNeeds: reportSetup.setup.length ? reportSetup.setup : 'nothing',
+          ...(reportSetup.testCode ? { inTheTests: reportSetup.testCode } : {}),
         } : { note: 'No report setup known for this framework: add its JUnit XML output to the run command.' }),
         planLinks: 'healer_run_tests links every result to its plan scenario through the plan\'s "File:" line (or generator_write_test scenario) and writes reports/junit-plans.xml; Allure results get the plan as epic, the suite as feature and the scenario as story. Write each test to the file its plan scenario names.',
       },

@@ -158,7 +158,7 @@ You review the plan before code is generated, and the code before it is committe
 Selenium has no reporting of its own, so every generated suite writes one: **JUnit XML** by default (read by every CI system, ReportPortal and Allure), and **Allure** when you ask for it or your project already uses it. `healer_run_tests` reads the results and links every test to the plan scenario it implements:
 
 - `reports/junit-plans.xml`: the JUnit results with the plan, scenario and review status as properties of each test, for your CI or ReportPortal
-- Allure results get the plan as **epic**, the suite as **feature** and the scenario as **story**, so Allure's Behaviors tab shows your approved plan with a result per scenario
+- Allure results get the plan as **epic**, the suite as **feature** and the scenario as **story**, so the report shows your approved plan with a result per scenario. Each test is named after its scenario, its description is the steps and expected results you approved, every plan step is a step in the report (in the plan's words), and a failing test gets a screenshot
 - the plan's review page shows the latest result per scenario (✓ passed, ✗ failed with the message, not run yet), and the overview of all plans shows "2 of 3 scenarios passed"
 - tests with no approved plan behind them are counted, so they stand out
 
