@@ -8,7 +8,7 @@
 > - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
 > - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
 
-**63 tools (77 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
+**64 tools (78 with Selenium Grid)**, loadable in [groups](#tool-groups), with accessibility tree and shadow DOM discovery, selector teaching, BiDi cross-browser support, Selenium Grid parallel execution, the planner → generator → healer pipeline, and session tracing.
 
 ### Video Tutorials
 
@@ -414,7 +414,7 @@ The default is `all`. For example, browsing and self-healing only:
 "env": { "SELENIUM_MCP_TOOLSETS": "core,healer" }
 ```
 
-## Tools (77)
+## Tools (78)
 
 ### Navigation (5)
 
@@ -506,13 +506,14 @@ The default is `all`. For example, browsing and self-healing only:
 | `recording_status` | Check if recording is active and show recent actions. Read-only. |
 | `clear_recording` | Clear all recorded browser actions. |
 
-### Test Planner (3)
+### Test Planner (4)
 
 | Tool | Description |
 |------|-------------|
 | `planner_setup_page` | Start test planning: open the app, run optional `setupSteps` (e.g. a login) and load the `seedTest` that generated tests follow. |
 | `planner_explore_page` | Explore a page: headings, input fields with their labels, test ids and dropdown options, buttons (incl. disabled), links (internal/external) and forms, as a compact inventory. |
 | `planner_save_plan` | Save the test plan to `specs/`, where the generator reads it. Structured as in Playwright: suites (seed file) → tests (target file) → steps with `expect`, plus elements and gaps. |
+| `planner_approve_plan` | Mark a reviewed plan approved, with the user's own words and the time. Every plan saved with `planner_save_plan` (or `generator_save_spec`) is a draft, and `generator_setup_page`, `generator_read_spec` and `generator_write_test` refuse a draft plan: tests are only generated from a plan someone has read. `skipPlanReview: true` only when the user explicitly skips the review. |
 
 ### Test Generator (6)
 
@@ -771,7 +772,8 @@ The generator and healer tools form a complete test automation pipeline:
 ### 1. Plan
 
 ```
-planner_setup_page (seedTest, setupSteps) → planner_explore_page → planner_save_plan → specs/<plan>.md
+planner_setup_page (seedTest, setupSteps) → planner_explore_page → planner_save_plan → specs/<plan>.md (draft)
+  → the user reviews it → planner_approve_plan (approved)
 ```
 
 ### 2. Record & Generate

@@ -4,6 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { codeCell, planFileName, renderPlan, tableCell, type StructuredPlan } from './plan-format.js';
+import { withPlanStatus } from './plan-review.js';
 import { PlannerSavePlanTool } from '../tools/agents/planner.js';
 
 const PLAN: StructuredPlan = {
@@ -69,12 +70,12 @@ describe('structured test plans (Playwright layout)', () => {
       expect(res.isError).to.not.equal(true);
       expect(res.content).to.contain('1 suite(s), 1 test(s), 2 steps.');
       const saved = fs.readFileSync(path.join(dir, 'specs', 'shopping-cart-and-checkout.md'), 'utf8');
-      expect(saved).to.equal(renderPlan(PLAN));
+      expect(saved).to.equal(withPlanStatus(renderPlan(PLAN), 'draft'));
     });
 
     it('still accepts a free-form plan', async () => {
       await new PlannerSavePlanTool().execute({} as never, { planContent: '# Plan', filename: 'free.md' });
-      expect(fs.readFileSync(path.join(dir, 'specs', 'free.md'), 'utf8')).to.equal('# Plan');
+      expect(fs.readFileSync(path.join(dir, 'specs', 'free.md'), 'utf8')).to.equal(withPlanStatus('# Plan', 'draft'));
     });
 
     it('explains what is missing in an incomplete structured plan', async () => {

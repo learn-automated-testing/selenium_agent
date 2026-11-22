@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### New Features
+
+- **The test plan review is enforced.** A generated test is only as good as the plan it implements, so tests are only generated from a plan the user has approved. Until now this was an instruction to the planner and generator agents; Playwright's test agents don't have it at all.
+  - `planner_save_plan` (and `generator_save_spec`) save every plan as a draft: `**Status:** draft` under the title, also when the content claims otherwise, so a changed plan is reviewed again.
+  - The new `planner_approve_plan` tool marks a plan approved after the user has read it. It needs the user's own words, and writes them with the time into the plan. Users can also change the line themselves.
+  - `generator_setup_page`, `generator_read_spec` and `generator_write_test` (with `specFile`) refuse a draft plan, with an error that tells the agent to show the plan to the user first. `skipPlanReview: true` starts from a draft only when the user explicitly asks to skip the review.
+  - A plan written by hand without a status line is still accepted, with a note to check that it is reviewed. The sample plans in `examples/` are marked approved.
+
 ## [3.6.0] - 2026-11-22
 
 ### New Features

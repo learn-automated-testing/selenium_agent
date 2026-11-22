@@ -36,10 +36,10 @@ describe('toolsets', () => {
   describe('getAllTools', () => {
     const names = async () => (await getAllTools()).map(t => t.name);
 
-    it('exposes all 63 non-grid tools by default', async () => {
+    it('exposes all 64 non-grid tools by default', async () => {
       delete process.env.SELENIUM_GRID_URL;
       delete process.env.SELENIUM_MCP_TOOLSETS;
-      expect(await names()).to.have.length(63);
+      expect(await names()).to.have.length(64);
     });
 
     it('exposes only the 38 core tools (with get_selenium_docs) for "core"', async () => {

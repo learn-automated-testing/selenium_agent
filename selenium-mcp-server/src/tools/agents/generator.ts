@@ -11,6 +11,8 @@ import { extractSelectors, validateSelectorsLive } from '../../utils/selector-va
 import { validateOutputPath } from '../../utils/sandbox.js';
 import { getOutputDir } from '../../utils/paths.js';
 import { detectProject } from '../../project-detect.js';
+import { checkPlanApproved, looksLikePlanPath } from '../../utils/plan-review.js';
+import { findSpec } from './spec.js';
 import {
   seleniumRulesFor, checkSeleniumRules, formatRuleViolations, SELENIUM_AI_AGENTS_DOCS,
 } from './selenium-rules.js';
@@ -71,7 +73,9 @@ async function detectConfigFile(projectRoot: string): Promise<string | null> {
 
 const setupSchema = z.object({
   url: z.string().describe('URL of the web application to test'),
-  testPlan: z.string().describe('Test plan content or path to test plan file'),
+  testPlan: z.string().describe('Test plan content or path to test plan file. It must be approved by the user (Status: approved)'),
+  skipPlanReview: z.boolean().optional()
+    .describe('Start from a plan that is still a draft. Only when the user explicitly says to skip the plan review.'),
   framework: z.string().optional()
     .describe('Test framework. Default: the one the project already uses (detected from pom.xml, build.gradle, requirements.txt, pyproject.toml, *.csproj, package.json, *.robot), else selenium-python-pytest. Others: selenium-java-maven, selenium-csharp-nunit, selenium-js-mocha, webdriverio-ts, robot-framework, playwright-js, ...'),
   projectRoot: z.string().optional()
@@ -93,13 +97,28 @@ language or framework the user names (Page Object Model, BDD/Gherkin and data-dr
 
 Pass the chosen framework to all subsequent generator and healer tool calls.
 
+Tests are only generated from a plan the user has approved. A plan that is still a draft (Status: draft, as
+planner_save_plan saves every plan) is refused: show it to the user first, and after their approval call
+planner_approve_plan.
+
 For Selenium frameworks the result includes Selenium's official rules for AI assistants for that language
 (${SELENIUM_AI_AGENTS_DOCS}): follow them. generator_write_test checks every test against them.`;
   readonly inputSchema = setupSchema;
   readonly category: ToolCategory = 'agent';
 
   async execute(context: Context, params: unknown): Promise<ToolResult> {
-    const { url, testPlan, framework: chosen, projectRoot } = this.parseParams(setupSchema, params);
+    const { url, testPlan, framework: chosen, projectRoot, skipPlanReview } = this.parseParams(setupSchema, params);
+
+    // The plan must be reviewed first: a test is only as good as the plan it implements.
+    let plan = { where: 'given', content: testPlan };
+    if (looksLikePlanPath(testPlan)) {
+      try {
+        const found = await findSpec(testPlan);
+        plan = { where: found.file, content: found.content };
+      } catch { /* not a file: treat the text as the plan */ }
+    }
+    const review = checkPlanApproved(plan.content, plan.where, skipPlanReview);
+    if (!review.ok) return this.error(review.message!);
     // No framework named: use the project's own language and test runner, else the default.
     const detected = chosen ? null : detectProject(projectRoot || getOutputDir());
     const framework = chosen || detected?.framework || DEFAULT_FRAMEWORK;
@@ -125,6 +144,8 @@ For Selenium frameworks the result includes Selenium's official rules for AI ass
       ...(detected ? { testRunner: detected.testRunner } : {}),
       recording: true,
       testPlanPreview: testPlan.slice(0, 200) + (testPlan.length > 200 ? '...' : ''),
+      planStatus: review.status ?? 'none',
+      ...(review.message ? { planReview: review.message } : {}),
       seleniumRules: undefined as string | undefined,
     };
 
@@ -195,7 +216,9 @@ const writeTestSchema = z.object({
   }).optional().describe('Custom run command override. If omitted, a default is suggested based on framework.'),
   configFile: z.string().optional().describe('Path to framework config file (e.g. wdio.conf.ts, playwright.config.ts). Auto-detected if omitted.'),
   verify: z.boolean().optional().describe('Validate selectors against the live page before writing (default: true)'),
-  specFile: z.string().optional().describe('Path to the spec file this test was generated from'),
+  specFile: z.string().optional().describe('Path to the spec file this test was generated from (it must be approved)'),
+  skipPlanReview: z.boolean().optional()
+    .describe('Write a test for a plan that is still a draft. Only when the user explicitly says to skip the plan review.'),
   allowRuleViolations: z.boolean().optional()
     .describe('Write the file even if it breaks Selenium\'s official rules (sleeps, driver paths, ...). Only when the user explicitly asks for it.'),
 });
@@ -215,7 +238,8 @@ The LLM can provide a custom runCommand, or let the tool suggest one based on th
 
 Selenium tests are checked against Selenium's official rules for AI agents (${SELENIUM_AI_AGENTS_DOCS}).
 A test with an error (a sleep, a driver manager or driver path, DesiredCapabilities, Selenium 3 APIs, mixed
-implicit and explicit waits, ...) is not written: fix the reported lines and call again. Warnings are reported.`;
+implicit and explicit waits, ...) is not written: fix the reported lines and call again. Warnings are reported.
+With specFile, the plan must be approved by the user: a test for a draft plan is not written.`;
   readonly inputSchema = writeTestSchema;
   readonly category: ToolCategory = 'agent';
 
@@ -223,8 +247,16 @@ implicit and explicit waits, ...) is not written: fix the reported lines and cal
     const {
       testCode, filename, framework: chosenFramework, outputDir,
       projectRoot: explicitProjectRoot, baseUrl, runCommand, configFile: explicitConfig,
-      verify, specFile, allowRuleViolations,
+      verify, specFile, allowRuleViolations, skipPlanReview,
     } = this.parseParams(writeTestSchema, params);
+
+    if (specFile) {
+      const spec = await findSpec(specFile).catch(() => null);
+      if (spec) {
+        const review = checkPlanApproved(spec.content, spec.file, skipPlanReview);
+        if (!review.ok) return this.error(`Test not written. ${review.message}`);
+      }
+    }
     const framework = chosenFramework || context.generatorFramework || DEFAULT_FRAMEWORK;
 
     const fs = await import('fs/promises');

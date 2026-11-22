@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { PlannerSavePlanTool, PlannerSetupTool } from './planner.js';
+import { PlannerApprovePlanTool, PlannerSavePlanTool, PlannerSetupTool } from './planner.js';
 import { GeneratorReadSpecTool } from './spec.js';
 
 /** A fake browser: records what the planner does; one element with options for select. */
@@ -91,7 +91,11 @@ describe('planner: seed test, setup steps and specs/', () => {
   it('saves plans to specs/, where the generator finds them by name', async () => {
     const saved = await new PlannerSavePlanTool().execute({} as never, { planContent: '# Plan: cart', filename: 'shopping-cart.md' });
     expect(saved.content).to.contain(path.join(dir, 'specs', 'shopping-cart.md'));
+    // A saved plan is a draft: the generator finds it by name, but reads it only after approval.
+    const draft = await new GeneratorReadSpecTool().execute({} as never, { specFile: 'shopping-cart' });
+    expect(draft.isError).to.equal(true);
+    await new PlannerApprovePlanTool().execute({} as never, { specFile: 'shopping-cart', approval: 'ok' });
     const read = parse(await new GeneratorReadSpecTool().execute({} as never, { specFile: 'shopping-cart' }));
-    expect(read.content).to.equal('# Plan: cart');
+    expect(read.content).to.match(/^# Plan: cart\n\n\*\*Status:\*\* approved/);
   });
 });

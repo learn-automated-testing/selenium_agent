@@ -1,5 +1,7 @@
 # Test plan: the-internet.herokuapp.com
 
+**Status:** approved — written and reviewed by hand for this sample. A plan from `planner_save_plan` starts as a draft until you approve it.
+
 Practice site: <https://the-internet.herokuapp.com>. The login credentials below are the practice credentials the site shows on its own login page.
 
 ## 1. Login
