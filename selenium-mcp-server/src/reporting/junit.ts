@@ -48,7 +48,13 @@ function firstLine(text: string | undefined): string | undefined {
 
 /** All test cases in a JUnit XML document (testsuites, nested testsuites or a single testsuite). */
 export function parseJUnitXml(xml: string): TestCaseResult[] {
-  const body = xml.replace(/<!--[\s\S]*?-->/g, '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, c: string) => encodeXml(c));
+  // Comments out, until none is left (a removed comment can join the halves of another); then CDATA as escaped text.
+  let body = xml;
+  for (let before = ''; before !== body;) {
+    before = body;
+    body = body.replace(/<!--[\s\S]*?-->/g, '');
+  }
+  body = body.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, c: string) => encodeXml(c));
   const cases: TestCaseResult[] = [];
   // The file attribute of the enclosing <testsuite>, for runners that only put it there (mocha-junit-reporter).
   const suiteFiles: Array<{ at: number; file?: string }> = [];

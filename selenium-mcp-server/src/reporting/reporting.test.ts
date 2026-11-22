@@ -81,6 +81,11 @@ describe('reporting', () => {
       expect(parseJUnitXml(ROBOT_XUNIT)[0]).to.include({ classname: 'Tests.Login', name: 'Valid Login', status: 'passed' });
     });
 
+    it('ignores test cases inside comments, also a comment that only appears once another is removed', () => {
+      const xml = '<testsuite><!-- <testcase name="hidden" classname="a"/> --><!<!-- x -->-- <testcase name="joined" classname="a"/> --><testcase name="real" classname="a"/></testsuite>';
+      expect(parseJUnitXml(xml).map(c => c.name)).to.deep.equal(['real']);
+    });
+
     it('takes the file from the enclosing testsuite when the case has none (mocha-junit-reporter)', () => {
       const xml = '<testsuites><testsuite name="Root Suite" file="test/cart.test.js"><testcase name="adds" classname="cart adds"/></testsuite></testsuites>';
       expect(parseJUnitXml(xml)[0].file).to.equal('test/cart.test.js');
