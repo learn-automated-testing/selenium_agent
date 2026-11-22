@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [3.8.0] - 2026-11-22
 
 ### New Features
 
@@ -18,6 +18,8 @@
 - CI: failing unit tests no longer pass as green. The test job had `continue-on-error`, which hid 15 failures on Node.js 18 (tests that stub `os.homedir` and `fs`, which don't reach the code on Node 18).
 
 ## [3.7.0] - 2026-11-22
+
+Not published to npm on its own: 3.8.0 contains it.
 
 ### New Features
 
