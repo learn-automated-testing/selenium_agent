@@ -283,11 +283,11 @@ const RULES: Rule[] = [
       /\.find_elements?_by_\w+\s*\(/, /\.switch_to_(alert|frame|window|default_content)\s*\(/,
       /\.findElements?By\w+\s*\(/, /\bFindElements?By\w+\s*\(/,
     ],
-    message: 'Selenium 3 API: removed in Selenium 4. Use find_element(By.ID, ...) / findElement(By.id(...)) and switch_to.alert.',
+    message: 'Selenium 3 API: removed in Selenium 4. Use find_element(By.ID, ...) / findElement(By.id(...)) / FindElement(By.Id(...)) and switch_to.alert.',
   },
   {
     id: 'old-headless', severity: 'error', languages: 'all',
-    patterns: [/\.headless\s*=\s*True/, /\bsetHeadless\s*\(/, /add_?[aA]rguments?\(\s*["']--headless["']\s*\)/, /addArguments\(\s*"--headless"\s*\)/],
+    patterns: [/\.headless\s*=\s*True/, /\bsetHeadless\s*\(/, /[aA]dd_?[aA]rguments?\(\s*["']-{0,2}headless["']\s*\)/],
     message: 'Old headless API. Use the Options argument "--headless=new".',
   },
   {
@@ -327,6 +327,12 @@ const RULES: Rule[] = [
     id: 'no-js-click', severity: 'warning', languages: 'all',
     patterns: [/arguments\[0\]\.click\(\)/],
     message: 'Don\'t click with execute_script when the element can be clicked natively: wait for it to be clickable instead.',
+  },
+  {
+    id: 'csharp-selenium3-api', severity: 'error', languages: ['.NET'],
+    patterns: [/new WebDriverWait\(\s*\w+\s*,\s*\d+\s*\)/, /\.ImplicitlyWait\s*\(/, /\bExpectedConditions\./],
+    message: 'Selenium 3 API, gone in Selenium 4 .NET: WebDriverWait takes a TimeSpan, Timeouts().ImplicitlyWait() was removed, ' +
+      'and .NET dropped ExpectedConditions. Wait with a lambda: new WebDriverWait(driver, TimeSpan.FromSeconds(10)).Until(d => ...).',
   },
   {
     id: 'csharp-close-not-quit', severity: 'warning', languages: ['.NET'],
@@ -404,4 +410,61 @@ export function formatRuleViolations(violations: RuleViolation[], file: string):
   const head = `${source}: ${errors} error(s), ${warnings} warning(s) in ${file}`;
   const body = violations.map(v => `  ${v.severity === 'error' ? 'ERROR' : 'warn '} line ${v.line} [${v.rule}] ${v.code}\n        → ${v.message}`);
   return [head, ...body].join('\n');
+}
+
+// ============================================================================
+// Longer timeouts: the healer's most common wrong fix
+// ============================================================================
+
+/**
+ * Wait timeouts on one line, in seconds. Covers Java Duration, C# TimeSpan, Python and old Java
+ * WebDriverWait(driver, n), JavaScript driver.wait(condition, ms), WebdriverIO { timeout: ms },
+ * Python timeout=n and Robot Framework timeout=10s / Set Selenium Timeout.
+ */
+export function timeoutsOnLine(line: string, language: SeleniumLanguage | 'WebdriverIO', robot = false): number[] {
+  const found: number[] = [];
+  const num = (v: string) => parseFloat(v);
+  const unit = (v: number, u = '') => (/^ms|millis/i.test(u) ? v / 1000 : /^m(in)?/i.test(u) ? v * 60 : v);
+  for (const m of line.matchAll(/Duration\.of(Seconds|Millis|Minutes)\(\s*(\d+(?:\.\d+)?)/g)) found.push(unit(num(m[2]), m[1] === 'Millis' ? 'ms' : m[1] === 'Minutes' ? 'min' : 's'));
+  for (const m of line.matchAll(/TimeSpan\.From(Seconds|Milliseconds|Minutes)\(\s*(\d+(?:\.\d+)?)/g)) found.push(unit(num(m[2]), m[1] === 'Milliseconds' ? 'ms' : m[1] === 'Minutes' ? 'min' : 's'));
+  for (const m of line.matchAll(/WebDriverWait\(\s*[\w.]+\s*,\s*(?:timeout\s*=\s*)?(\d+(?:\.\d+)?)\s*[,)]/g)) found.push(num(m[1]));
+  if (language === 'JavaScript' || language === 'WebdriverIO') {
+    for (const m of line.matchAll(/\.wait\([^;]*?,\s*(\d+)\s*[,)]/g)) found.push(num(m[1]) / 1000);
+    for (const m of line.matchAll(/\btimeout\s*:\s*(\d+)/g)) found.push(num(m[1]) / 1000);
+  } else if (robot) {
+    for (const m of line.matchAll(/\btimeout=(\d+(?:\.\d+)?)\s*(ms|s|sec|seconds?|min(?:utes?)?)?/gi)) found.push(unit(num(m[1]), m[2]));
+    const set = /Set Selenium Timeout(?:\s{2,}|\t)(\d+(?:\.\d+)?)\s*(ms|s|sec|seconds?|min(?:utes?)?)?/i.exec(line);
+    if (set) found.push(unit(num(set[1]), set[2]));
+  } else if (language === 'Python') {
+    for (const m of line.matchAll(/\btimeout\s*=\s*(\d+(?:\.\d+)?)/g)) found.push(num(m[1]));
+  }
+  return found;
+}
+
+/**
+ * A fix that raises a wait timeout above anything the test had before hides the race instead of fixing it
+ * (Selenium's guidance for AI agents). Returns one violation per line that does that; new waits at or below
+ * the old maximum, and waits added to a test that had none, are fine.
+ */
+export function findLongerTimeouts(oldCode: string, newCode: string, framework: string, filename = ''): RuleViolation[] {
+  const wdio = isWebdriverIO(framework, filename);
+  const language = wdio ? 'WebdriverIO' : seleniumLanguage(framework, filename);
+  if (!language) return [];
+  const robot = framework.toLowerCase().startsWith('robot') || filename.toLowerCase().endsWith('.robot');
+  const comment = (l: string) => isComment(l, language === 'WebdriverIO' ? 'JavaScript' : language, robot);
+  const oldMax = Math.max(0, ...oldCode.split('\n').filter(l => !comment(l)).flatMap(l => timeoutsOnLine(l, language, robot)));
+  if (oldMax === 0) return [];
+  const violations: RuleViolation[] = [];
+  newCode.split('\n').forEach((line, i) => {
+    if (comment(line)) return;
+    const longer = timeoutsOnLine(line, language, robot).filter(t => t > oldMax);
+    if (longer.length > 0) {
+      violations.push({
+        rule: 'no-longer-timeout', severity: 'error', line: i + 1, code: line.trim().slice(0, 160),
+        message: `The timeout goes up from ${oldMax}s to ${Math.max(...longer)}s. A longer timeout hides the race: ` +
+          'say which condition was not true yet, and wait for exactly that.',
+      });
+    }
+  });
+  return violations;
 }

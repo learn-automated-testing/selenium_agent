@@ -174,6 +174,15 @@ If you don't name one, the generator uses **your project's own stack**: Java wit
 
 Conventions per framework are in [Framework Standards](docs/FRAMEWORK_STANDARDS.md).
 
+### Sample projects
+
+Ready-made projects to try the agents on, each with a test plan, a section left for the generator to write, and an old Selenium 3 suite for the migrator:
+
+| Sample | Stack |
+|---|---|
+| [`examples/java-junit5`](examples/java-junit5) | Java 17+, Maven, Selenium 4, JUnit 5, page objects |
+| [`examples/csharp-nunit`](examples/csharp-nunit) | .NET 8+, Selenium 4, NUnit, page objects |
+
 ## Parallel Testing with Selenium Grid
 
 Everything above works with a local browser. Selenium Grid adds parallel sessions: explore or test many parts of an application at once, across Chrome, Firefox and Edge.

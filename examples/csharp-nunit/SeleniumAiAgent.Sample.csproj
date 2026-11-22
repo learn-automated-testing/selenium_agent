@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Selenium AI Agent sample: .NET 8+, Selenium 4, NUnit 5, page objects, explicit waits. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Also runs on a newer .NET when 8 is not installed. -->
+    <RollForward>Major</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>SeleniumAiAgent.Sample</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="legacy-selenium3/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageReference Include="NUnit" Version="5.0.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.3.1" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.53.0" />
+    <PackageReference Include="Selenium.Support" Version="4.53.0" />
+  </ItemGroup>
+
+</Project>
