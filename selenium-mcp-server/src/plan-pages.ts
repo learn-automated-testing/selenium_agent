@@ -5,7 +5,7 @@
  * - an overview of every plan in specs/: review status, tests, generated test files and the last run.
  * The same pages are saved next to the plans (specs/<plan>.html, specs/index.html) as read-only copies.
  */
-import { planStatus, type PlanStatus } from './utils/plan-review.js';
+import { DRAFT_NOTE, planStatus, type PlanStatus } from './utils/plan-review.js';
 
 export interface PlanStep { perform: string; expect: string[] }
 export interface PlanTest { id: string; name: string; file?: string; steps: PlanStep[] }
@@ -171,7 +171,7 @@ export function renderPlanPage(markdown: string, opts: PlanPageOptions): string 
 <title>${esc(plan.title || opts.file)} · test plan review</title><style>${STYLE}</style></head><body><main>
 <div class="top"><div><div class="path">${opts.overviewUrl ? `<a href="${esc(opts.overviewUrl)}">All test plans</a> · ` : ''}${esc(opts.file)}</div>
 <h1>${esc(plan.title || opts.file)}</h1></div><div id="status">${statusPill(plan.status)}</div></div>
-${plan.statusNote && plan.status !== 'draft' ? `<div class="note">${esc(plan.statusNote)}</div>` : ''}
+${plan.statusNote && plan.statusNote !== DRAFT_NOTE ? `<div class="note">${esc(plan.statusNote)}</div>` : ''}
 <div class="stats"><div class="stat"><b>${plan.suites.length}</b><span>suites</span></div><div class="stat"><b>${tests.length}</b><span>tests</span></div>
 <div class="stat"><b>${steps}</b><span>steps</span></div><div class="stat"><b>${expects}</b><span>expected results</span></div>
 <div class="stat"><b class="${plan.gaps.length ? 'bad' : ''}">${plan.gaps.length}</b><span>gaps and questions</span></div></div>
@@ -182,8 +182,8 @@ ${plan.elements.length ? `<h2>Elements</h2><div class="card"><table><tr><th>Elem
 ${plan.gaps.length ? `<h2>Gaps and questions</h2>${plan.gaps.map(g => `<div class="gap">${esc(g)}</div>`).join('')}` : ''}
 ${interactive ? '<h2>Comment on the whole plan</h2><textarea id="general" placeholder="Anything missing, out of scope or wrong? (optional)"></textarea>' : ''}
 </main>
-${interactive ? `<div class="bar"><span id="msg">${opts.reviewRequired === false ? 'The plan review is turned off: approving is optional.' : 'Tests are only generated from an approved plan.'}</span>
-<button id="changes">Request changes</button><button id="approve" class="primary">Approve plan</button></div>
+${interactive ? `<div class="bar"><span id="msg">${plan.status === 'approved' ? 'Approved. Reopen it when the plan needs another look: the generator then waits for a new approval.' : opts.reviewRequired === false ? 'The plan review is turned off: approving is optional.' : 'Tests are only generated from an approved plan.'}</span>
+${plan.status === 'approved' || plan.status === 'changes requested' ? '<button id="reopen">Reopen for review</button>' : ''}<button id="changes">Request changes</button>${plan.status === 'approved' ? '' : '<button id="approve" class="primary">Approve plan</button>'}</div>
 <script>
 const send = async (decision) => {
   const comments = [...document.querySelectorAll('[data-test]')].map(c => ({ test: c.dataset.test, text: c.querySelector('textarea').value.trim() })).filter(c => c.text);
@@ -197,10 +197,13 @@ const send = async (decision) => {
     if (!r.ok) throw new Error(j.error || r.statusText);
     msg.className = ''; msg.textContent = j.message;
     document.getElementById('status').innerHTML = j.pill;
+    setTimeout(() => location.reload(), 1500);
   } catch (e) { msg.className = 'err'; msg.textContent = 'Not saved: ' + e.message; document.querySelectorAll('.bar button').forEach(b => b.disabled = false); }
 };
-document.getElementById('approve').onclick = () => send('approve');
-document.getElementById('changes').onclick = () => send('changes');
+for (const [id, decision] of [['approve', 'approve'], ['changes', 'changes'], ['reopen', 'reopen']]) {
+  const b = document.getElementById(id);
+  if (b) b.onclick = () => send(decision);
+}
 </script>` : `<div class="bar"><span id="msg">Read-only copy. To approve or request changes, run this in your project folder:</span>
 <code class="cmd" id="cmd">npx selenium-ai-agent review</code><button id="copy">Copy</button></div>
 <script>document.getElementById('copy').onclick = async () => { try { await navigator.clipboard.writeText(document.getElementById('cmd').textContent); document.getElementById('copy').textContent = 'Copied'; } catch { document.getElementById('copy').textContent = 'Select and copy'; } };</script>`}

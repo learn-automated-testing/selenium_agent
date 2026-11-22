@@ -150,6 +150,9 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
       if (!comments.length) return send(res, 400, 'application/json', '{"error":"Write what should change first."}');
       updated = withReviewComments(markdown, comments, when);
       message = 'Changes requested. Tell your AI assistant: the planner reads your comments, changes the plan and asks you again.';
+    } else if (body.decision === 'reopen') {
+      updated = withPlanStatus(markdown, 'draft', `reopened for review by the user on ${when} UTC: approve it again before more tests are generated`);
+      message = 'Reopened for review. The plan is a draft again: the generator waits until you approve it.';
     } else {
       return send(res, 400, 'application/json', '{"error":"Unknown decision"}');
     }

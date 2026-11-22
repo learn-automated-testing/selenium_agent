@@ -182,6 +182,22 @@ describe('plan review pages', () => {
       expect(read.content).to.include('asked for changes');
     });
 
+    it('Reopen for review puts an approved plan back to draft, and the generator waits again', async () => {
+      await save();
+      await ensureReviewServer();
+      await post(await decisionUrl(), { decision: 'approve' });
+      const page = await (await fetch(reviewUrls.plan('login.md'))).text();
+      expect(page).to.include('id="reopen"').and.not.include('id="approve"');
+      const r = await post(await decisionUrl(), { decision: 'reopen' });
+      expect(r.status).to.equal(200);
+      expect(planStatus(md())).to.equal('draft');
+      expect(md()).to.include('reopened for review by the user on');
+      expect((await new GeneratorReadSpecTool().execute({} as never, { specFile: 'login' })).isError).to.equal(true);
+      const again = await (await fetch(reviewUrls.plan('login.md'))).text();
+      expect(again).to.include('id="approve"').and.include('reopened for review');
+      expect(again).to.not.include('id="reopen"');
+    });
+
     it('refuses a decision that is not JSON or comes from another site', async () => {
       await save();
       await ensureReviewServer();
