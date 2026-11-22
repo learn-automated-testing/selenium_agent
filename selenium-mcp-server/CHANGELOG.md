@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [3.8.1] - 2026-11-22
+
+### Changes
+
+- The npm and MCP Registry descriptions and the README say what the agent does now: plan review, and JUnit and Allure reports linked to the approved plan. More npm keywords (allure, junit, test-reporting, test-plan, traceability).
 
 ### New Features
 

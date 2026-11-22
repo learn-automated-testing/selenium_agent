@@ -5,6 +5,8 @@
 > - **Built in Node.js:** run it with `npx -y selenium-ai-agent`, no install needed.
 > - **Generates tests in Python with pytest by default**, and in any other language or framework on request: Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework.
 > - **Test agents like Playwright's:** a planner explores your app and writes a structured test plan, a generator turns it into tests checked live in the browser, and a healer runs and repairs them.
+> - **You approve the plan first:** a review page in your browser; tests are only generated from an approved plan.
+> - **Reports testers can read:** JUnit XML and Allure, every result linked to its plan scenario.
 > - **Works in Claude Desktop, Claude Code, VS Code (GitHub Copilot) and Cursor.**
 > - **Scales with Selenium Grid** for parallel sessions on Chrome, Firefox and Edge.
 

@@ -5,11 +5,13 @@
 [![YouTube tutorials](https://img.shields.io/badge/YouTube-Video%20tutorials-red?logo=youtube)](https://www.youtube.com/@ralphvanderhorst5193/videos)
 [![Selenium Grid](https://img.shields.io/badge/Selenium%20Grid-Parallel-blue.svg)](https://www.selenium.dev/documentation/grid/)
 
-**AI test agents for Selenium, like Playwright's: plan, generate and heal tests from a prompt.**
+**AI test agents for Selenium: plan, review, generate and heal tests from a prompt, with reports linked to the test plan you approved.**
 
 Selenium AI Agent (`selenium-ai-agent` on npm) is an MCP server that lets your AI assistant drive a real browser through Selenium WebDriver and build a test suite for you.
 
 - **Test agents:** a planner explores your app and writes a structured test plan, a generator turns it into tests checked live in the browser, and a healer runs and repairs them.
+- **You approve the plan first:** the plan opens as a review page in your browser; tests are only generated from a plan you approved.
+- **Reports testers can read:** JUnit XML and Allure, with every result linked to its plan scenario: which scenario failed, at which step, with a screenshot.
 - **Python + pytest by default**, and any other language on request: Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework.
 - **Works in your AI client:** Claude Code, Claude Desktop, VS Code (GitHub Copilot) and Cursor.
 - **Built in Node.js:** run it with `npx -y selenium-ai-agent`; the matching browser driver is downloaded for you.
