@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixes
+
+- **Opening the Allure report.** The agent suggested `allure serve allure-results`, which needs the Allure command-line tool (and Java). `healer_run_tests` now returns `viewAllure`: `npx allure generate allure-results && npx allure open allure-report` (Allure 3, nothing to install). When the project has no Allure config yet, it writes an `allurerc.mjs` that groups the report by plan > suite > scenario, so Allure 3 shows the approved plans as the tree. An existing config is left alone.
+- `npx selenium-ai-agent review` printed an extra blank line.
+
 ## [3.8.0] - 2026-11-22
 
 ### New Features

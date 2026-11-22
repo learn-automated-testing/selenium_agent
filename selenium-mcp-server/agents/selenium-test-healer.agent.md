@@ -190,7 +190,7 @@ https://www.selenium.dev/documentation/ai_agents/ (WebdriverIO: https://webdrive
    - `.spec.ts`/`.test.ts` with `wdio.conf.ts` → webdriverio-ts
    - `.robot` → robot-framework
 
-2. **Run Suite**: `healer_run_tests(path, framework)` to get failure summary. Its `report` (from the runner's JUnit XML) lists every failure with its message and the plan scenario it belongs to, and how many tests have no approved plan behind them: work from that, it is more reliable than the console output
+2. **Run Suite**: `healer_run_tests(path, framework)` to get failure summary. Its `report` (from the runner's JUnit XML) lists every failure with its message and the plan scenario it belongs to, and how many tests have no approved plan behind them: work from that, it is more reliable than the console output. When it has `viewAllure`, give the user that command to open the Allure report (it uses `npx allure`; don't suggest `allure serve`, which needs the Allure command-line tool installed)
 
 3. **Focus on Failure**: `healer_debug_test(test_name, path, framework)` for specific failing test
 

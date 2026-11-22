@@ -86,7 +86,8 @@ if (args[0] === 'review') {
   await writeStaticPages();
   const url = plan ? reviewUrls.plan(plan.endsWith('.md') ? plan : `${plan}.md`) : reviewUrls.overview();
   console.log(`Selenium AI Agent: test plan review for ${getSpecsDir()} (${plans.length} plan(s))`);
-  console.log(`${(await sharedFolderNote()).trim()}\n`);
+  const note = (await sharedFolderNote()).trim();
+  console.log(note ? `${note}\n` : '');
   console.log(`  ${url}\n`);
   const opened = args.includes('--no-open') ? false : await openInBrowser(url);
   console.log(opened ? 'Opened in your browser. ' : 'Open the link above in your browser. ');

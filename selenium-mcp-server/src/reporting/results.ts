@@ -34,6 +34,36 @@ export interface RunReport {
   /** Test cases with no approved plan behind them. */
   unlinked: number;
   written: string[];
+  /** How to view the Allure report, when Allure results were written. */
+  view?: string;
+}
+
+/** Allure 3 groups by suite unless told otherwise: this config shows the approved plan as the tree. */
+export const ALLURERC = `// Written by selenium-ai-agent: show the report as your approved test plans (plan > suite > scenario).
+export default {
+  name: "Test report",
+  output: "./allure-report",
+  plugins: { awesome: { options: { groupBy: ["epic", "feature", "story"] } } },
+};
+`;
+
+export const ALLURE_VIEW_COMMAND = 'npx allure generate allure-results && npx allure open allure-report';
+
+/**
+ * Make sure Allure 3 shows the plan tree: write allurerc.mjs when the project has no Allure config yet.
+ * Returns the file written, or undefined when one was already there.
+ */
+export async function ensureAllureConfig(projectRoot: string): Promise<string | undefined> {
+  const names = ['allurerc.mjs', 'allurerc.js', 'allurerc.cjs', 'allurerc.json', 'allurerc.yml', 'allurerc.yaml'];
+  for (const n of names) {
+    try {
+      await fs.access(path.join(projectRoot, n));
+      return undefined;
+    } catch { /* not there */ }
+  }
+  const file = path.join(projectRoot, 'allurerc.mjs');
+  await fs.writeFile(file, ALLURERC);
+  return file;
 }
 
 async function filesIn(target: string, since: number, pattern: RegExp): Promise<string[]> {
@@ -218,8 +248,14 @@ export async function collectRunReport(opts: {
     const allureDirs = [...new Set([...(reportingFor(opts.framework)?.allure.results ?? []), 'allure-results'])].map(d => path.resolve(opts.projectRoot, d));
     let labelled = 0;
     for (const d of allureDirs) labelled += await labelAllureResults(d, opts.since, opts.projectRoot, opts.manifest, opts.specsDir);
-    if (labelled) written.push(`${labelled} Allure result(s) labelled with their plan`);
-    if (!files.length) return labelled ? { files: [], summary: summarize([]), cases: [], unlinked: 0, written } : null;
+    let view: string | undefined;
+    if (labelled) {
+      written.push(`${labelled} Allure result(s) labelled with their plan`);
+      const config = await ensureAllureConfig(opts.projectRoot).catch(() => undefined);
+      if (config) written.push(`${config} (Allure 3: the report shows plan > suite > scenario)`);
+      view = `${ALLURE_VIEW_COMMAND} (Allure 3 via npx, no install or Java needed; with Allure 2: allure serve allure-results, Behaviors tab)`;
+    }
+    if (!files.length) return labelled ? { files: [], summary: summarize([]), cases: [], unlinked: 0, written, view } : null;
     const cases: TestCaseResult[] = [];
     for (const f of files) cases.push(...parseJUnitXml(await fs.readFile(f, 'utf8')));
     const linked = await linkCases(cases, opts.projectRoot, opts.manifest, opts.specsDir);
@@ -227,7 +263,7 @@ export async function collectRunReport(opts: {
     await fs.mkdir(path.dirname(out), { recursive: true });
     await fs.writeFile(out, junitWithPlans(linked));
     written.unshift(out);
-    return { files, summary: summarize(linked), cases: linked, unlinked: linked.filter(c => !c.link).length, written };
+    return { files, summary: summarize(linked), cases: linked, unlinked: linked.filter(c => !c.link).length, written, ...(view ? { view } : {}) };
   } catch {
     return null;
   }

@@ -202,6 +202,7 @@ Explicit mode examples:
             })),
             withoutPlan: report.unlinked,
             written: report.written,
+            ...(report.view ? { viewAllure: report.view } : {}),
           }
           : `No JUnit XML found after this run. ${reportingFor(framework)?.junit.setup.join('; ') || 'Add the runner\'s JUnit XML output to the run command'} (see generator_setup_page "reporting").`,
         stdout: result.stdout.slice(0, 8000),
