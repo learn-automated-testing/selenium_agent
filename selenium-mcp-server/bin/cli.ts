@@ -47,10 +47,26 @@ if (args[0] === 'review') {
     if (arg.startsWith('--output-dir=')) process.env.SELENIUM_MCP_OUTPUT_DIR = arg.slice('--output-dir='.length);
   }
   const portArg = args.find(a => a.startsWith('--port='));
-  const plan = args.slice(1).find(a => !a.startsWith('--'));
+  // A folder argument is the project (or output) folder with specs/; anything else is a plan name.
+  const { existsSync, statSync } = await import('node:fs');
+  const { resolve: resolvePath } = await import('node:path');
+  const positional = args.slice(1).filter(a => !a.startsWith('--'));
+  const folder = positional.find(a => existsSync(a) && statSync(a).isDirectory());
+  if (folder) process.env.SELENIUM_MCP_OUTPUT_DIR = resolvePath(folder.replace(/[\\/]specs[\\/]?$/, ''));
+  const plan = positional.find(a => a !== folder);
   const { ensureReviewServer, reviewUrls, writeStaticPages, listPlans, openInBrowser } = await import('../src/plan-review-server.js');
   const { getSpecsDir } = await import('../src/utils/paths.js');
   const plans = await listPlans();
+  if (!plans.length) {
+    const { findPlanFolders } = await import('../src/plan-review-server.js');
+    const elsewhere = (await findPlanFolders()).filter(f => resolvePath(f.dir, 'specs') !== getSpecsDir());
+    console.log(`No test plans in ${getSpecsDir()}.`);
+    if (elsewhere.length) {
+      console.log('Plans in other folders:');
+      for (const f of elsewhere) console.log(`  npx selenium-ai-agent review ${f.dir}   (${f.plans} plan${f.plans === 1 ? '' : 's'})`);
+    }
+    console.log('');
+  }
   if (plan && !plans.includes(plan.endsWith('.md') ? plan : `${plan}.md`)) {
     console.error(`No plan "${plan}" in ${getSpecsDir()}. Plans there: ${plans.join(', ') || 'none'}`);
     process.exit(1);

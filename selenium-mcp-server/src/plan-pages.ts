@@ -224,6 +224,8 @@ export interface OverviewOptions {
   planUrl?: (file: string) => string;
   lastSuiteRun?: { at: string; passed: boolean; summary: string; command: string } | null;
   reviewRequired?: boolean;
+  /** Other folders with plans, shown when this one has none. */
+  elsewhere?: Array<{ dir: string; plans: number }>;
 }
 
 const day = (iso: string) => iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC' : '';
@@ -253,6 +255,6 @@ ${opts.planUrl ? '' : '<div class="note">Read-only copy. To review plans, run <c
 <div class="note">${opts.reviewRequired === false ? 'The plan review is turned off (SELENIUM_MCP_PLAN_REVIEW=off): tests may be generated from any plan.' : 'Tests are only generated from approved plans.'}${run ? ` Last test run: <span class="${run.passed ? 'ok' : 'bad'}">${esc(run.summary || (run.passed ? 'passed' : 'failed'))}</span>, ${esc(day(run.at))}.` : ''}</div>
 <div class="card" style="margin-top:16px;padding:6px 8px">${parsed.length
     ? `<table><tr><th>Plan</th><th>Review</th><th>Tests</th><th>Generated</th><th>Last run</th></tr>${body}</table>`
-    : '<p class="muted" style="padding:10px">No test plans yet. Ask the planner to explore your app and save a plan.</p>'}</div>
+    : `<p class="muted" style="padding:10px">No test plans in this folder yet. Ask the planner to explore your app and save a plan${opts.elsewhere?.length ? ', or review the plans in another folder:' : '.'}</p>${(opts.elsewhere ?? []).map(e => `<p style="padding:0 10px"><code class="mono">npx selenium-ai-agent review ${esc(e.dir)}</code> <span class="muted">(${e.plans} plan${e.plans === 1 ? '' : 's'})</span></p>`).join('')}`}</div>
 </main></body></html>`;
 }

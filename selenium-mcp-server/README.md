@@ -383,7 +383,7 @@ npx selenium-ai-agent init-agents --loop=claude --with-rules   # ... plus Seleni
 | Flag | Description |
 |------|-------------|
 | `doctor` | Run preflight diagnostics (Chrome, driver, proxy, cache, output folder) and exit |
-| `review [plan] [--output-dir=…] [--no-open] [--port=…]` | Review test plans yourself, without asking the AI: opens the overview of all plans in `specs/` (or one plan) in your browser, with **Approve plan** / **Request changes** per plan. Runs on 127.0.0.1 until Ctrl+C; your AI assistant reads the decision from the plan |
+| `review [folder] [plan] [--no-open] [--port=…]` | Review test plans yourself, without asking the AI: opens the overview of all plans in the folder's `specs/` (default: the project you're in; or one plan) in your browser, with **Approve plan** / **Request changes** per plan. Runs on 127.0.0.1 until Ctrl+C; your AI assistant reads the decision from the plan. With no plans there, it lists the folders that have plans |
 | `init-agents --loop=claude\|vscode\|copilot\|cursor [--server=name] [--with-rules[=...]] [--framework=f]` | Install the test agents for your AI client (see [Test Agents](#test-agents)) and exit; `--with-rules` also writes the [rules for AI agents](#rules-for-ai-agents) into the project |
 | `install claude-desktop\|cursor\|windsurf\|junie [--with-rules[=...]]` | Add the server to the client's config; `--with-rules` also writes the rules into this project's instruction file |
 | `--stealth` | Enable stealth mode |

@@ -10,7 +10,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getOutputDir, getSpecsDir } from './utils/paths.js';
+import { defaultOutputDir, getOutputDir, getSpecsDir } from './utils/paths.js';
 import { planReviewRequired, withPlanStatus, withReviewComments, planStatus, type ReviewComment } from './utils/plan-review.js';
 import { renderOverviewPage, renderPlanPage, statusPill, type OverviewRow } from './plan-pages.js';
 import { readManifest } from './types/manifest.js';
@@ -101,8 +101,10 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
 
   if (req.method === 'GET' && u.pathname === '/') {
     const runs = await readTestRuns();
-    return send(res, 200, 'text/html; charset=utf-8', renderOverviewPage(await overviewRows(), {
-      dir: getSpecsDir(), planUrl: f => reviewUrls.plan(f), lastSuiteRun: runs.suite, reviewRequired: planReviewRequired(),
+    const rows = await overviewRows();
+    const elsewhere = rows.length ? [] : (await findPlanFolders()).filter(f => path.join(f.dir, 'specs') !== getSpecsDir());
+    return send(res, 200, 'text/html; charset=utf-8', renderOverviewPage(rows, {
+      dir: getSpecsDir(), planUrl: f => reviewUrls.plan(f), lastSuiteRun: runs.suite, reviewRequired: planReviewRequired(), elsewhere,
     }));
   }
 
@@ -201,3 +203,22 @@ export async function openInBrowser(target: string): Promise<boolean> {
 }
 
 export const REVIEW_COMMAND = 'npx selenium-ai-agent review';
+
+/**
+ * Folders with test plans: the current output folder, the default one (~/selenium-ai-agent) and the project folders
+ * in it. For "no plans here": tell the user where their plans are.
+ */
+export async function findPlanFolders(): Promise<Array<{ dir: string; plans: number }>> {
+  const candidates = new Set<string>([getOutputDir(), defaultOutputDir()]);
+  try {
+    for (const e of await fs.readdir(defaultOutputDir(), { withFileTypes: true })) {
+      if (e.isDirectory() && !e.name.startsWith('.')) candidates.add(path.join(defaultOutputDir(), e.name));
+    }
+  } catch { /* no default folder */ }
+  const found: Array<{ dir: string; plans: number }> = [];
+  for (const dir of candidates) {
+    const plans = (await listPlans(path.join(dir, 'specs'))).length;
+    if (plans) found.push({ dir, plans });
+  }
+  return found;
+}
