@@ -1,7 +1,7 @@
 <!-- skillsrepo:detected-stack:start -->
 ## Detected stack for this project
 
-- Project: `selenium_agent`
+- Project: `selenium-ai-agent`
 - Primary language: `typescript`
 - Test framework: `mocha` (user-selected)
 - Deploy target: `docker`, `docker-compose`
