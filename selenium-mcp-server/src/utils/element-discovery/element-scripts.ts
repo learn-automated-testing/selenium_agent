@@ -1,6 +1,7 @@
 import { WebDriver, WebElement } from 'selenium-webdriver';
 import type { ElementInfo } from '../../types.js';
 import { SELECTOR_COMPUTATION_CODE } from './selector-scripts.js';
+import { DEEP_QUERY, countDeep, isUsableElement } from '../shadow-dom.js';
 
 /**
  * Browser-side script that computes a CSS/XPath selector for a single element.
@@ -102,6 +103,7 @@ export async function extractElementInfo(
  * placeholder → role+text → tag+text (full descendant text) → position.
  */
 const FIND_ELEMENT_SCRIPT = `
+  ${DEEP_QUERY}
   var info = arguments[0];
   var tag = info.tagName;
   var attrs = info.attributes || {};
@@ -115,31 +117,13 @@ const FIND_ELEMENT_SCRIPT = `
     return s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0';
   }
 
-  // Shadow DOM helper: resolve "hostSelector >>> innerSelector" paths
-  function queryShadow(cssPath) {
-    var parts = cssPath.split(' >>> ');
-    if (parts.length < 2) return document.querySelector(parts[0]);
-    var current = document;
-    for (var i = 0; i < parts.length; i++) {
-      try {
-        var el = current.querySelector(parts[i]);
-        if (!el) return null;
-        if (i < parts.length - 1) {
-          if (!el.shadowRoot) return null;
-          current = el.shadowRoot;
-        } else {
-          return el;
-        }
-      } catch (_) { return null; }
-    }
-    return null;
-  }
-
-  // 0. By stored CSS selector (handles shadow DOM >>> paths)
+  // 0. By stored CSS selector, searched deep: open shadow roots and "host >>> inner" paths included
   if (info.css) {
     try {
-      var el = info.css.indexOf(' >>> ') !== -1 ? queryShadow(info.css) : document.querySelector(info.css);
-      if (el && isVisible(el)) return el;
+      var cssMatches = queryAllPath(info.css);
+      for (var cmi = 0; cmi < cssMatches.length; cmi++) {
+        if (isVisible(cssMatches[cmi])) return cssMatches[cmi];
+      }
     } catch (_) {}
   }
 
@@ -246,9 +230,34 @@ export async function findElementByInfo(driver: WebDriver, info: ElementInfo): P
     ariaLabel: info.ariaLabel,
     attributes: info.attributes,
     boundingBox: info.boundingBox,
+    css: info.css,
   }) as WebElement | null;
 
   if (el) return el;
 
+  throw new Error(`Could not find element: ${info.ref} (${info.tagName})`);
+}
+
+/**
+ * What a tool can act on for a ref: a usable WebElement, or (when WebDriver cannot hold a reference to the
+ * element, as with Salesforce Lightning's synthetic shadow DOM) the selector for the *Deep actions in
+ * shadow-dom.ts, which click and type with real input at the element's position.
+ */
+export type RefTarget =
+  | { element: WebElement; selector?: undefined }
+  | { element?: undefined; selector: string };
+
+export async function resolveRefTarget(driver: WebDriver, info: ElementInfo): Promise<RefTarget> {
+  let element: WebElement | null = null;
+  try {
+    element = await findElementByInfo(driver, info);
+  } catch {
+    element = null;
+  }
+  if (element && await isUsableElement(element)) return { element };
+
+  if (info.css && (await countDeep(driver, info.css)) > 0) return { selector: info.css };
+
+  if (element) return { element }; // let the tool report WebDriver's own error
   throw new Error(`Could not find element: ${info.ref} (${info.tagName})`);
 }

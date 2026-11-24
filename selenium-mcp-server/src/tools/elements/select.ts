@@ -3,6 +3,7 @@ import { By } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { clickDeep, clickOptionDeep, selectNativeDeep, stateDeep, type OptionChoice } from '../../utils/shadow-dom.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference for select element'),
@@ -13,7 +14,8 @@ const schema = z.object({
 
 export class SelectTool extends BaseTool {
   readonly name = 'select_option';
-  readonly description = 'Select an option from a dropdown/select element by value, text, or index';
+  readonly description = 'Select an option from a dropdown by value, text, or index: a native <select>, or a dropdown list ' +
+    '(combobox / picklist such as Salesforce Lightning), which is opened and the option clicked';
   readonly inputSchema = schema;
   readonly category: ToolCategory = 'interaction';
 
@@ -24,12 +26,36 @@ export class SelectTool extends BaseTool {
       return this.error('Must provide value, text, or index to select');
     }
 
-    const element = await context.getElementByRef(ref);
-    const tagName = await element.getTagName();
+    const driver = await context.getDriver();
+    const target = await context.getTargetByRef(ref);
+    const choice: OptionChoice = value ? { value } : text ? { text } : { index };
+    const tagName = target.element
+      ? (await target.element.getTagName()).toLowerCase()
+      : (await stateDeep(driver, target.selector))?.tag ?? '';
 
-    if (tagName.toLowerCase() !== 'select') {
-      return this.error(`Element ${ref} is not a select element`);
+    if (tagName !== 'select') {
+      // Dropdown list (combobox, Lightning picklist, listbox): open it, then click the option.
+      try {
+        if (target.element) await target.element.click();
+        else await clickDeep(driver, target.selector);
+        const label = await clickOptionDeep(driver, choice);
+        return this.success(`Selected "${label}" in ${ref}`, true);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return this.error(`Element ${ref} is not a <select>, and picking from its dropdown list failed: ${message}`);
+      }
     }
+
+    if (!target.element) {
+      // Native <select> in shadow DOM WebDriver cannot reach: set it in the page and fire input/change.
+      const result = await selectNativeDeep(driver, target.selector, choice);
+      if (result.error === 'no-option') {
+        return this.error(`No matching option in ${ref}. Options: ${(result.options ?? []).join(', ')}`);
+      }
+      if (result.error) return this.error(`Element ${ref} is not a select element`);
+      return this.success(`Selected option "${result.label}" (in shadow DOM, ${target.selector})`, true);
+    }
+    const element = target.element;
 
     if (value) {
       const option = await element.findElement(By.css(`option[value="${value}"]`));

@@ -108,6 +108,25 @@ export const ACCESSIBILITY_TREE_SCRIPT = `
     return null;
   }
 
+  // Ids are scoped to the element's own (shadow) root: look there first, then in the document
+  function scopedRoot(el) {
+    var r = el.getRootNode ? el.getRootNode() : document;
+    return r && r.querySelector ? r : document;
+  }
+  function getByIdScoped(el, id) {
+    var r = scopedRoot(el);
+    var found = null;
+    try { found = r.getElementById ? r.getElementById(id) : r.querySelector('[id="' + id.replace(/"/g, '\\\\"') + '"]'); } catch (_) {}
+    return found || document.getElementById(id);
+  }
+  function labelForScoped(el, id) {
+    var sel = 'label[for="' + id.replace(/"/g, '\\\\"') + '"]';
+    var found = null;
+    try { found = scopedRoot(el).querySelector(sel); } catch (_) {}
+    if (!found) { try { found = document.querySelector(sel); } catch (_) {} }
+    return found;
+  }
+
   function getAccessibleName(el) {
     var ariaLabel = el.getAttribute('aria-label');
     if (ariaLabel) return ariaLabel.trim();
@@ -117,7 +136,7 @@ export const ACCESSIBILITY_TREE_SCRIPT = `
       var parts = labelledBy.split(/\\s+/);
       var texts = [];
       for (var i = 0; i < parts.length; i++) {
-        var refEl = document.getElementById(parts[i]);
+        var refEl = getByIdScoped(el, parts[i]);
         if (refEl) texts.push((refEl.textContent || '').trim());
       }
       if (texts.length > 0) return texts.join(' ');
@@ -133,7 +152,7 @@ export const ACCESSIBILITY_TREE_SCRIPT = `
     if (['input','select','textarea'].indexOf(tag) !== -1) {
       var id = el.getAttribute('id');
       if (id) {
-        var label = document.querySelector('label[for="' + id + '"]');
+        var label = labelForScoped(el, id);
         if (label) return (label.textContent || '').trim();
       }
       var parentLabel = el.closest('label');

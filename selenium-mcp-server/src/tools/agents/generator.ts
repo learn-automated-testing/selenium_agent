@@ -109,6 +109,11 @@ language or framework the user names (Page Object Model, BDD/Gherkin and data-dr
 
 Pass the chosen framework to all subsequent generator and healer tool calls.
 
+Shadow DOM: get locators for elements inside web components with browser_generate_locator. On Salesforce
+Lightning (synthetic shadow DOM) WebDriver cannot find these elements at all, and find_element / shadow_root code
+fails; browser_generate_locator then returns code that calls a small helper file (deep_shadow.py for Python and
+Robot Framework, deep-shadow.js, DeepShadow.java) and the file itself: save it next to the tests and use it.
+
 Tests are only generated from a plan the user has approved. A plan that is still a draft (Status: draft, as
 planner_save_plan saves every plan) is refused: show it to the user first, and after their approval call
 planner_approve_plan.

@@ -3,6 +3,7 @@ import { until } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { stateDeep } from '../../utils/shadow-dom.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference from page snapshot'),
@@ -20,7 +21,14 @@ export class VerifyElementVisibleTool extends BaseTool {
 
     try {
       const driver = await context.getDriver();
-      const element = await context.getElementByRef(ref);
+      const target = await context.getTargetByRef(ref);
+      if (!target.element) {
+        // Shadow DOM WebDriver cannot reach: check visibility in the page until the timeout.
+        const selector = target.selector;
+        await driver.wait(async () => (await stateDeep(driver, selector))?.visible === true, timeout);
+        return this.success(`Element ${ref} is visible (in shadow DOM, ${selector})`, false);
+      }
+      const element = target.element;
 
       await driver.wait(until.elementIsVisible(element), timeout);
       const isVisible = await element.isDisplayed();

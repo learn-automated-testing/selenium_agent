@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { dragDeep } from '../../utils/shadow-dom.js';
 
 const schema = z.object({
   fromRef: z.string().describe('Source element reference'),
@@ -18,11 +19,16 @@ export class MouseDragTool extends BaseTool {
     const { fromRef, toRef } = this.parseParams(schema, params);
 
     const driver = await context.getDriver();
-    const sourceElement = await context.getElementByRef(fromRef);
-    const targetElement = await context.getElementByRef(toRef);
+    const source = await context.getTargetByRef(fromRef);
+    const target = await context.getTargetByRef(toRef);
 
-    const actions = driver.actions({ async: true });
-    await actions.dragAndDrop(sourceElement, targetElement).perform();
+    if (source.element && target.element) {
+      const actions = driver.actions({ async: true });
+      await actions.dragAndDrop(source.element, target.element).perform();
+    } else {
+      // At least one end is in shadow DOM WebDriver cannot reach: drag with real mouse events at the positions.
+      await dragDeep(driver, source, target);
+    }
 
     return this.success(`Dragged from ${fromRef} to ${toRef}`, true);
   }

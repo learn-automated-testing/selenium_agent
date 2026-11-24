@@ -1,6 +1,7 @@
 import { WebDriver, WebElement } from 'selenium-webdriver';
 import { Context } from '../context.js';
 import { PageSnapshot, SnapshotOptions, DiffOptions } from '../types.js';
+import type { RefTarget } from '../utils/element-discovery/index.js';
 import { GridSession } from './grid-session.js';
 
 /**
@@ -40,6 +41,10 @@ export class SessionContext extends Context {
 
   override async getElementByRef(ref: string): Promise<WebElement> {
     return this.gridSession.getElementByRef(ref);
+  }
+
+  override async getTargetByRef(ref: string): Promise<RefTarget> {
+    return this.gridSession.getTargetByRef(ref);
   }
 
   override async captureSnapshotWithDiff(

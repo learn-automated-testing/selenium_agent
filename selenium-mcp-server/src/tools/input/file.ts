@@ -28,7 +28,13 @@ export class FileUploadTool extends BaseTool {
         return this.error(`File not found: ${filePath}`);
       }
 
-      const element = await context.getElementByRef(ref);
+      const target = await context.getTargetByRef(ref);
+      if (!target.element) {
+        return this.error(`File input ${ref} is inside shadow DOM that WebDriver cannot reach (${target.selector}), ` +
+          'so a file cannot be attached to it directly. Upload the file another way (e.g. the API) or ' +
+          'use a file input outside that component.');
+      }
+      const element = target.element;
       const absolutePath = path.resolve(filePath);
 
       await element.sendKeys(absolutePath);

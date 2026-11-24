@@ -1,6 +1,6 @@
 import { WebDriver, WebElement } from 'selenium-webdriver';
 import { PageSnapshot, ElementInfo, GridSessionInfo, SnapshotOptions } from '../types.js';
-import { discoverElements, findElementByInfo, formatAccessibilityTree } from '../utils/element-discovery/index.js';
+import { discoverElements, findElementByInfo, formatAccessibilityTree, resolveRefTarget, type RefTarget } from '../utils/element-discovery/index.js';
 
 export class GridSession {
   readonly sessionId: string;
@@ -69,6 +69,20 @@ export class GridSession {
     }
 
     return findElementByInfo(this.driver, info);
+  }
+
+  /** A usable WebElement for the ref, or its selector for the real-input *Deep actions (see Context). */
+  async getTargetByRef(ref: string): Promise<RefTarget> {
+    if (!this.snapshot) {
+      await this.captureSnapshot();
+    }
+
+    const info = this.snapshot!.elements.get(ref);
+    if (!info) {
+      throw new Error(`Element ref not found: ${ref}. Available refs: ${Array.from(this.snapshot!.elements.keys()).join(', ')}`);
+    }
+
+    return resolveRefTarget(this.driver, info);
   }
 
   async close(): Promise<void> {

@@ -12,6 +12,10 @@ import { collectLocatorCandidates, locatorSnippets, rankCandidates, type Locator
 import { checkSeleniumRules, findLongerTimeouts, formatRuleViolations } from './selenium-rules.js';
 import { recordTestRun } from '../../utils/test-runs.js';
 import { countDeep } from '../../utils/shadow-dom.js';
+import { helperLanguageFor, shadowHelper, type HelperLanguage } from '../../utils/shadow-helpers.js';
+
+/** Helper files already handed out, per session, so a test generation run gets each one once. */
+const helpersSent = new WeakMap<object, Set<HelperLanguage>>();
 
 // ============================================================================
 // Shared command runner
@@ -399,7 +403,9 @@ export class BrowserGenerateLocatorTool extends BaseTool {
   readonly description =
     'Generate a robust locator for an element described in plain words, e.g. "search box" or ' +
     '"the Add to Cart button of the Mechanical Keyboard". Matches text, label, placeholder, test id, ' +
-    'element kind and the surrounding content; returns ready-to-paste locators for JavaScript, Python and Java';
+    'element kind and the surrounding content; returns ready-to-paste locators for JavaScript, Python, Java and ' +
+    'Robot Framework. For elements in shadow DOM WebDriver cannot reach (Salesforce Lightning), the locators call a ' +
+    'small helper file, returned once with the first such locator: save it next to the tests';
   readonly inputSchema = generateLocatorSchema;
   readonly category: ToolCategory = 'agent';
 
@@ -436,9 +442,35 @@ export class BrowserGenerateLocatorTool extends BaseTool {
         css: m.css,
         score: m.score,
       })),
+      ...this.shadowHelperFor(context, best),
     };
 
     return this.success(JSON.stringify(result, null, 2), false);
+  }
+
+  /** For shadow DOM WebDriver cannot reach (or Robot Framework in any shadow DOM): the helper file, once per session. */
+  private shadowHelperFor(context: Context, m: LocatorCandidate): Record<string, unknown> {
+    const framework = context.generatorFramework ?? undefined;
+    const robot = /robot/i.test(framework ?? '');
+    if (!m.syntheticShadow && !(robot && m.css.includes('>>>'))) return {};
+
+    const why = m.syntheticShadow
+      ? 'This element is in Salesforce-style (synthetic) shadow DOM: WebDriver cannot find it and shadow_root fails, ' +
+        'so use the locator code above, which calls the helper.'
+      : 'SeleniumLibrary has no keywords for shadow DOM, so the Robot Framework locator calls the helper.';
+    const language = helperLanguageFor(framework);
+    if (!language) {
+      return { shadowDom: { note: `${why} There is no helper file for ${framework}: use its own shadow-piercing ` +
+        `locator for ${m.css} (Playwright CSS pierces shadow DOM), or real mouse input at the element's position.` } };
+    }
+    let sent = helpersSent.get(context);
+    if (!sent) helpersSent.set(context, (sent = new Set()));
+    const helper = shadowHelper(language);
+    if (sent.has(language)) {
+      return { shadowDom: { note: `${why} Uses ${helper.filename}, given earlier in this session.` } };
+    }
+    sent.add(language);
+    return { shadowDom: { note: why, helperFile: { filename: helper.filename, usage: helper.usage, code: helper.code } } };
   }
 }
 
