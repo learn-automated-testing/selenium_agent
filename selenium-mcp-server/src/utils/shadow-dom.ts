@@ -13,6 +13,8 @@ import { Condition, Key, Origin, type WebDriver, type WebElement } from 'seleniu
  *    shadow root and its light-DOM children, so slotted content is found too)
  *  - queryAllPath(path): all matches of the last part
  *  - shadowHosts(el): the chain of shadow hosts around an element, outermost first
+ *  - isShown(el): has a box and is not parked off the page (left of or above it). Salesforce keeps hidden
+ *    copies of forms at about x = -9400: they have a box, but are not what the user sees.
  */
 export const DEEP_QUERY = `
 function deepQueryAll(root, selector) {
@@ -43,6 +45,11 @@ function shadowHosts(el) {
   const hosts = [];
   for (let r = el.getRootNode(); r instanceof ShadowRoot; r = r.host.getRootNode()) hosts.unshift(r.host);
   return hosts;
+}
+function isShown(el) {
+  if (!el.getClientRects().length) return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 && r.right + window.scrollX > 0 && r.bottom + window.scrollY > 0;
 }
 `;
 
@@ -95,7 +102,7 @@ export interface DeepPoint {
 
 const POINT = `${DEEP_QUERY}
 var el;
-try { el = queryAllPath(arguments[0]).filter(function (e) { return e.getClientRects().length > 0; })[0]; } catch (e) { return null; }
+try { el = queryAllPath(arguments[0]).filter(isShown)[0]; } catch (e) { return null; }
 if (!el) return null;
 el.scrollIntoView({ block: 'center', inline: 'center' });
 var r = el.getBoundingClientRect();
@@ -111,7 +118,7 @@ for (var n = top; n; n = n.parentNode || n.host || null) { if (n === el) { hit =
 return { x: x, y: y, hit: hit, tag: el.tagName.toLowerCase() };`;
 
 const SELECT_CONTENT = `${DEEP_QUERY}
-var el = queryAllPath(arguments[0]).filter(function (e) { return e.getClientRects().length > 0; })[0];
+var el = queryAllPath(arguments[0]).filter(isShown)[0];
 if (!el) return 0;
 if (typeof el.select === 'function') { el.select(); return (el.value || '').length; }
 if (el.isContentEditable) { var range = document.createRange(); range.selectNodeContents(el); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); return (el.textContent || '').length; }
@@ -169,10 +176,10 @@ export interface DeepState {
 
 const STATE = `${DEEP_QUERY}
 var all = queryAllPath(arguments[0]);
-var el = all.filter(function (e) { return e.getClientRects().length > 0; })[0] || all[0];
+var el = all.filter(isShown)[0] || all[0];
 if (!el) return null;
 var s = getComputedStyle(el);
-var visible = el.getClientRects().length > 0 && s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity || '1') > 0;
+var visible = isShown(el) && s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity || '1') > 0;
 var r = el.getBoundingClientRect();
 return { tag: el.tagName.toLowerCase(), value: typeof el.value === 'string' ? el.value : null,
   text: (el.innerText || el.textContent || '').trim(), visible: visible,
@@ -208,7 +215,7 @@ export async function selectNativeDeep(driver: WebDriver, selector: string, choi
 // scrolls it into view and returns its centre and whether a click there would land on it.
 const OPTION_POINT = `${DEEP_QUERY}
 var by = arguments[0];
-var opts = deepQueryAll(document, '[role="option"]').filter(function (e) { return e.getClientRects().length > 0; });
+var opts = deepQueryAll(document, '[role="option"]').filter(isShown);
 function label(e) { return (e.innerText || e.textContent || '').trim().replace(/\\s+/g, ' '); }
 var el = null;
 if (by.value != null) el = opts.filter(function (e) { return e.getAttribute('data-value') === by.value || e.getAttribute('value') === by.value; })[0];

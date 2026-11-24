@@ -98,6 +98,22 @@ describe('shadow DOM locators', () => {
   });
 });
 
+describe('shadow DOM: what counts as shown', () => {
+  const isShown = new Function('window', `${DEEP_QUERY}\nreturn isShown;`)({ scrollX: 0, scrollY: 0 });
+  const el = (rect: object, boxes = 1) => ({ getClientRects: () => new Array(boxes), getBoundingClientRect: () => rect });
+
+  it('skips copies Salesforce parks off the page (left of it)', () => {
+    expect(isShown(el({ width: 300, height: 32, right: -9138, bottom: 60 }))).to.equal(false);
+  });
+  it('keeps elements on the page, also below the fold', () => {
+    expect(isShown(el({ width: 300, height: 32, right: 600, bottom: 300 }))).to.equal(true);
+    expect(isShown(el({ width: 300, height: 32, right: 600, bottom: 4000 }))).to.equal(true);
+  });
+  it('skips elements without a box', () => {
+    expect(isShown(el({ width: 0, height: 0, right: 0, bottom: 0 }, 0))).to.equal(false);
+  });
+});
+
 describe('shadow DOM: deep query', () => {
   it('searches an element\'s own shadow root and its light-DOM children for the next part of a >>> path', () => {
     expect(DEEP_QUERY).to.contain('if (root.shadowRoot) visit(root.shadowRoot);');

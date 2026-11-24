@@ -113,6 +113,7 @@ const FIND_ELEMENT_SCRIPT = `
     if (!el) return false;
     var r = el.getBoundingClientRect();
     if (r.width === 0 && r.height === 0) return false;
+    if (!isShown(el)) return false; // parked off the page (Salesforce keeps hidden copies of forms there)
     var s = window.getComputedStyle(el);
     return s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0';
   }

@@ -13,7 +13,7 @@ import { DEEP_QUERY } from './shadow-dom.js';
 
 /** In-page functions shared by every helper call (plain JavaScript, ES5). */
 export const PAGE_LIB = `${DEEP_QUERY}
-function firstVisible(path) { return queryAllPath(path).filter(function (e) { return e.getClientRects().length > 0; })[0] || null; }
+function firstVisible(path) { return queryAllPath(path).filter(isShown)[0] || null; }
 function centreHit(el) {
   var r = el.getBoundingClientRect();
   var x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
@@ -30,7 +30,7 @@ function centreHit(el) {
 function point(path) { var el = firstVisible(path); if (!el) return null; el.scrollIntoView({ block: 'center', inline: 'center' }); return centreHit(el); }
 function label(e) { return (e.innerText || e.textContent || '').trim().replace(/\\s+/g, ' '); }
 function optionPoint(text) {
-  var opts = deepQueryAll(document, '[role="option"]').filter(function (e) { return e.getClientRects().length > 0; });
+  var opts = deepQueryAll(document, '[role="option"]').filter(isShown);
   var el = opts.filter(function (e) { return label(e) === text || e.getAttribute('data-value') === text; })[0];
   if (!el) return { found: false, hit: false, options: opts.map(label) };
   el.scrollIntoView({ block: 'nearest' });
@@ -38,11 +38,11 @@ function optionPoint(text) {
 }
 function state(path) {
   var all = queryAllPath(path);
-  var el = all.filter(function (e) { return e.getClientRects().length > 0; })[0] || all[0];
+  var el = all.filter(isShown)[0] || all[0];
   if (!el) return null;
   var s = getComputedStyle(el);
   return { value: typeof el.value === 'string' ? el.value : null, text: label(el),
-    visible: el.getClientRects().length > 0 && s.visibility !== 'hidden' && s.display !== 'none' };
+    visible: isShown(el) && s.visibility !== 'hidden' && s.display !== 'none' };
 }
 function selectContent(path) {
   var el = firstVisible(path);

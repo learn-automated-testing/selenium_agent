@@ -38,7 +38,7 @@ const COLLECT_CANDIDATES = `${DEEP_QUERY}
 const visible = (el) => {
   const r = el.getBoundingClientRect();
   const s = getComputedStyle(el);
-  return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
+  return isShown(el) && s.visibility !== 'hidden' && s.display !== 'none';
 };
 const clean = (t) => (t || '').replace(/\\s+/g, ' ').trim();
 const q = (v) => '"' + String(v).replace(/\\\\/g, '\\\\\\\\').replace(/"/g, '\\\\"') + '"';
@@ -106,7 +106,7 @@ const countKeys = () => {
   keyCounts = new Map();
   const add = (k) => keyCounts.set(k, (keyCounts.get(k) || 0) + 1);
   for (const e of deepQueryAll(document, '*')) {
-    if (!e.getClientRects().length) continue;
+    if (!isShown(e)) continue;
     const tag = e.tagName.toLowerCase();
     for (const a of SHORT_ATTRS) { const v = e.getAttribute(a); if (v) add(tag + '[' + a + '=' + q(v) + ']'); }
     const id = e.getAttribute('id');
