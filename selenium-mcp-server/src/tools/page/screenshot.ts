@@ -6,6 +6,7 @@ import { ToolResult, ToolCategory } from '../../types.js';
 import { getOutputDir } from '../../utils/paths.js';
 import { getBidiContext } from '../../utils/bidi-helpers.js';
 import { validateOutputPath } from '../../utils/sandbox.js';
+import { stateDeep } from '../../utils/shadow-dom.js';
 
 const SCREENSHOTS_DIR = 'screenshots';
 
@@ -40,11 +41,19 @@ export class ScreenshotTool extends BaseTool {
         try {
           if (ref) {
             // Element screenshot via BiDi — resolve by element ref
-            const element = await context.getElementByRef(ref);
-            const rect = await driver.executeScript(
-              'const r = arguments[0].getBoundingClientRect(); return {x: r.x, y: r.y, width: r.width, height: r.height};',
-              element
-            ) as { x: number; y: number; width: number; height: number };
+            const target = await context.getTargetByRef(ref);
+            let rect: { x: number; y: number; width: number; height: number };
+            if (target.element) {
+              rect = await driver.executeScript(
+                'const r = arguments[0].getBoundingClientRect(); return {x: r.x, y: r.y, width: r.width, height: r.height};',
+                target.element
+              ) as { x: number; y: number; width: number; height: number };
+            } else {
+              // Shadow DOM WebDriver cannot reach: measure the element in the page.
+              const state = await stateDeep(driver, target.selector);
+              if (!state) throw new Error(`No element matches ${target.selector}`);
+              rect = state.rect;
+            }
 
             base64 = await bidi.browsingContext.captureBoxScreenshot(
               rect.x, rect.y, rect.width, rect.height

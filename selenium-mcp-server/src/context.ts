@@ -1,7 +1,7 @@
 import { Builder, WebDriver, WebElement } from 'selenium-webdriver';
 import chrome from 'selenium-webdriver/chrome.js';
 import { PageSnapshot, BrowserConfig, TabInfo, ConsoleLogEntry, SnapshotOptions, ConsoleOptions, DiffOptions } from './types.js';
-import { discoverElements, findElementByInfo, formatAccessibilityTree } from './utils/element-discovery/index.js';
+import { discoverElements, findElementByInfo, formatAccessibilityTree, resolveRefTarget, type RefTarget } from './utils/element-discovery/index.js';
 import { buildChromeOptions, applyStealthScripts } from './utils/chrome-options.js';
 import { EventCollector } from './bidi/event-collector.js';
 import { SessionTracer } from './trace/session-tracer.js';
@@ -543,6 +543,27 @@ export class Context {
 
     const driver = await this.getDriver();
     return findElementByInfo(driver, info);
+  }
+
+  /**
+   * Like getElementByRef, but for elements WebDriver cannot hold a reference to (shadow-DOM polyfills such as
+   * Salesforce Lightning's synthetic shadow) it returns the element's selector instead, for the real-input
+   * *Deep actions in utils/shadow-dom.ts.
+   */
+  async getTargetByRef(ref: string): Promise<RefTarget> {
+    if (this.activeGridSession) {
+      return this.activeGridSession.getTargetByRef(ref);
+    }
+
+    const snapshot = await this.getSnapshot();
+    const info = snapshot.elements.get(ref);
+
+    if (!info) {
+      throw new Error(`Element ref not found: ${ref}. Available refs: ${Array.from(snapshot.elements.keys()).join(', ')}`);
+    }
+
+    const driver = await this.getDriver();
+    return resolveRefTarget(driver, info);
   }
 
   async getTabs(): Promise<TabInfo[]> {
