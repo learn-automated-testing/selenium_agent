@@ -214,8 +214,8 @@ Everything above works with a local browser. Selenium Grid adds parallel session
 ### 1. Start the Grid
 
 ```bash
-git clone https://github.com/learn-automated-testing/selenium-ai-agent.git
-cd selenium-ai-agent/selenium-grid
+git clone https://github.com/learn-automated-testing/selenium_agent.git
+cd selenium_agent/selenium-grid
 docker-compose up -d          # Grid console: http://localhost:4444
 
 docker-compose up -d --scale chrome-node=10   # scale up any time
@@ -361,5 +361,5 @@ MIT — see [LICENSE](LICENSE).
 
 <p align="center">
   <b>If this project helps you, please give it a star!</b><br>
-  <a href="https://github.com/learn-automated-testing/selenium-ai-agent">Star on GitHub</a>
+  <a href="https://github.com/learn-automated-testing/selenium_agent">Star on GitHub</a>
 </p>

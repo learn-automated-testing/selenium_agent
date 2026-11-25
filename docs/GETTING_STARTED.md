@@ -50,8 +50,8 @@ Get the full power of parallel browser automation:
 ### 1. Clone and Start Grid
 
 ```bash
-git clone https://github.com/learn-automated-testing/selenium-ai-agent.git
-cd selenium-ai-agent
+git clone https://github.com/learn-automated-testing/selenium_agent.git
+cd selenium_agent
 docker-compose up -d
 ```
 
@@ -170,5 +170,5 @@ docker-compose up -d --scale chrome-node=20 --scale firefox-node=5
 ## Getting Help
 
 - 📖 [Full Documentation](README.md)
-- 🐛 [Report Issues](https://github.com/learn-automated-testing/selenium-ai-agent/issues)
-- 💬 [Discussions](https://github.com/learn-automated-testing/selenium-ai-agent/discussions)
+- 🐛 [Report Issues](https://github.com/learn-automated-testing/selenium_agent/issues)
+- 💬 [Discussions](https://github.com/learn-automated-testing/selenium_agent/discussions)
