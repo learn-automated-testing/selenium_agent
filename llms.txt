@@ -29,18 +29,18 @@ Key facts:
 
 ## Docs
 
-- [README](https://github.com/learn-automated-testing/selenium_agent#readme): overview, Grid setup and comparison with Playwright MCP
-- [Package README](https://github.com/learn-automated-testing/selenium_agent/blob/main/selenium-mcp-server/README.md): all tools, tool groups, environment variables, CLI commands and test agents
-- [CHANGELOG](https://github.com/learn-automated-testing/selenium_agent/blob/main/selenium-mcp-server/CHANGELOG.md): what changed per version
+- [README](https://github.com/learn-automated-testing/selenium-ai-agent#readme): overview, Grid setup and comparison with Playwright MCP
+- [Package README](https://github.com/learn-automated-testing/selenium-ai-agent/blob/main/selenium-mcp-server/README.md): all tools, tool groups, environment variables, CLI commands and test agents
+- [CHANGELOG](https://github.com/learn-automated-testing/selenium-ai-agent/blob/main/selenium-mcp-server/CHANGELOG.md): what changed per version
 - [npm package](https://www.npmjs.com/package/selenium-ai-agent)
 
 ## Examples
 
-- [Examples](https://github.com/learn-automated-testing/selenium_agent/tree/main/examples): product discovery and analysis of the practice application https://practiceautomatedtesting.com
+- [Examples](https://github.com/learn-automated-testing/selenium-ai-agent/tree/main/examples): product discovery and analysis of the practice application https://practiceautomatedtesting.com
 
 ## Optional
 
 - [Learn Automated Testing](https://learnautomatedtesting.com): courses and articles on test automation, by the author
-- [Agent definitions](https://github.com/learn-automated-testing/selenium_agent/tree/main/selenium-mcp-server/agents): the planner, generator, healer and analyzer instructions that `init-agents` installs
+- [Agent definitions](https://github.com/learn-automated-testing/selenium-ai-agent/tree/main/selenium-mcp-server/agents): the planner, generator, healer and analyzer instructions that `init-agents` installs
 - [Selenium's guide for AI agents](https://www.selenium.dev/documentation/ai_agents/) and [Selenium docs index](https://www.selenium.dev/llms.txt): the rules the generator and healer follow
 - [WebdriverIO's guide for AI agents](https://webdriver.io/docs/ai-agents) and [WebdriverIO docs index](https://webdriver.io/llms.txt)

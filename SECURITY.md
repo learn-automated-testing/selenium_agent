@@ -17,7 +17,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 1. **Do NOT open a public GitHub issue** for security vulnerabilities
 2. Email us at: [security@learnautomatedtesting.com](mailto:security@learnautomatedtesting.com)
-3. Or use GitHub's private vulnerability reporting: [Report a vulnerability](https://github.com/learn-automated-testing/selenium_agent/security/advisories/new)
+3. Or use GitHub's private vulnerability reporting: [Report a vulnerability](https://github.com/learn-automated-testing/selenium-ai-agent/security/advisories/new)
 
 ### What to Include
 

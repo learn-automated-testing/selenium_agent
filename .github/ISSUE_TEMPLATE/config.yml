@@ -5,11 +5,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: 📚 Documentation
-    url: https://github.com/learn-automated-testing/selenium_agent/blob/main/README.md
+    url: https://github.com/learn-automated-testing/selenium-ai-agent/blob/main/README.md
     about: Check the documentation before opening an issue
   - name: 💬 Discussions
-    url: https://github.com/learn-automated-testing/selenium_agent/discussions
+    url: https://github.com/learn-automated-testing/selenium-ai-agent/discussions
     about: Ask questions and share ideas in Discussions
   - name: 🔒 Security Issues
-    url: https://github.com/learn-automated-testing/selenium_agent/security/advisories/new
+    url: https://github.com/learn-automated-testing/selenium-ai-agent/security/advisories/new
     about: Report security vulnerabilities privately
