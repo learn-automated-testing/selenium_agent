@@ -900,7 +900,7 @@ session_create (chrome + firefox) → parallel_execute
 session_create (chrome) → session_create (firefox) → parallel_execute
 ```
 
-See the [project README](https://github.com/learn-automated-testing/selenium-ai-agent#readme) for Docker Compose setup and Grid architecture details.
+See the [project README](https://github.com/learn-automated-testing/selenium_agent#readme) for Docker Compose setup and Grid architecture details.
 
 ---
 

@@ -4,11 +4,11 @@
   "title": "Selenium AI Agent",
   "description": "Selenium MCP: plan, review, generate, heal tests; JUnit/Allure reports linked to the plan",
   "repository": {
-    "url": "https://github.com/learn-automated-testing/selenium-ai-agent",
+    "url": "https://github.com/learn-automated-testing/selenium_agent",
     "source": "github",
     "subfolder": "selenium-mcp-server"
   },
-  "websiteUrl": "https://github.com/learn-automated-testing/selenium-ai-agent#readme",
+  "websiteUrl": "https://github.com/learn-automated-testing/selenium_agent#readme",
   "version": "3.8.1",
   "packages": [
     {
