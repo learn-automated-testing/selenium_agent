@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { typeDeep } from '../../utils/shadow-dom.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference (e.g., e1, e2) for input field'),
@@ -39,7 +40,18 @@ export class TypeTool extends BaseTool {
   async execute(context: Context, params: unknown): Promise<ToolResult> {
     const { ref, text, clear } = this.parseParams(schema, params);
 
-    const element = await context.getElementByRef(ref);
+    const target = await context.getTargetByRef(ref);
+
+    if (!target.element) {
+      // WebDriver cannot hold this element (shadow-DOM polyfill): click into it and type with real key events
+      await typeDeep(await context.getDriver(), target.selector, text, clear);
+      return this.success(
+        `Typed "${text.slice(0, 20)}${text.length > 20 ? '...' : ''}" into ${ref} (in shadow DOM: real key events, ${target.selector})`,
+        true,
+      );
+    }
+
+    const element = target.element;
 
     if (clear) {
       await element.clear();

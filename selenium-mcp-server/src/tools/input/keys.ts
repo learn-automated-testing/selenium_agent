@@ -3,6 +3,7 @@ import { Key } from 'selenium-webdriver';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { clickDeep } from '../../utils/shadow-dom.js';
 
 const keyMap: Record<string, string> = {
   'enter': Key.ENTER,
@@ -72,8 +73,9 @@ export class KeyPressTool extends BaseTool {
 
     // If ref provided, click on element first
     if (ref) {
-      const element = await context.getElementByRef(ref);
-      await element.click();
+      const target = await context.getTargetByRef(ref);
+      if (target.element) await target.element.click();
+      else await clickDeep(driver, target.selector); // shadow DOM: focus it with a real click
     }
 
     // Press the key

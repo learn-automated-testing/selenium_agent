@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { BaseTool } from '../base.js';
 import { Context } from '../../context.js';
 import { ToolResult, ToolCategory } from '../../types.js';
+import { stateDeep } from '../../utils/shadow-dom.js';
 
 const schema = z.object({
   ref: z.string().describe('Element reference from page snapshot'),
@@ -18,8 +19,15 @@ export class VerifyValueTool extends BaseTool {
     const { ref, expectedValue } = this.parseParams(schema, params);
 
     try {
-      const element = await context.getElementByRef(ref);
-      const actualValue = await element.getAttribute('value') || await element.getText();
+      const target = await context.getTargetByRef(ref);
+      let actualValue: string;
+      if (target.element) {
+        actualValue = await target.element.getAttribute('value') || await target.element.getText();
+      } else {
+        // Shadow DOM WebDriver cannot reach: read the value / text in the page.
+        const state = await stateDeep(await context.getDriver(), target.selector);
+        actualValue = state?.value || state?.text || '';
+      }
 
       if (actualValue === expectedValue) {
         return this.success(`Element ${ref} has expected value "${expectedValue}"`, false);
