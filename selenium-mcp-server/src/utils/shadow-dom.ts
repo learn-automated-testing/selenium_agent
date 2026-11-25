@@ -311,17 +311,19 @@ export async function isUsableElement(element: WebElement): Promise<boolean> {
  * Selenium code for a `host >>> inner` path: each host's shadow_root is opened in turn.
  * Selenium searches a shadow root with CSS only (no XPath), as browsers do.
  */
-export function shadowSnippets(path: string): { python: string; java: string; javascript: string } {
+export function shadowSnippets(path: string): { python: string; java: string; javascript: string; csharp: string } {
   const parts = path.split(/\s*>>>\s*/);
   const sq = (s: string) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
   const dq = (s: string) => JSON.stringify(s);
   let python = `driver.find_element(By.CSS_SELECTOR, ${sq(parts[0])})`;
   let java = `driver.findElement(By.cssSelector(${dq(parts[0])}))`;
   let javascript = `(await driver.findElement(By.css(${sq(parts[0])})))`;
+  let csharp = `driver.FindElement(By.CssSelector(${dq(parts[0])}))`;
   for (const part of parts.slice(1)) {
     python += `.shadow_root.find_element(By.CSS_SELECTOR, ${sq(part)})`;
     java += `.getShadowRoot().findElement(By.cssSelector(${dq(part)}))`;
     javascript = `(await (await ${javascript}.getShadowRoot()).findElement(By.css(${sq(part)})))`;
+    csharp += `.GetShadowRoot().FindElement(By.CssSelector(${dq(part)}))`;
   }
-  return { python, java, javascript: `await ${javascript.slice(7, -1)}` };
+  return { python, java, javascript: `await ${javascript.slice(7, -1)}`, csharp };
 }

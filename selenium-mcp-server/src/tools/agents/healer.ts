@@ -403,7 +403,7 @@ export class BrowserGenerateLocatorTool extends BaseTool {
   readonly description =
     'Generate a robust locator for an element described in plain words, e.g. "search box" or ' +
     '"the Add to Cart button of the Mechanical Keyboard". Matches text, label, placeholder, test id, ' +
-    'element kind and the surrounding content; returns ready-to-paste locators for JavaScript, Python, Java and ' +
+    'element kind and the surrounding content; returns ready-to-paste locators for JavaScript, Python, Java, C# and ' +
     'Robot Framework. For elements in shadow DOM WebDriver cannot reach (Salesforce Lightning), the locators call a ' +
     'small helper file, returned once with the first such locator: save it next to the tests';
   readonly inputSchema = generateLocatorSchema;

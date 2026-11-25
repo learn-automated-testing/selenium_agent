@@ -15,7 +15,8 @@ describe('script generator: shadow DOM locators', () => {
     expect(s.robot).to.match(/^Deep Click {4}one-app-nav-bar >>> a\[title="New"\]/);
     expect(s.javascript).to.match(/^await deepClick\(driver, 'one-app-nav-bar >>> a\[title="New"\]'\)/);
     expect(s.java).to.match(/^DeepShadow\.click\(driver, "one-app-nav-bar >>> a\[title=\\"New\\"\]"\);/);
-    for (const code of Object.values(s)) expect(code).not.to.match(/shadow_root|getShadowRoot|find_element|findElement/);
+    expect(s.csharp).to.match(/^DeepShadow\.Click\(driver, "one-app-nav-bar >>> a\[title=\\"New\\"\]"\);/);
+    for (const code of Object.values(s)) expect(code).not.to.match(/shadow_root|getShadowRoot|GetShadowRoot|find_element|findElement|FindElement/);
   });
 
   it('also calls the helper for synthetic shadow elements whose selector has no >>> path', () => {
@@ -27,6 +28,13 @@ describe('script generator: shadow DOM locators', () => {
     const s = locatorSnippets({ ...base, css: 'login-form >>> #user' });
     expect(s.python).to.equal("driver.find_element(By.CSS_SELECTOR, 'login-form').shadow_root.find_element(By.CSS_SELECTOR, '#user')");
     expect(s.robot).to.match(/^Deep Click {4}login-form >>> #user/);
+    expect(s.csharp).to.equal('driver.FindElement(By.CssSelector("login-form")).GetShadowRoot().FindElement(By.CssSelector("#user"))');
+  });
+
+  it('gives C# locators for elements in the page itself', () => {
+    expect(locatorSnippets({ ...base, css: '#login' }).csharp).to.equal('By.CssSelector("#login")');
+    expect(locatorSnippets({ ...base, css: '#login', xpath: "//a[normalize-space()='New']" }).csharpXpath)
+      .to.equal('By.XPath("//a[normalize-space()=\'New\']")');
   });
 
   it('gives SeleniumLibrary locators for elements in the page itself', () => {
@@ -66,7 +74,10 @@ describe('script generator: helper file per framework', () => {
     expect(helperLanguageFor('selenium-js-jest')).to.equal('javascript');
     expect(helperLanguageFor('playwright-js')).to.equal(null);
     expect(helperLanguageFor('webdriverio-ts')).to.equal(null);
-    expect(helperLanguageFor('selenium-csharp-nunit')).to.equal(null);
+    expect(helperLanguageFor('selenium-csharp-nunit')).to.equal('csharp');
+    expect(helperLanguageFor('selenium-dotnet-xunit')).to.equal('csharp');
+    expect(helperLanguageFor('mstest')).to.equal('csharp');
+    expect(helperLanguageFor('selenium-java-testng')).to.equal('java');
   });
 
   it('runs valid JavaScript in the page', () => {
@@ -95,5 +106,18 @@ describe('script generator: helper file per framework', () => {
     expect(h.code).to.contain('public final class DeepShadow');
     expect(h.code).to.contain('.replace(/\\\\s+/g');   // \s in the page code becomes \\s in Java source
     expect(h.code).not.to.contain('Thread.sleep');
+  });
+
+  it('C# helper keeps the page code intact in a verbatim string', () => {
+    const h = shadowHelper('csharp');
+    expect(h.filename).to.equal('DeepShadow.cs');
+    expect(h.code).to.contain('public static class DeepShadow');
+    const lib = /private const string Lib = @"([\s\S]*?)";\n/.exec(h.code);
+    expect(lib, 'Lib string').to.not.equal(null);
+    expect(lib![1].replace(/""/g, '"')).to.equal(PAGE_LIB);   // C# verbatim: "" is one quote, backslashes kept
+    expect(h.code).not.to.match(/Thread\.Sleep|Task\.Delay|ImplicitWait/);
+    // An instant (0 ms) move left Lightning picklist options unselected; Java and Python move over 250 ms.
+    expect(h.code).to.contain('TimeSpan.FromMilliseconds(250)');
+    expect(h.code).to.contain('new PointerInputDevice(PointerKind.Mouse');
   });
 });

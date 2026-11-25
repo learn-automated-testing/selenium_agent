@@ -256,11 +256,13 @@ export function locatorSnippets(m: LocatorCandidate): Record<string, string> {
     javascript: `By.css(${single(m.css)})`,
     python: `(By.CSS_SELECTOR, ${single(m.css)})`,
     java: `By.cssSelector(${double(m.css)})`,
+    csharp: `By.CssSelector(${double(m.css)})`,
     robot: positional && m.xpath ? `xpath:${m.xpath}` : `css:${m.css}`,
   };
   if (m.xpath) {
     snippets.xpath = m.xpath;
     snippets.javascriptXpath = `By.xpath(${double(m.xpath)})`;
+    snippets.csharpXpath = `By.XPath(${double(m.xpath)})`;
   }
   return snippets;
 }
