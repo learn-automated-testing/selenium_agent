@@ -219,8 +219,8 @@ For GitHub Copilot, use `"servers"` instead of `"mcpServers"` and add `"type": "
 ### Start the Grid
 
 ```bash
-git clone https://github.com/learn-automated-testing/selenium_agent.git
-cd selenium_agent
+git clone https://github.com/learn-automated-testing/selenium-ai-agent.git
+cd selenium-ai-agent
 docker-compose up -d
 ```
 
@@ -329,4 +329,4 @@ If Chrome is blocked by macOS security:
 - [Agent Workflow](AGENT_WORKFLOW.md) — Planner → Generator → Healer pipeline
 - [Framework Standards](FRAMEWORK_STANDARDS.md) — Code generation conventions
 
-For issues: https://github.com/learn-automated-testing/selenium_agent/issues
+For issues: https://github.com/learn-automated-testing/selenium-ai-agent/issues
