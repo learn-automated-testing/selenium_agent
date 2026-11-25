@@ -86,7 +86,10 @@ function installToTarget(targetKey: string, args: string[] = []): void {
   const config = readJsonFile(configPath);
   const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
   const { dir } = outputDirFor(args);
-  const existing = mcpServers['selenium-mcp'] as ServerEntry | undefined;
+  // An existing setup keeps its key ("selenium-mcp" before 3.9, or any entry that runs the package).
+  const existingKey = ['selenium-ai-agent', 'selenium-mcp'].find(k => mcpServers[k])
+    ?? Object.keys(mcpServers).find(k => /selenium-ai-agent/.test(JSON.stringify(mcpServers[k])));
+  const existing = (existingKey ? mcpServers[existingKey] : undefined) as ServerEntry | undefined;
   const current = existing?.env?.SELENIUM_MCP_OUTPUT_DIR;
 
   if (existing) {
@@ -97,7 +100,7 @@ function installToTarget(targetKey: string, args: string[] = []): void {
     }
     existing.env = { ...(existing.env ?? {}), SELENIUM_MCP_OUTPUT_DIR: dir };
   } else {
-    mcpServers['selenium-mcp'] = { ...SERVER_ENTRY, ...(dir ? { env: { SELENIUM_MCP_OUTPUT_DIR: dir } } : {}) };
+    mcpServers['selenium-ai-agent'] = { ...SERVER_ENTRY, ...(dir ? { env: { SELENIUM_MCP_OUTPUT_DIR: dir } } : {}) };
   }
   config.mcpServers = mcpServers;
 

@@ -6,7 +6,7 @@ import YAML from 'yaml';
 export const LOOPS = ['claude', 'vscode', 'copilot', 'cursor'] as const;
 export type Loop = (typeof LOOPS)[number];
 
-export const DEFAULT_SERVER_NAME = 'selenium-mcp';
+export const DEFAULT_SERVER_NAME = 'selenium-ai-agent';
 
 /** One agent: instructions plus the tools it may use (plain server tool names, or "search"/"edit"). */
 export interface AgentSpec {

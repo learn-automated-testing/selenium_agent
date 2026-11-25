@@ -1,4 +1,4 @@
-# Project context: selenium_agent
+# Project context: selenium-ai-agent
 
 This file is read by every agent and skill before they act. It is the single source of
 truth for project-specific stack, conventions, and domain knowledge. Keep it current.

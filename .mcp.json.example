@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["selenium-ai-agent"],
       "env": {

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createServer as createHttpServer, IncomingMessage, ServerResponse } from 'node:http';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -21,11 +22,22 @@ import { isSessionLostError, SESSION_LOST_HINT } from './session-recovery.js';
 // Pre-compute the expectation JSON schema once
 const expectationJsonSchema = zodToJsonSchema(ExpectationSchema.unwrap());
 
+/** The version in package.json (src/ when run from source, dist/src/ when built). */
+function packageVersion(): string {
+  for (const rel of ['../package.json', '../../package.json']) {
+    try {
+      const pkg = JSON.parse(readFileSync(new URL(rel, import.meta.url), 'utf8')) as { name?: string; version?: string };
+      if (pkg.name === 'selenium-ai-agent' && pkg.version) return pkg.version;
+    } catch { /* try the next */ }
+  }
+  return '0.0.0';
+}
+
 export async function createServer(externalContext?: Context) {
   const server = new Server(
     {
-      name: 'selenium-mcp',
-      version: '2.0.0'
+      name: 'selenium-ai-agent',
+      version: packageVersion()
     },
     {
       capabilities: {

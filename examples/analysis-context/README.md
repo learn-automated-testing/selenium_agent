@@ -1,6 +1,6 @@
 # Analysis Context Examples
 
-The Selenium MCP Server's analyzer is **generic** — it has no built-in knowledge
+The Selenium AI Agent's analyzer is **generic** — it has no built-in knowledge
 about your application. You provide context by importing documents (PRD, user stories,
 test scope) that guide the analysis.
 

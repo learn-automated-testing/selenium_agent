@@ -1,10 +1,10 @@
 # Selenium AI Agent
 
-> Selenium AI Agent (`selenium-ai-agent` on npm, actively maintained, MIT) is a Selenium MCP server: it lets AI assistants drive a real browser with Selenium WebDriver, explore an application, write a test plan, generate tests from it, run them and repair them. It is built in Node.js (`npx -y selenium-ai-agent`). Generated tests are Python with pytest by default; on request it writes them in any language or framework (Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework, ...). It works in Claude Desktop, Claude Code, VS Code (GitHub Copilot agent mode) and Cursor, and scales out with Selenium Grid.
+> Selenium AI Agent (`selenium-ai-agent` on npm, actively maintained, MIT) is an open-source MCP server that brings Playwright-style AI test agents (planner, generator, healer) to Selenium: you approve the test plan before any test is written, tests are generated and self-healed in a real browser (also in parallel on Selenium Grid), and every JUnit or Allure result links back to its plan scenario. It works in Claude Code, Claude Desktop, VS Code (GitHub Copilot), Cursor, JetBrains IDEs and other MCP clients. It is built in Node.js (`npx -y selenium-ai-agent`). Generated tests are Python with pytest by default; on request it writes them in any language or framework (Java, C#, JavaScript/TypeScript, WebdriverIO, Robot Framework, ...). It works in Claude Desktop, Claude Code, VS Code (GitHub Copilot agent mode) and Cursor, and scales out with Selenium Grid.
 
 Key facts:
 
-- Package: `selenium-ai-agent` on npm. Run with `npx -y selenium-ai-agent` (Node.js 18+, Chrome; the matching ChromeDriver is downloaded automatically). Check a setup with `npx selenium-ai-agent doctor`.
+- Package: `selenium-ai-agent` on npm. Run with `npx -y selenium-ai-agent` (Node.js 20+, Chrome; the matching ChromeDriver is downloaded automatically). Check a setup with `npx selenium-ai-agent doctor`.
 - Test agents, like Playwright's: planner, generator and healer (plus a migrator for Selenium 3 → 4 and a regression analyzer). Install them in a project with `npx selenium-ai-agent init-agents --loop=claude` (or `vscode`, `copilot`, `cursor`).
 - Planner: explores the app (`planner_setup_page`, `planner_explore_page`) and saves a structured test plan to `specs/` with `planner_save_plan`: suites with a seed file, tests with the file they become, steps with their own expected results, plus the elements found (with stable locators) and the gaps in the application. Every saved plan is a draft: `planner_review_plan` opens it as a review page in the user's browser (Approve / Request changes, comments per test) and an overview of all plans; `planner_approve_plan` records an approval given in the chat. The generator tools refuse a draft plan or one with changes requested (`skipPlanReview` only when the user explicitly skips the review). `SELENIUM_MCP_PLAN_REVIEW=off` turns the review off for speed. Reports: generated suites write JUnit XML (Allure with `reporting: "allure"` or when the project uses it); `healer_run_tests` links every result to its plan scenario, writes `reports/junit-plans.xml` and labels Allure results (epic = plan, story = scenario). Plans go to `specs/` in the project (`SELENIUM_MCP_SPECS_DIR` picks another folder); only Markdown with the plan layout counts as a plan, other files there are left alone.
 - Generator: reads a plan (`generator_read_spec`), checks every step live in the browser and writes one test file per plan test (`generator_write_test`), with an assertion for every expected result. Default framework: `selenium-python-pytest`; others on request, e.g. `selenium-java-maven`, `selenium-csharp-nunit`, `selenium-js-mocha`, `webdriverio-ts`, `robot-framework`.
@@ -22,25 +22,25 @@ Key facts:
 
 ## Install in an MCP client
 
-- Claude Code: `claude mcp add selenium-mcp -- npx -y selenium-ai-agent`
-- Claude Desktop (`claude_desktop_config.json`) and Cursor (`~/.cursor/mcp.json`): `{"mcpServers": {"selenium-mcp": {"command": "npx", "args": ["-y", "selenium-ai-agent"]}}}`
-- VS Code / GitHub Copilot (`.vscode/mcp.json`): `{"servers": {"selenium-mcp": {"command": "npx", "args": ["-y", "selenium-ai-agent"]}}}`
+- Claude Code: `claude mcp add selenium-ai-agent -- npx -y selenium-ai-agent`
+- Claude Desktop (`claude_desktop_config.json`) and Cursor (`~/.cursor/mcp.json`): `{"mcpServers": {"selenium-ai-agent": {"command": "npx", "args": ["-y", "selenium-ai-agent"]}}}`
+- VS Code / GitHub Copilot (`.vscode/mcp.json`): `{"servers": {"selenium-ai-agent": {"command": "npx", "args": ["-y", "selenium-ai-agent"]}}}`
 - Headless browser: add `"env": {"SELENIUM_HEADLESS": "true"}`.
 
 ## Docs
 
-- [README](https://github.com/learn-automated-testing/selenium_agent#readme): overview, Grid setup and comparison with Playwright MCP
-- [Package README](https://github.com/learn-automated-testing/selenium_agent/blob/main/selenium-mcp-server/README.md): all tools, tool groups, environment variables, CLI commands and test agents
-- [CHANGELOG](https://github.com/learn-automated-testing/selenium_agent/blob/main/selenium-mcp-server/CHANGELOG.md): what changed per version
+- [README](https://github.com/learn-automated-testing/selenium-ai-agent#readme): overview, Grid setup and comparison with Playwright MCP
+- [Package README](https://github.com/learn-automated-testing/selenium-ai-agent/blob/main/selenium-mcp-server/README.md): all tools, tool groups, environment variables, CLI commands and test agents
+- [CHANGELOG](https://github.com/learn-automated-testing/selenium-ai-agent/blob/main/selenium-mcp-server/CHANGELOG.md): what changed per version
 - [npm package](https://www.npmjs.com/package/selenium-ai-agent)
 
 ## Examples
 
-- [Examples](https://github.com/learn-automated-testing/selenium_agent/tree/main/examples): product discovery and analysis of the practice application https://practiceautomatedtesting.com
+- [Examples](https://github.com/learn-automated-testing/selenium-ai-agent/tree/main/examples): product discovery and analysis of the practice application https://practiceautomatedtesting.com
 
 ## Optional
 
 - [Learn Automated Testing](https://learnautomatedtesting.com): courses and articles on test automation, by the author
-- [Agent definitions](https://github.com/learn-automated-testing/selenium_agent/tree/main/selenium-mcp-server/agents): the planner, generator, healer and analyzer instructions that `init-agents` installs
+- [Agent definitions](https://github.com/learn-automated-testing/selenium-ai-agent/tree/main/selenium-mcp-server/agents): the planner, generator, healer and analyzer instructions that `init-agents` installs
 - [Selenium's guide for AI agents](https://www.selenium.dev/documentation/ai_agents/) and [Selenium docs index](https://www.selenium.dev/llms.txt): the rules the generator and healer follow
 - [WebdriverIO's guide for AI agents](https://webdriver.io/docs/ai-agents) and [WebdriverIO docs index](https://webdriver.io/llms.txt)

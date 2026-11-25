@@ -17,7 +17,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 1. **Do NOT open a public GitHub issue** for security vulnerabilities
 2. Email us at: [security@learnautomatedtesting.com](mailto:security@learnautomatedtesting.com)
-3. Or use GitHub's private vulnerability reporting: [Report a vulnerability](https://github.com/learn-automated-testing/selenium_agent/security/advisories/new)
+3. Or use GitHub's private vulnerability reporting: [Report a vulnerability](https://github.com/learn-automated-testing/selenium-ai-agent/security/advisories/new)
 
 ### What to Include
 
@@ -63,8 +63,7 @@ This project implements the following security practices:
 
 The following are in scope for security reports:
 
-- Selenium MCP Server (`selenium-mcp-server/`)
-- npm wrapper (`npm-wrapper/`)
+- Selenium AI Agent (`selenium-mcp-server/`)
 - Docker configurations
 - GitHub Actions workflows
 
@@ -83,4 +82,4 @@ We appreciate security researchers who help keep our project safe. Contributors 
 - Added to our CONTRIBUTORS.md (if desired)
 - Thanked publicly (with your permission)
 
-Thank you for helping keep Selenium MCP Server and its users safe!
+Thank you for helping keep Selenium AI Agent and its users safe!

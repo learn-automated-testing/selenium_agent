@@ -1,4 +1,4 @@
-# Contributing to Selenium MCP Server
+# Contributing to Selenium AI Agent
 
 First off, thank you for considering contributing! 🎉
 
@@ -8,7 +8,7 @@ This project is open source and we love receiving contributions from our communi
 
 ### 🐛 Report Bugs
 
-Found a bug? Please [open an issue](https://github.com/learn-automated-testing/selenium_agent/issues/new) with:
+Found a bug? Please [open an issue](https://github.com/learn-automated-testing/selenium-ai-agent/issues/new) with:
 - A clear description of the problem
 - Steps to reproduce
 - Expected vs actual behavior
@@ -16,7 +16,7 @@ Found a bug? Please [open an issue](https://github.com/learn-automated-testing/s
 
 ### 💡 Suggest Features
 
-Have an idea? We'd love to hear it! [Open a feature request](https://github.com/learn-automated-testing/selenium_agent/issues/new) describing:
+Have an idea? We'd love to hear it! [Open a feature request](https://github.com/learn-automated-testing/selenium-ai-agent/issues/new) describing:
 - The problem you're trying to solve
 - Your proposed solution
 - Alternative approaches you've considered
@@ -27,8 +27,8 @@ Have an idea? We'd love to hear it! [Open a feature request](https://github.com/
 
 ```bash
 # Clone the repo
-git clone https://github.com/learn-automated-testing/selenium_agent.git
-cd selenium_agent
+git clone https://github.com/learn-automated-testing/selenium-ai-agent.git
+cd selenium-ai-agent
 
 # Install dependencies
 cd selenium-mcp-server
@@ -139,8 +139,8 @@ When adding new tools:
 
 ## Questions?
 
-- Open a [Discussion](https://github.com/learn-automated-testing/selenium_agent/discussions)
-- Check existing [Issues](https://github.com/learn-automated-testing/selenium_agent/issues)
+- Open a [Discussion](https://github.com/learn-automated-testing/selenium-ai-agent/discussions)
+- Check existing [Issues](https://github.com/learn-automated-testing/selenium-ai-agent/issues)
 
 ## License
 

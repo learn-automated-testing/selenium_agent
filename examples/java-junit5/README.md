@@ -38,7 +38,7 @@ Add the MCP server to your assistant (Node.js 20+ needed for `npx`).
 
 | Assistant | Setup |
 |---|---|
-| Claude Code | `claude mcp add selenium-mcp -- npx -y selenium-ai-agent` |
+| Claude Code | `claude mcp add selenium-ai-agent -- npx -y selenium-ai-agent` |
 | IntelliJ IDEA (Junie) | `npx selenium-ai-agent install junie` |
 | IntelliJ IDEA (AI Assistant, Copilot) | see [JetBrains IDEs](../../selenium-mcp-server/README.md#jetbrains-ides-intellij-idea-pycharm-webstorm-) |
 | VS Code, Cursor, Windsurf | see the [main README](../../README.md) |

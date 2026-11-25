@@ -23,12 +23,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/learn-automated-testing/selenium_agent.git",
+    "url": "https://github.com/learn-automated-testing/selenium-ai-agent.git",
     "directory": "selenium-test-agents"
   },
-  "homepage": "https://github.com/learn-automated-testing/selenium_agent#readme",
+  "homepage": "https://github.com/learn-automated-testing/selenium-ai-agent#readme",
   "bugs": {
-    "url": "https://github.com/learn-automated-testing/selenium_agent/issues"
+    "url": "https://github.com/learn-automated-testing/selenium-ai-agent/issues"
   },
   "engines": {
     "node": ">=16.0.0"

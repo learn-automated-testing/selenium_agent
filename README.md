@@ -7,7 +7,7 @@
 
 **AI test agents for Selenium: plan, review, generate and heal tests from a prompt, with reports linked to the test plan you approved.**
 
-Selenium AI Agent (`selenium-ai-agent` on npm) is an MCP server that lets your AI assistant drive a real browser through Selenium WebDriver and build a test suite for you.
+Selenium AI Agent is an open-source MCP server that brings Playwright-style AI test agents (planner, generator, healer) to Selenium: you approve the test plan before any test is written, tests are generated and self-healed in a real browser (also in parallel on Selenium Grid), and every JUnit or Allure result links back to its plan scenario. It works in Claude Code, Claude Desktop, VS Code (GitHub Copilot), Cursor, JetBrains IDEs and other MCP clients. On npm: `selenium-ai-agent`.
 
 - **Test agents:** a planner explores your app and writes a structured test plan, a generator turns it into tests checked live in the browser, and a healer runs and repairs them.
 - **You approve the plan first:** the plan opens as a review page in your browser; tests are only generated from a plan you approved.
@@ -17,7 +17,7 @@ Selenium AI Agent (`selenium-ai-agent` on npm) is an MCP server that lets your A
 - **Built in Node.js:** run it with `npx -y selenium-ai-agent`; the matching browser driver is downloaded for you.
 - **Scales with Selenium Grid:** parallel sessions on Chrome, Firefox and Edge.
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-mcp%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF)](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-ai-agent%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5)](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522selenium-ai-agent%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522selenium-ai-agent%2522%255D%257D) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=selenium-ai-agent&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJzZWxlbml1bS1haS1hZ2VudCJdfQ%3D%3D)
 
 <p align="center">
   <img src="docs/selenium-agent-workflow.png" alt="Selenium Agent Workflow" width="700"/>
@@ -56,7 +56,7 @@ You need **Node.js 20+** and a browser (Chrome, Firefox or Edge).
 **Claude Code:**
 
 ```bash
-claude mcp add selenium-mcp -- npx -y selenium-ai-agent
+claude mcp add selenium-ai-agent -- npx -y selenium-ai-agent
 ```
 
 **Claude Desktop, Cursor, Windsurf or Junie in IntelliJ IDEA / PyCharm** (writes the config for you):
@@ -78,7 +78,7 @@ Where your test plans, tests and reports go:
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["-y", "selenium-ai-agent"]
     }
@@ -91,7 +91,7 @@ Where your test plans, tests and reports go:
 ```json
 {
   "servers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["-y", "selenium-ai-agent"],
       "type": "stdio"
@@ -214,8 +214,8 @@ Everything above works with a local browser. Selenium Grid adds parallel session
 ### 1. Start the Grid
 
 ```bash
-git clone https://github.com/learn-automated-testing/selenium_agent.git
-cd selenium_agent/selenium-grid
+git clone https://github.com/learn-automated-testing/selenium-ai-agent.git
+cd selenium-ai-agent/selenium-grid
 docker-compose up -d          # Grid console: http://localhost:4444
 
 docker-compose up -d --scale chrome-node=10   # scale up any time
@@ -228,7 +228,7 @@ The included `docker-compose.yml` starts a hub, 4 Chrome nodes and 1 Firefox nod
 ```json
 {
   "mcpServers": {
-    "selenium-mcp": {
+    "selenium-ai-agent": {
       "command": "npx",
       "args": ["-y", "selenium-ai-agent"],
       "env": { "SELENIUM_GRID_URL": "http://localhost:4444" }
@@ -315,14 +315,13 @@ All variables, CLI flags, driver and proxy setup, and troubleshooting are in the
 - [Example Chats](docs/EXAMPLE_CHATS.md): prompts with the tools they call and the results
 - [Agent Workflow](docs/AGENT_WORKFLOW.md): the end-to-end testing pipeline
 - [Framework Standards](docs/FRAMEWORK_STANDARDS.md): code generation conventions
-- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md): production deployment
 - [Package README](selenium-mcp-server/README.md): all tools, options and troubleshooting
 
 <details>
 <summary>Project structure</summary>
 
 ```text
-selenium_agent/
+selenium-ai-agent/
 ├── selenium-mcp-server/     # TypeScript MCP server (npm: selenium-ai-agent)
 │   └── src/
 │       ├── server.ts        # MCP protocol handler
@@ -362,5 +361,5 @@ MIT — see [LICENSE](LICENSE).
 
 <p align="center">
   <b>If this project helps you, please give it a star!</b><br>
-  <a href="https://github.com/learn-automated-testing/selenium_agent">Star on GitHub</a>
+  <a href="https://github.com/learn-automated-testing/selenium-ai-agent">Star on GitHub</a>
 </p>
